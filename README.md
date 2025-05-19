@@ -36,10 +36,10 @@ ArcadeHub is a decentralized gaming platform on the NERO Chain, blending Web2 si
 
 ```sh
 # Step 1: Clone the repository using the project's Git URL.
-git clone https://github.com/cosmasken/arcadehub-neon-nights.git
+git clone https://github.com/cosmasken/arcadehub.git
 
 # Step 2: Navigate to the project directory.
-cd arcadehub-neon-nights
+cd arcadehub
 
 # Step 3: Install the necessary dependencies.
 npm i

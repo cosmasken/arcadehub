@@ -1,0 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 5.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 270 100% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 10% 10%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 12 90% 55%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 5% 15%;
+    --input: 240 5% 15%;
+    --ring: 240 4.9% 83.9%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 240 10% 3.9%;
+    --sidebar-foreground: 240 5% 90%;
+    --sidebar-primary: 270 100% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 5% 10%;
+    --sidebar-accent-foreground: 240 5% 90%;
+    --sidebar-border: 240 5% 13%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  .neon-border {
+    box-shadow: 0 0 5px rgba(137, 92, 246, 0.5), 0 0 15px rgba(217, 70, 239, 0.3);
+  }
+  
+  .neon-border:hover {
+    box-shadow: 0 0 10px rgba(137, 92, 246, 0.7), 0 0 25px rgba(217, 70, 239, 0.5);
+  }
+
+  .arcade-card {
+    @apply bg-card rounded-xl border border-muted/20 transition-all duration-300 hover:border-arcade-purple/50 hover:neon-border;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-arcade-gradient;
+  }
+}

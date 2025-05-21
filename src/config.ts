@@ -28,7 +28,7 @@ export const AA_PLATFORM_CONFIG = {
   platformUrl: "https://aa-platform.nerochain.io/",
   platformApiUrl: "https://api-aa-platform.nerochain.io/",
   paymasterRpc: "https://paymaster-testnet.nerochain.io",
-  bundlerRpc: "https://bundler.service.nerochain.io",
+  bundlerRpc: "https://bundler.testnet.nerochain.io",
   priceServiceUrl: "https://price-service.nerochain.io"
 };
 

@@ -57,7 +57,7 @@ Watch our 3-minute demo showcasing ArcadeHub’s features:
 - Gasless UX with Paymaster
 - Profiles and rewards tracker
 
-[Demo Video](https://youtu.be/8kZshneuNps) | [Live Demo](https://arcadehub-mflcnsyz9-double-pusles-projects.vercel.app/)
+[Demo Video](https://youtu.be/8kZshneuNps) | [Live Demo](https://arcadehub.vercel.app)
 
 ## Smart Contracts
 

@@ -1,7 +1,5 @@
 import { create } from 'zustand';
-import { IProvider } from "@web3auth/base";
-import { Web3Auth } from "@web3auth/modal";
-import { Web3AuthOptions } from "@web3auth/base";
+import { Web3Auth, Web3AuthOptions } from "@web3auth/modal";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
 import { chainConfig } from "../config";
@@ -9,8 +7,7 @@ import { CHAIN_NAMESPACES, IAdapter, IProvider, WEB3AUTH_NETWORK, getEvmChainCon
 import { 
   initAAClient,
   initAABuilder,
-  getAAWalletAddress,
-  getGasParameters
+  getAAWalletAddress
 } from '@/lib/aaUtils';
 import { ethers } from 'ethers';
 
@@ -46,6 +43,8 @@ interface AuthState {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   initAAWallet: () => Promise<void>;
+  isConnecting: boolean;
+  error: string | null;
 }
 
 
@@ -56,6 +55,8 @@ const useAuthStore = create<AuthState>((set,get) => ({
   aaWallet: null,
   aaProvider: null,
   aaSigner: null,
+  isConnecting: false,
+  error: null,
 
 
   init: async () => {
@@ -73,6 +74,7 @@ const useAuthStore = create<AuthState>((set,get) => ({
 
 
   login: async () => {
+   // set({ isConnecting: true, error: null });
     const web3auth = get().web3auth;
      if (!web3auth) throw new Error("Web3Auth not initialized");
     
@@ -118,11 +120,13 @@ const useAuthStore = create<AuthState>((set,get) => ({
 
     try {
       // Initialize AA components
-      const client = await initAAClient(aaSigner);
+      const client = await initAAClient();
       const builder = await initAABuilder(aaSigner);
       const aaWallet = await getAAWalletAddress(aaSigner);
       
        console.log("AA Wallet initialized:", aaWallet);
+       console.log("AA Builder initialized:", builder);
+       console.log("AA Client initialized:", client);
 
       set({ aaWallet });
       return aaWallet;

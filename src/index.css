@@ -4,7 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
-
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
 
 @layer base {
   :root {

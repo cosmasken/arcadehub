@@ -2,59 +2,51 @@ import { useState, useEffect } from 'react';
 import GameCard, { Game } from './GameCard';
 import GameFilters from './GameFilters';
 import { Link } from 'react-router-dom';
+import clickerlogo from '../../assets/clicker.jpg';
+import spintowin from '../../assets/spintowin.png';
+import tictactoe from '../../assets/tictactoe.png';
+import memorygame from '../../assets/memory-game.png';
 
 // Mock data for games
 const MOCK_GAMES: Game[] = [
+ 
   {
-    id: "star-blaster",
-    title: "Star Blaster",
-    thumbnail: "https://images.unsplash.com/photo-1538641297814-26eb2ae7b485?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    genre: "Arcade",
-    plays: 15432,
-    rating: 4.5
-  },
-  {
-    id: "puzzle-pop",
-    title: "Puzzle Pop",
-    thumbnail: "https://images.unsplash.com/photo-1536751048178-14c1807eb1a9?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    genre: "Puzzle",
-    plays: 12050,
-    rating: 4.8
-  },
-  {
-    id: "turbo-dash",
-    title: "Turbo Dash",
-    thumbnail: "https://images.unsplash.com/photo-1533236897111-3e94666b2edf?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    genre: "Racing",
-    plays: 8721,
-    rating: 4.2
-  },
-  {
-    id: "clicker-craze",
+    id: "clicker",
     title: "Clicker Craze",
-    thumbnail: "https://images.unsplash.com/photo-1607016284318-d1384bf5edd1?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    thumbnail: clickerlogo,
     genre: "Idle",
     plays: 20548,
     rating: 3.9,
-    url: "/games/clicker" // Added direct URL to our new Clicker game
+    url: "/games/clicker"
   },
   {
-    id: "alien-quest",
-    title: "Alien Quest",
-    thumbnail: "https://images.unsplash.com/photo-1569701813229-33284b643e3c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    genre: "Adventure",
-    plays: 5829,
-    rating: 4.7,
-    developer: "GameStudio"
+    id: "tic-tac-toe",
+    title: "Tic Tac Toe",
+    thumbnail: tictactoe,
+    genre: "Puzzle",
+    plays: 5000,
+    rating: 4.5,
+    url: "/games/tic-tac-toe"
   },
   {
-    id: "space-explorer",
-    title: "Space Explorer",
-    thumbnail: "https://images.unsplash.com/photo-1581822261290-991b38693823?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    genre: "Simulation",
-    plays: 4215,
-    rating: 4.3
+    id: "memory-game",
+    title: "Memory Match",
+    thumbnail: memorygame,
+    genre: "Puzzle",
+    plays: 3800,
+    rating: 4.4,
+    url: "/games/memory-game"
+  },
+  {
+    id: "spin-to-win",
+    title: "Spin to Win",
+    thumbnail: spintowin,
+    genre: "Casino",
+    plays: 6200,
+    rating: 4.6,
+    url: "/games/spin-to-win"
   }
+
 ];
 
 type FilterOptions = {
@@ -127,7 +119,7 @@ const GameGrid = () => {
               {games.map(game => (
                 <Link 
                   key={game.id}
-                  to={game.url || `/game/${game.id}`} 
+                  to={game.url || `/games/${game.id}`} 
                   className="block transition-transform hover:scale-105"
                 >
                   <GameCard game={game} />

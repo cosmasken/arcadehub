@@ -55,7 +55,7 @@ const GameCard = ({ game }: GameCardProps) => {
             asChild
             className="w-full bg-arcade-blue hover:bg-arcade-blue/80 text-white transition-transform duration-200 hover:translate-y-[-2px]"
           >
-            <Link to={`/game/${game.id}`}>
+            <Link to={`/games/${game.id}`}>
               Play Now
             </Link>
           </Button>

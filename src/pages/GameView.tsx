@@ -32,7 +32,7 @@ const GAMES: Record<string, {
     genre: "Racing",
     arcReward: 40,
   },
-  "clicker-craze": {
+  "clicker": {
     title: "Clicker Craze",
     description: "Click to collect coins, upgrade for more in this addictive idle game.",
     genre: "Idle",

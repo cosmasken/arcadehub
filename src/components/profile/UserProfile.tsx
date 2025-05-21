@@ -1,35 +1,112 @@
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Gamepad, Settings, Edit, Share2, Trophy, Clock, ArrowRight, Users } from "lucide-react";
+import { User, Gamepad, Settings, Edit, Share2, Trophy, Clock, ArrowRight, Users, Coins } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import AccountSettings from "./AccountSettings";
 import InviteFriends from "./InviteFriends";
+import useProfileStore from "@/stores/use-profile";
+import { ethers } from 'ethers';
+import { getArcadeNFTContract, getArcadeHubContract } from '@/lib/contractUtils';
+import { CONTRACT_ADDRESSES } from '@/config';
+import { useAAWallet } from '@/hooks/useAAWallet';
+import { toast } from "sonner";
+
+interface NFT {
+  tokenId: string;
+  name: string;
+  description: string;
+  image: string;
+  attributes: {
+    trait_type: string;
+    value: string;
+  }[];
+}
 
 const UserProfile = () => {
-  // Sample data
-  const user = {
-    username: "GamerX",
-    avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=GamerX",
-    bio: "Passionate arcade gamer and developer. I love puzzle games and racing games.",
-    arcBalance: 200,
-    gamesPlayed: 45,
-    achievements: 12,
-    assets: [
-      { id: "nft1", name: "Star Trophy", image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" },
-      { id: "nft2", name: "Race Car", image: "https://images.unsplash.com/photo-1621385291484-8f8082da1e14?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" },
-    ],
-    history: [
-      { game: "Star Blaster", score: "1028", date: "2025-05-18" },
-      { game: "Puzzle Pop", score: "325", date: "2025-05-17" },
-      { game: "Turbo Dash", score: "582", date: "2025-05-15" },
-    ],
-    developerGames: [
-      { id: "game1", title: "Space Adventure", plays: 235, revenue: 50 },
-    ],
+  const { balance, isLoading, aaWallet, aaSigner } = useAAWallet();
+  const { username, bio, avatar, arcBalance, gamesPlayed, achievements, assets, history, developerGames } = useProfileStore();
+  const [nfts, setNFTs] = useState<NFT[]>([]);
+  const [loadingNFTs, setLoadingNFTs] = useState(false);
+  const [claimingTokens, setClaimingTokens] = useState(false);
+  const [availableTokens, setAvailableTokens] = useState<number>(0);
+
+  const checkAvailableTokens = useCallback(async () => {
+    if (!aaSigner) return;
+    
+    try {
+      const contract = getArcadeHubContract(aaSigner);
+      const available = await contract.getAvailableTokens(aaWallet);
+      setAvailableTokens(available.toNumber());
+    } catch (error) {
+      console.error('Error checking available tokens:', error);
+    }
+  }, [aaSigner, aaWallet]);
+
+  const claimTokens = async () => {
+    if (!aaSigner || claimingTokens) return;
+
+    try {
+      setClaimingTokens(true);
+      const contract = getArcadeHubContract(aaSigner);
+      const tx = await contract.claimTokens();
+      await tx.wait();
+      
+      // Refresh token balance and available tokens
+      checkAvailableTokens();
+      toast.success('Tokens claimed successfully!');
+    } catch (error) {
+      console.error('Error claiming tokens:', error);
+      toast.error('Failed to claim tokens');
+    } finally {
+      setClaimingTokens(false);
+    }
   };
+
+  useEffect(() => {
+    checkAvailableTokens();
+  }, [checkAvailableTokens]);
+
+  useEffect(() => {
+    const fetchNFTs = async () => {
+      if (!aaWallet || !aaSigner) return;
+
+      setLoadingNFTs(true);
+      try {
+        // Get NFT contract with signer
+        const contract = getArcadeNFTContract(aaSigner);
+        
+        // Get total supply
+        const totalSupply = await contract.totalSupply();
+        
+        // Check each token to see if it's owned by the user
+        const nftPromises = [];
+        for (let i = 0; i < totalSupply.toNumber(); i++) {
+          const tokenId = i;
+          const owner = await contract.ownerOf(tokenId);
+          if (owner.toLowerCase() === aaWallet.toLowerCase()) {
+            const uri = await contract.tokenURI(tokenId);
+            const response = await fetch(uri);
+            const metadata = await response.json();
+            nftPromises.push({
+              tokenId: tokenId.toString(),
+              ...metadata,
+            });
+          }
+        }
+
+        setNFTs(nftPromises);
+      } catch (error) {
+        console.error('Error fetching NFTs:', error);
+      } finally {
+        setLoadingNFTs(false);
+      }
+    };
+
+    fetchNFTs();
+  }, [aaWallet, aaSigner]);
 
   return (
     <div className="container mx-auto px-4 my-8">
@@ -38,8 +115,8 @@ const UserProfile = () => {
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="relative group">
             <img 
-              src={user.avatar} 
-              alt={user.username}
+              src={avatar} 
+              alt={username}
               className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-arcade-purple/50"
             />
             <button className="absolute bottom-0 right-0 bg-arcade-purple text-white rounded-full p-2 opacity-80 hover:opacity-100 transition-opacity">
@@ -49,7 +126,7 @@ const UserProfile = () => {
           
           <div className="text-center sm:text-left flex-1">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-              <h1 className="text-2xl sm:text-3xl font-bold">{user.username}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold">{username}</h1>
               <div className="flex justify-center sm:justify-start gap-2">
                 <span className="bg-arcade-blue/20 text-arcade-blue text-xs px-2 py-1 rounded-full">
                   Gamer
@@ -59,8 +136,32 @@ const UserProfile = () => {
                 </span>
               </div>
             </div>
-            <p className="text-white/70 mb-4">{user.bio}</p>
+            <p className="text-white/70 mb-4">{bio}</p>
             <div className="flex flex-wrap justify-center sm:justify-start gap-3">
+              <div className="flex items-center gap-2">
+                <Coins className="w-4 h-4" />
+                <span className="text-white/70">{arcBalance} ARC</span>
+              </div>
+              {availableTokens > 0 && (
+                <Button
+                  variant="outline"
+                  className="bg-arcade-green hover:bg-arcade-green/80"
+                  onClick={claimTokens}
+                  disabled={claimingTokens}
+                >
+                  {claimingTokens ? (
+                    <>
+                      <ArrowRight className="animate-spin" />
+                      Claiming...
+                    </>
+                  ) : (
+                    <>
+                      <Coins className="mr-2" />
+                      Claim {availableTokens} ARC
+                    </>
+                  )}
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -84,7 +185,7 @@ const UserProfile = () => {
             <p className="text-white/60 text-sm mb-1">ARC Balance</p>
             <p className="text-xl font-bold flex items-center justify-center">
               <span className="w-4 h-4 bg-arcade-yellow rounded-full inline-block mr-2"></span>
-              {user.arcBalance}
+              {isLoading ? "Loading..." : arcBalance}
             </p>
           </div>
         </div>
@@ -115,18 +216,8 @@ const UserProfile = () => {
         <TabsContent value="gamer">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-3 md:grid-cols-1 gap-4 col-span-3 md:col-span-1">
-              <Card className="bg-secondary border-muted/20">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-white/60">ARC Balance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold flex items-center">
-                    <span className="w-4 h-4 bg-arcade-yellow rounded-full inline-block mr-2"></span>
-                    {user.arcBalance}
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-2 md:grid-cols-1 gap-4 col-span-2 md:col-span-1">
+              
               
               <Card className="bg-secondary border-muted/20">
                 <CardHeader className="pb-2">
@@ -135,7 +226,7 @@ const UserProfile = () => {
                 <CardContent>
                   <div className="text-2xl font-bold flex items-center">
                     <Gamepad size={16} className="text-arcade-blue mr-2" />
-                    {user.gamesPlayed}
+                    {gamesPlayed}
                   </div>
                 </CardContent>
               </Card>
@@ -147,7 +238,7 @@ const UserProfile = () => {
                 <CardContent>
                   <div className="text-2xl font-bold flex items-center">
                     <Trophy size={16} className="text-arcade-yellow mr-2" />
-                    {user.achievements}
+                    {achievements}
                   </div>
                 </CardContent>
               </Card>
@@ -156,7 +247,7 @@ const UserProfile = () => {
               <Card className="col-span-3 bg-secondary border-muted/20">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-center">
-                    <CardTitle>Assets</CardTitle>
+                    <CardTitle>NFTs</CardTitle>
                     <Button variant="ghost" size="sm" className="text-white/70 hover:text-white">
                       View all
                       <ArrowRight size={14} className="ml-1" />
@@ -165,7 +256,7 @@ const UserProfile = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-3">
-                    {user.assets.map(asset => (
+                    {assets.map(asset => (
                       <div 
                         key={asset.id}
                         className="bg-muted rounded-lg overflow-hidden border border-muted/30 hover:border-arcade-purple/50 transition-colors cursor-pointer group"
@@ -194,7 +285,7 @@ const UserProfile = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {user.history.map((item, index) => (
+                  {history.map((item, index) => (
                     <div key={index}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -211,7 +302,7 @@ const UserProfile = () => {
                           {new Date(item.date).toLocaleDateString()}
                         </div>
                       </div>
-                      {index < user.history.length - 1 && <Separator className="my-4 bg-muted/30" />}
+                      {index < history.length - 1 && <Separator className="my-4 bg-muted/30" />}
                     </div>
                   ))}
                 </div>
@@ -240,17 +331,17 @@ const UserProfile = () => {
                 <div className="space-y-4">
                   <div className="bg-muted rounded-lg p-4">
                     <p className="text-sm text-white/60 mb-1">Total Games</p>
-                    <p className="text-2xl font-bold">{user.developerGames.length}</p>
+                    <p className="text-2xl font-bold">{developerGames.length}</p>
                   </div>
                   <div className="bg-muted rounded-lg p-4">
                     <p className="text-sm text-white/60 mb-1">Total Plays</p>
-                    <p className="text-2xl font-bold">{user.developerGames.reduce((sum, game) => sum + game.plays, 0)}</p>
+                    <p className="text-2xl font-bold">{developerGames.reduce((sum, game) => sum + game.plays, 0)}</p>
                   </div>
                   <div className="bg-muted rounded-lg p-4">
                     <p className="text-sm text-white/60 mb-1">Total Revenue</p>
                     <p className="text-2xl font-bold flex items-center">
                       <span className="w-4 h-4 bg-arcade-yellow rounded-full inline-block mr-2"></span>
-                      {user.developerGames.reduce((sum, game) => sum + game.revenue, 0)}
+                      {developerGames.reduce((sum, game) => sum + game.revenue, 0)}
                     </p>
                   </div>
                 </div>
@@ -268,9 +359,9 @@ const UserProfile = () => {
                 <CardTitle>My Games</CardTitle>
               </CardHeader>
               <CardContent>
-                {user.developerGames.length > 0 ? (
+                {developerGames.length > 0 ? (
                   <div className="space-y-4">
-                    {user.developerGames.map(game => (
+                    {developerGames.map(game => (
                       <div key={game.id} className="bg-muted rounded-lg p-4 flex flex-col sm:flex-row justify-between gap-4">
                         <div>
                           <h4 className="font-medium mb-1">{game.title}</h4>

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Gamepad, Trophy, Users, Code } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Gamepad, Trophy, Users, Code, UploadCloud, BarChart4 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const UnloggedInView = () => (
@@ -14,44 +15,78 @@ const UnloggedInView = () => (
         <br />
         Play, earn ARC tokens and NFTs, and own your rewards. Developers upload games and earn revenue. Gasless, vibrant, and community-driven.
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-8">
-        <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
-          <Trophy size={32} className="text-yellow-400 mb-2" />
-          <h3 className="text-xl font-semibold mb-1">Play & Earn</h3>
-          <p className="text-sm text-muted-foreground text-center">
-            Enjoy arcade games, earn ARC tokens and NFT rewards for achievements.
-          </p>
-        </div>
-        <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
-          <Code size={32} className="text-arcade-purple mb-2" />
-          <h3 className="text-xl font-semibold mb-1">Developer Ecosystem</h3>
-          <p className="text-sm text-muted-foreground text-center">
-            Upload your games, earn 70% revenue, and grow your audience.
-          </p>
-        </div>
-        <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
-          <Users size={32} className="text-arcade-blue mb-2" />
-          <h3 className="text-xl font-semibold mb-1">Community</h3>
-          <p className="text-sm text-muted-foreground text-center">
-            Refer friends, join events, and unlock exclusive badges.
-          </p>
-        </div>
-        <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
-          <Gamepad size={32} className="text-arcade-yellow mb-2" />
-          <h3 className="text-xl font-semibold mb-1">Gasless UX</h3>
-          <p className="text-sm text-muted-foreground text-center">
-            Play and upload games with no gas fees, powered by NERO’s Paymaster.
-          </p>
-        </div>
-      </div>
-      <div className="flex flex-col md:flex-row gap-4 w-full justify-center">
-        <Button asChild className="bg-arcade-yellow text-black hover:bg-arcade-yellow/80 px-8 py-3 text-lg font-semibold w-full md:w-auto">
-          <Link to="/">Explore Games</Link>
-        </Button>
-        <Button asChild variant="outline" className="border-white/20 text-white hover:bg-white/5 px-8 py-3 text-lg font-semibold w-full md:w-auto">
-          <Link to="/developers">For Developers</Link>
-        </Button>
-      </div>
+      <Tabs defaultValue="games" className="w-full flex flex-col items-center">
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="games" className="w-full text-lg">Explore Games</TabsTrigger>
+          <TabsTrigger value="developers" className="w-full text-lg">For Developers</TabsTrigger>
+        </TabsList>
+        <TabsContent value="games">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-8">
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <Trophy size={32} className="text-yellow-400 mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Play & Earn</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Enjoy arcade games, earn ARC tokens and NFT rewards for achievements.
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <Users size={32} className="text-arcade-blue mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Community</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Refer friends, join events, and unlock exclusive badges.
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <Gamepad size={32} className="text-arcade-yellow mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Gasless UX</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Play and upload games with no gas fees, powered by NERO’s Paymaster.
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <Code size={32} className="text-arcade-purple mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Developer Ecosystem</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Upload your games, earn 70% revenue, and grow your audience.
+              </p>
+            </div>
+          </div>
+          
+        </TabsContent>
+        <TabsContent value="developers">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-8">
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <UploadCloud size={32} className="text-arcade-yellow mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Upload Games</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Easily upload your HTML5 games and reach a global audience.
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <BarChart4 size={32} className="text-arcade-blue mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Analytics & Revenue</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Track plays, earnings, and player engagement. Earn 70% revenue.
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <Code size={32} className="text-arcade-purple mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Developer Community</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Join a vibrant developer ecosystem and get support.
+              </p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-muted rounded-lg border border-muted/30">
+              <Gamepad size={32} className="text-arcade-yellow mb-2" />
+              <h3 className="text-xl font-semibold mb-1">Gasless Publishing</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Publish and monetize games with no gas fees, powered by NERO’s Paymaster.
+              </p>
+            </div>
+          </div>
+        
+        </TabsContent>
+      </Tabs>
     </div>
     <footer className="mt-12 text-sm text-white/50 text-center">
       &copy; {new Date().getFullYear()} ArcadeHub. All rights reserved.<br />

@@ -41,9 +41,6 @@ export const CONTRACT_ADDRESSES = {
   arcadeHub:"0xeBb9C0143416C300bab3107B37841Dde6d63A416",
   arcadeNFT: "0x31e34B3884Ec2Fff40623855D0B15981Cfc31314",
   arcToken: "0xe4f95D88f440F138e525E658D984F08De3b5f1EC",
-  // This would be your deployed NFT contract address
-  nftContract: "0xD3821bD2ec70ED37709e7DD0D5003fdC3e0556F8", // Replace with your deployed contract address
-  testTokenContract: "0xc2c2387288ba55ce6fd63c06a0b314666f704f5b" // TestToken contract address
 };
 
 // ERC20 Token Addresses (for testing)
@@ -51,7 +48,8 @@ export const ERC20_ADDRESSES = {
   dai: "0x5d0E342cCD1aD86a16BfBa26f404486940DBE345",
   usdt: "0x1dA998CfaA0C044d7205A17308B20C7de1bdCf74",
   usdc: "0xC86Fed58edF0981e927160C50ecB8a8B05B32fed",
-  testToken: "0xc2c2387288ba55ce6fd63c06a0b314666f704f5b"
+  arcToken: "0xe4f95D88f440F138e525E658D984F08De3b5f1EC",
+  gmxhub: "0xc2c2387288ba55ce6fd63c06a0b314666f704f5b",
 };
 
 // Sample NFT Metadata URI - This could be a real IPFS link in production

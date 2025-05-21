@@ -57,13 +57,19 @@ Watch our 3-minute demo showcasing ArcadeHub’s features:
 - Gasless UX with Paymaster
 - Profiles and rewards tracker
 
-<!-- [Demo Video](https://youtube.com/your-video-link) | [Live Demo](https://arcadehub.vercel.app) -->
+[Demo Video](https://youtu.be/8kZshneuNps) | [Live Demo](https://arcadehub-mflcnsyz9-double-pusles-projects.vercel.app/)
 
 ## Smart Contracts
 
 - **ARCToken.sol**: ERC-20, 100M ARC for rewards and payouts
 - **NeroNFT.sol**: ERC-721 for NFT achievements (e.g., 100 points, no-restart)
 - **GameHub.sol**: Manages game uploads, 70/30 revenue split
+
+## Contract Addresses
+
+- **ArcadeHub**: `0xeBb9C0143416C300bab3107B37841Dde6d63A416`
+- **ArcadeNFT**: `0x31e34B3884Ec2Fff40623855D0B15981Cfc31314`
+- **ArcToken**: `0xe4f95D88f440F138e525E658D984F08De3b5f1EC`
 
 ## Testing
 

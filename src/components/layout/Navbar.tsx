@@ -50,7 +50,7 @@ const Navbar = () => {
                 ) : (
                   <>
                     <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                    <span className="text-red-500">Loading...</span>
+                    <span className="text-red-500">Click to connect...</span>
                   </>
                 )}
               </span>

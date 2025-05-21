@@ -1,12 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Gamepad, User, Code, Trophy, Settings, Menu, X } from "lucide-react";
+import { Gamepad, User, Code, Trophy, Menu, X } from "lucide-react";
 import { useState } from 'react';
 import useAuthStore from "@/hooks/use-auth"; // Update import path
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { loggedIn, login, logout,aaWallet } = useAuthStore(); // Get auth state from Zustand
+  const { loggedIn, login, logout,aaWallet } = useAuthStore(); 
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -34,21 +34,26 @@ const Navbar = () => {
           <NavLink to="/profile" icon={<User size={18} />} label="Profile" />
           <NavLink to="/developers" icon={<Code size={18} />} label="Developers" />
           <NavLink to="/rewards" icon={<Trophy size={18} />} label="Rewards" />
-          <NavLink to="/settings" icon={<Settings size={18} />} label="Settings" />
-          
+          <NavLink to="/achievement-minting" icon={<Trophy size={18} />} label="Mint Achievements" />
+
           <Button 
             onClick={handleAuth}
             className="ml-4 bg-arcade-yellow text-black hover:bg-arcade-yellow/80"
           >
             {loggedIn ? (
-              // <span className="flex items-center">
-              //   <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-              //   Hi, Player
-              // </span>
               <span className="flex items-center">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-            {aaWallet ? `${aaWallet.slice(0,6)}...${aaWallet.slice(-4)}` : 'Connected'}
-          </span>
+                {aaWallet ? (
+                  <>
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                    {`${aaWallet.slice(0,6)}...${aaWallet.slice(-4)}`}
+                  </>
+                ) : (
+                  <>
+                    <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                    <span className="text-red-500">Loading...</span>
+                  </>
+                )}
+              </span>
             ) : (
               "Connect"
             )}
@@ -73,7 +78,6 @@ const Navbar = () => {
             <MobileNavLink to="/profile" icon={<User size={18} />} label="Profile" onClick={toggleMenu} />
             <MobileNavLink to="/developers" icon={<Code size={18} />} label="Developers" onClick={toggleMenu} />
             <MobileNavLink to="/rewards" icon={<Trophy size={18} />} label="Rewards" onClick={toggleMenu} />
-            <MobileNavLink to="/settings" icon={<Settings size={18} />} label="Settings" onClick={toggleMenu} />
             
             <Button 
               onClick={() => {

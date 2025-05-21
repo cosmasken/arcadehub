@@ -86,7 +86,7 @@ const HeroSection = () => {
             {FEATURED_GAMES.map((game, index) => (
               <Link
                 key={game.id}
-                to={`/game/${game.id}`}
+                to={`/games/${game.id}`}
                 className={`
                   absolute inset-0 transition-all duration-500 overflow-hidden rounded-2xl border-2 border-white/20 neon-border
                   ${index === currentSlide ? 'opacity-100 z-20 scale-100' : 'opacity-0 z-10 scale-95'}

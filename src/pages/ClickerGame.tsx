@@ -1,5 +1,9 @@
-
 import React, { useState, useEffect } from "react";
+import { ethers } from "ethers";
+import { CONTRACT_ADDRESSES } from "@/config";
+import { getArcadeHubContract } from "@/lib/contractUtils";
+import { useAAWallet } from "@/hooks/useAAWallet";
+import { useRewardsStore } from "@/hooks/use-rewards";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { CoinsIcon, Star, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
+import { Loader2 } from "lucide-react";
 
 interface Upgrade {
   id: number;
@@ -37,6 +42,9 @@ interface Achievement {
 }
 
 const ClickerGame = () => {
+  const { aaWallet, aaSigner, refreshBalance } = useAAWallet();
+  const { addReward, setTotals } = useRewardsStore();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [arcPoints, setArcPoints] = useState(0);
   const [arcPerClick, setArcPerClick] = useState(1);
   const [clickCount, setClickCount] = useState(0);
@@ -145,26 +153,13 @@ const ClickerGame = () => {
       reward: 250
     }
   ]);
-  
-  // Auto-generate ARC points
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const deltaTime = (now - lastTick) / 1000; // Convert to seconds
-      
-      if (arcPerSecond > 0) {
-        const earned = arcPerSecond * deltaTime;
-        setArcPoints(prev => prev + earned);
-        setTotalEarned(prev => prev + earned);
-      }
-      
-      setLastTick(now);
-    }, 100);
-    
+    const interval = setInterval(handleAutoEarnings, 1000);
+
     return () => clearInterval(interval);
   }, [arcPerSecond, lastTick]);
-  
-  // Check achievements
+
   useEffect(() => {
     const newAchievements = [...achievements];
     let updated = false;
@@ -205,7 +200,77 @@ const ClickerGame = () => {
     }
   }, [clickCount, totalEarned, upgrades, autoUpgrades]);
 
-  // Handle clicking the main button
+  const handleClaimEarnings = async () => {
+    if (!aaSigner || !arcPoints || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      const contract = getArcadeHubContract(aaSigner);
+      const tx = await contract.recordGameEarnings(arcPoints);
+      await tx.wait();
+      
+      // Update local state
+      setArcPoints(0);
+      setTotalEarned(prev => prev + arcPoints);
+      
+      // Update rewards store
+      addReward({
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        game: "Clicker Game",
+        type: "Earn",
+        amount: arcPoints
+      });
+      
+      // Refresh AA wallet balance
+      await refreshBalance();
+      
+      toast.success("Earnings deposited successfully!");
+    } catch (error) {
+      console.error("Error depositing earnings:", error);
+      toast.error("Failed to deposit earnings");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderClaimButton = () => {
+    if (!aaSigner || !arcPoints) {
+      return null;
+    }
+
+    return (
+      <Button
+        onClick={handleClaimEarnings}
+        disabled={isSubmitting}
+        className="mt-4 w-full bg-arcade-yellow hover:bg-arcade-yellow/80 text-black"
+      >
+        {isSubmitting ? (
+          <>
+            <span>Claiming...</span>
+            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+          </>
+        ) : (
+          <>
+            <CoinsIcon className="mr-2 h-4 w-4" />
+            Claim {arcPoints} ARC
+          </>
+        )}
+      </Button>
+    );
+  };
+
+  const handleAutoEarnings = async () => {
+    const now = Date.now();
+    const timeDiff = now - lastTick;
+    if (timeDiff >= 1000) { // Update every second
+      const earned = (timeDiff / 1000) * arcPerSecond;
+      setArcPoints(prev => prev + earned);
+      setTotalEarned(prev => prev + earned);
+      setLastTick(now);
+    }
+  };
+
   const handleClick = () => {
     const earned = arcPerClick;
     setArcPoints(prev => prev + earned);
@@ -213,7 +278,6 @@ const ClickerGame = () => {
     setClickCount(prev => prev + 1);
   };
 
-  // Purchase an upgrade
   const purchaseUpgrade = (id: number) => {
     const upgradeIndex = upgrades.findIndex(upgrade => upgrade.id === id);
     if (upgradeIndex === -1) return;
@@ -331,16 +395,14 @@ const ClickerGame = () => {
                 <CardTitle className="text-center">Click Me!</CardTitle>
                 <CardDescription className="text-center">Earn ARC with each click</CardDescription>
               </CardHeader>
-              <CardContent className="flex justify-center py-8">
+              <CardContent className="flex flex-col items-center gap-4 py-8">
                 <button 
                   onClick={handleClick}
-                  className="w-40 h-40 rounded-full bg-primary/20 border-4 border-primary hover:bg-primary/30 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center"
+                  className="bg-arcade-yellow text-black rounded-full p-6 text-3xl font-bold hover:bg-arcade-yellow/80 transition-colors"
                 >
-                  <div className="text-center">
-                    <CoinsIcon className="w-16 h-16 mx-auto text-yellow-500 animate-bounce-subtle" />
-                    <span className="block mt-2 text-lg font-bold text-primary">+{arcPerClick} ARC</span>
-                  </div>
+                  Click!
                 </button>
+                {renderClaimButton()}
               </CardContent>
               <CardFooter className="flex flex-col items-center justify-center">
                 <p className="text-sm text-muted-foreground mb-2">Auto-generating {arcPerSecond} ARC per second</p>

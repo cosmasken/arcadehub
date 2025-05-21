@@ -1,18 +1,17 @@
-
-import { useState } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useToast } from "@/hooks/use-toast";
+import { useSettingsStore } from "@/hooks/use-settings";
+import useAuthStore from "@/hooks/use-auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { Wallet, Bell, Globe, Accessibility, Languages, Volume, User } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Wallet, Bell, Accessibility, Languages, Volume, User } from "lucide-react";
 
 interface SettingsFormValues {
   walletAddress: string;
@@ -30,51 +29,56 @@ interface SettingsFormValues {
 
 const AccountSettings = () => {
   const { toast } = useToast();
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const settings = useSettingsStore();
+  const { setSetting, setAll } = useSettingsStore();
+  const { login, logout, aaWallet } = useAuthStore();
 
+  // Form setup with store values
   const form = useForm<SettingsFormValues>({
-    defaultValues: {
-      walletAddress: "",
-      notificationEmails: true,
-      notificationPushes: true,
-      notificationUpdates: false,
-      profileVisibility: "public",
-      language: "en",
-      highContrast: false,
-      fontSize: "medium",
-      soundEffects: true,
-      musicVolume: "medium",
-      autoSaveEnabled: true,
-    },
+    defaultValues: { ...settings }
   });
 
-  const connectWallet = () => {
-    // Simulate wallet connection
-    setTimeout(() => {
-      form.setValue("walletAddress", "0x1a2b3c4d5e6f7g8h9i0j");
-      setIsWalletConnected(true);
+  // Keep form in sync with store (if store changes externally)
+  useEffect(() => {
+    form.reset({ ...settings });
+  }, [settings, form]);
+
+  // Wallet connection state
+  const isWalletConnected = !!settings.walletAddress;
+
+  const connectWallet = async () => {
+    await login();
+    if (aaWallet) {
+      setSetting("walletAddress", aaWallet);
       toast({
         title: "Wallet Connected",
         description: "Your wallet has been successfully connected.",
       });
-    }, 500);
+    }
   };
 
-  const disconnectWallet = () => {
-    form.setValue("walletAddress", "");
-    setIsWalletConnected(false);
+  const disconnectWallet = async () => {
+    await logout();
+    setSetting("walletAddress", "");
     toast({
       title: "Wallet Disconnected",
       description: "Your wallet has been disconnected.",
     });
   };
 
+  // Update store on form submit
   const onSubmit = (values: SettingsFormValues) => {
-    console.log(values);
+    setAll(values);
     toast({
       title: "Settings Saved",
       description: "Your account settings have been updated.",
     });
+  };
+
+  // Update store instantly on change for each field
+  const handleFieldChange = <K extends keyof SettingsFormValues>(key: K, value: SettingsFormValues[K]) => {
+    setSetting(key, value);
+    form.setValue(key, value, { shouldDirty: true });
   };
 
   return (
@@ -104,6 +108,7 @@ const AccountSettings = () => {
                         <Input
                           placeholder="Connect wallet to display address"
                           {...field}
+                          value={settings.walletAddress}
                           readOnly
                           className="bg-muted border-muted/30"
                         />
@@ -155,8 +160,8 @@ const AccountSettings = () => {
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={settings.notificationEmails}
+                        onCheckedChange={v => handleFieldChange("notificationEmails", v)}
                       />
                     </FormControl>
                   </FormItem>
@@ -175,8 +180,8 @@ const AccountSettings = () => {
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={settings.notificationPushes}
+                        onCheckedChange={v => handleFieldChange("notificationPushes", v)}
                       />
                     </FormControl>
                   </FormItem>
@@ -195,8 +200,8 @@ const AccountSettings = () => {
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={settings.notificationUpdates}
+                        onCheckedChange={v => handleFieldChange("notificationUpdates", v)}
                       />
                     </FormControl>
                   </FormItem>
@@ -226,8 +231,8 @@ const AccountSettings = () => {
                   <FormItem>
                     <FormLabel>Profile Visibility</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      onValueChange={v => handleFieldChange("profileVisibility", v)}
+                      value={settings.profileVisibility}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-muted border-muted/30">
@@ -270,8 +275,8 @@ const AccountSettings = () => {
                   <FormItem>
                     <FormLabel>Display Language</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      onValueChange={v => handleFieldChange("language", v)}
+                      value={settings.language}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-muted border-muted/30">
@@ -323,8 +328,8 @@ const AccountSettings = () => {
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={settings.highContrast}
+                        onCheckedChange={v => handleFieldChange("highContrast", v)}
                       />
                     </FormControl>
                   </FormItem>
@@ -340,8 +345,8 @@ const AccountSettings = () => {
                     <FormControl>
                       <ToggleGroup 
                         type="single" 
-                        value={field.value} 
-                        onValueChange={field.onChange}
+                        value={settings.fontSize}
+                        onValueChange={v => handleFieldChange("fontSize", v)}
                         className="justify-start bg-muted rounded-md border border-muted/30"
                       >
                         <ToggleGroupItem value="small">Small</ToggleGroupItem>
@@ -385,8 +390,8 @@ const AccountSettings = () => {
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={settings.soundEffects}
+                        onCheckedChange={v => handleFieldChange("soundEffects", v)}
                       />
                     </FormControl>
                   </FormItem>
@@ -402,8 +407,8 @@ const AccountSettings = () => {
                     <FormControl>
                       <ToggleGroup 
                         type="single" 
-                        value={field.value} 
-                        onValueChange={field.onChange}
+                        value={settings.musicVolume}
+                        onValueChange={v => handleFieldChange("musicVolume", v)}
                         className="justify-start bg-muted rounded-md border border-muted/30"
                       >
                         <ToggleGroupItem value="off">Off</ToggleGroupItem>
@@ -423,8 +428,8 @@ const AccountSettings = () => {
                   <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-lg border border-muted/30 p-3 bg-muted">
                     <FormControl>
                       <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={settings.autoSaveEnabled}
+                        onCheckedChange={v => handleFieldChange("autoSaveEnabled", v)}
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">

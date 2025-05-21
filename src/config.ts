@@ -38,6 +38,9 @@ export const CONTRACT_ADDRESSES = {
   entryPoint: "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
   accountFactory: "0x9406Cc6185a346906296840746125a0E44976454",
   multiCall: "0x343A0DdD8e58bEaf29d69936c82F1516C6677B0E",
+  arcadeHub:"0xeBb9C0143416C300bab3107B37841Dde6d63A416",
+  arcadeNFT: "0x31e34B3884Ec2Fff40623855D0B15981Cfc31314",
+  arcToken: "0xe4f95D88f440F138e525E658D984F08De3b5f1EC",
   // This would be your deployed NFT contract address
   nftContract: "0xD3821bD2ec70ED37709e7DD0D5003fdC3e0556F8", // Replace with your deployed contract address
   testTokenContract: "0xc2c2387288ba55ce6fd63c06a0b314666f704f5b" // TestToken contract address

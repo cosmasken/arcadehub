@@ -5,25 +5,45 @@ import type { Web3AuthOptions } from "@web3auth/modal";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
 import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
-import type { IAdapter } from "@web3auth/base";
+import type { CustomChainConfig, IAdapter } from "@web3auth/base";
 import type { IProvider } from "@web3auth/base";
 import type { WalletConnectionState } from '@/types/wallet';
 import {  getAAWalletAddress, initAABuilder } from '../utils/aaUtils';
 import { TESTNET_CONFIG } from '../config';
 
+
+//custom chain is described as 
+const customChain :CustomChainConfig = {
+      chainNamespace: CHAIN_NAMESPACES.EIP155,
+      chainId: "0x2b1",
+      rpcTarget: "https://rpc-testnet.nerochain.io",
+      displayName: "Nero",
+      blockExplorerUrl: "https://testnet.neroscan.io",
+      ticker: "NERO",
+      tickerName: "Nero",
+      decimals: 18,
+      logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+      isTestnet: true
+  }
+
+
 const clientId = import.meta.env.VITE_WEB3AUTH_CLIENT_ID as string;
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: `0x${TESTNET_CONFIG.chain.chainId.toString(16)}`,
+  chainId: `0x${TESTNET_CONFIG.chain.chainId.toString()}`,
+  // chainId: `0x${TESTNET_CONFIG.chain.chainId.toString()}`,
   rpcTarget: TESTNET_CONFIG.chain.rpcUrl,
   displayName: TESTNET_CONFIG.chain.chainName,
   blockExplorerUrl: TESTNET_CONFIG.chain.explorer,
   ticker: TESTNET_CONFIG.chain.currency,
   logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
 };
+// const privateKeyProvider = new EthereumPrivateKeyProvider({
+//   config: {  customChain },
+// });
 const privateKeyProvider = new EthereumPrivateKeyProvider({
-  config: { chainConfig },
-});
+  config: { chainConfig: customChain },
+})
 
 const web3AuthOptions: Web3AuthOptions = {
   clientId,
@@ -47,6 +67,13 @@ interface WalletStore {
   updateSigner: (signer: ethers.Signer) => void;
   initAAWallet: () => Promise<void>;
 }
+
+const web3auth = new Web3Auth(web3AuthOptions);
+
+const adapters = getDefaultExternalAdapters({ options: web3AuthOptions });
+adapters.forEach((adapter) => {
+  web3auth.configureAdapter(adapter);
+});
 
 export const useWalletStore = create<WalletStore>((set, get) => ({
   walletState: {
@@ -73,11 +100,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
   initializeWeb3Auth: async () => {
     set({ isLoading: true, error: null });
     try {
-      const web3auth = new Web3Auth(web3AuthOptions);
-      const adapters = getDefaultExternalAdapters({ options: web3AuthOptions });
-      adapters.forEach((adapter) => {
-        web3auth.configureAdapter(adapter);
-      });
+     
       
       await web3auth.initModal();
       set({ 
@@ -99,7 +122,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
   connectWallet: async () => {
     set({ isLoading: true, error: null });
     try {
-      await get().initializeWeb3Auth();
+      //await get().initializeWeb3Auth();
       const web3auth = get().web3auth;
       if (!web3auth) throw new Error('Web3Auth not initialized');
 

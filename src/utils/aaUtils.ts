@@ -10,7 +10,8 @@ import {
 } from '../config';
 import NeroNFTABI from '../contracts/NeroNFT.json';
 
-const API_KEY = getApiKey();
+const API_KEY = import.meta.env.VITE_NEROCHAIN_API_KEY;
+// get api from
 
 // Cache variables to prevent redundant initialization
 let cachedClient: any = null;
@@ -119,7 +120,7 @@ export const initAABuilder = async (accountSigner: ethers.Signer, apiKey?: strin
     if (cachedBuilder && cachedWalletAddress === signerAddress) {
       // Update API key if needed but don't reinitialize
       console.log("Using cached AA builder with updated API key");
-      const currentApiKey = apiKey || API_KEY;
+      const currentApiKey = API_KEY;
       cachedBuilder.setPaymasterOptions({
         apikey: currentApiKey,
         rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
@@ -145,7 +146,7 @@ export const initAABuilder = async (accountSigner: ethers.Signer, apiKey?: strin
   const gasParams = getGasParameters();
   
   // Set API key for paymaster - use provided key, global API_KEY, or none
-  const currentApiKey = apiKey || API_KEY;
+  const currentApiKey =  API_KEY;
   
   // Set paymaster options with API key and gas parameters
   builder.setPaymasterOptions({
@@ -407,7 +408,7 @@ export const getSupportedTokens = async (client: any, builder: any) => {
       console.log("Fetching supported tokens from API");
       
       // Get API key
-      const apiKeyToUse = builder.paymasterOptions.apikey || API_KEY;
+      const apiKeyToUse = API_KEY;
       
       // Try direct method first
       let response = await directGetSupportedTokens(sender, apiKeyToUse);

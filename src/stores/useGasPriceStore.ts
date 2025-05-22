@@ -60,13 +60,13 @@ export const useGasPriceStore = create<GasPriceStore>((set,get) => ({
       set({ loadingTokenGasPrices: true });
       
       let gasPrice = BigInt(get().gasPriceInfo.gasPrice || '0');
-      if (gasPrice === BigInt(0)) {
+      if (gasPrice == BigInt(0)) {
         const provider = signer.provider as ethers.BrowserProvider;
         const gasPriceData = (await provider.getFeeData()).gasPrice;
-        if (gasPriceData === null) {
+        if (!gasPriceData) {
           throw new Error('Gas price not available');
         }
-        gasPrice = gasPriceData;
+        gasPrice = BigInt(gasPriceData);
       }
       const estimatedGasLimit = BigInt(100000);
       const estimatedGasCostWei = gasPrice * estimatedGasLimit;
@@ -81,7 +81,7 @@ export const useGasPriceStore = create<GasPriceStore>((set,get) => ({
           const decimals = await tokenContract.decimals();
           const conversionRate = token.price || 1;
           const gasCostInToken =
-            (ethers.toBigInt(estimatedGasCostWei) *
+            (BigInt(estimatedGasCostWei) *
               BigInt(Math.floor(conversionRate * 100)) *
               BigInt(10 ** decimals)) /
             BigInt('1000000000000000000') /

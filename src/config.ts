@@ -65,17 +65,17 @@ export const TESTNET_CONFIG: {
   erc20: ERC20Addresses;
 } = {
   chain: {
-    chainId: 689,
+    chainId: 2052,
     chainName: 'NERO Chain Testnet',
     rpcUrl: 'https://rpc-testnet.nerochain.io',
     currency: 'NERO',
     explorer: 'https://testnet.neroscan.io',
   },
   aaPlatform: {
-    platformUrl: 'https://aa-platform.nerochain.io/',
-    platformApiUrl: 'https://api-aa-platform.nerochain.io/',
+    platformUrl: 'https://api-testnet.nerochain.io',
+    platformApiUrl: 'https://api-aa-platform.nerochain.io',
     paymasterRpc: 'https://paymaster-testnet.nerochain.io',
-    bundlerRpc: 'https://bundler-testnet.nerochain.io/',
+    bundlerRpc: 'https://bundler-testnet.nerochain.io',
     priceServiceUrl: 'https://price-service.nerochain.io',
   },
   contracts: {
@@ -147,12 +147,21 @@ export const API_OPTIMIZATION: ApiOptimizationConfig = {
 };
 
 // Gas configuration
+// export const GAS_CONFIG: GasConfig = {
+//   callGasLimit: BigInt(35000), // 0x88b8
+//   verificationGasLimit: BigInt(210000), // 0x33450
+//   preVerificationGas: BigInt(51770), // 0xea60 - Increased from 50000 to ensure it's above 51770
+//   maxFeePerGas: BigInt(2500000000), // ~90 Gwei
+//   maxPriorityFeePerGas: BigInt(250000000), // ~1.08 Gwei
+//   feeMultiplier: 100,
+//   priorityFeeMultiplier: 100,
+// };
 export const GAS_CONFIG: GasConfig = {
-  callGasLimit: BigInt(35000), // 0x88b8
-  verificationGasLimit: BigInt(210000), // 0x33450
-  preVerificationGas: BigInt(60000), // 0xea60 - Increased from 50000 to ensure it's above 51770
-  maxFeePerGas: BigInt(90000000000), // ~90 Gwei
-  maxPriorityFeePerGas: BigInt(1080000000), // ~1.08 Gwei
+  callGasLimit: BigInt(250000), // Standard transaction gas limit
+  verificationGasLimit: BigInt(210000), // Reasonable verification limit
+  preVerificationGas: BigInt(51770), // Minimum required
+  maxFeePerGas: BigInt(2500000000), // ~8 Gwei
+  maxPriorityFeePerGas: BigInt(2500000000), // ~0.6 Gwei
   feeMultiplier: 100,
   priorityFeeMultiplier: 100,
 };

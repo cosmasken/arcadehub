@@ -82,13 +82,13 @@ const WalletConnector = () => {
           </div>
           {walletState.aaWalletAddress && (
             <div className="aa-wallet-info">
-              <span className="aa-wallet-label">AA Wallet:</span>
-              <span className="aa-wallet-address">
+              <span className="text-[FF0000]">AA Wallet:</span>
+              <span className="text-[#000]">
                 {walletState.aaWalletAddress.substring(0, 6)}...{walletState.aaWalletAddress.substring(walletState.aaWalletAddress.length - 4)}
               </span>
               <button 
                 onClick={() => navigator.clipboard.writeText(walletState.aaWalletAddress)}
-                className="btn-copy"
+                className="bg-transparent border-none cursor-pointer text-sm px-0.5 text-white opacity-60 transition-opacity duration-200"
                 title="Copy address"
               >
                 📋

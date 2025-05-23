@@ -5,11 +5,11 @@ import type { Web3AuthOptions } from "@web3auth/modal";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
 import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
-import type { CustomChainConfig, IAdapter } from "@web3auth/base";
+import type { CustomChainConfig } from "@web3auth/base";
 import type { IProvider } from "@web3auth/base";
 import type { WalletConnectionState } from '@/types/wallet';
 import {  getAAWalletAddress, initAABuilder } from '../utils/aaUtils';
-import { TESTNET_CONFIG } from '../config';
+import useTokenStore from './useTokenStore';
 
 
 //custom chain is described as 
@@ -28,19 +28,7 @@ const customChain :CustomChainConfig = {
 
 
 const clientId = import.meta.env.VITE_WEB3AUTH_CLIENT_ID as string;
-const chainConfig = {
-  chainNamespace: CHAIN_NAMESPACES.EIP155,
-  chainId: `0x${TESTNET_CONFIG.chain.chainId.toString()}`,
-  // chainId: `0x${TESTNET_CONFIG.chain.chainId.toString()}`,
-  rpcTarget: TESTNET_CONFIG.chain.rpcUrl,
-  displayName: TESTNET_CONFIG.chain.chainName,
-  blockExplorerUrl: TESTNET_CONFIG.chain.explorer,
-  ticker: TESTNET_CONFIG.chain.currency,
-  logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
-};
-// const privateKeyProvider = new EthereumPrivateKeyProvider({
-//   config: {  customChain },
-// });
+
 const privateKeyProvider = new EthereumPrivateKeyProvider({
   config: { chainConfig: customChain },
 })
@@ -219,6 +207,14 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
           smartAccount: aaBuilder
         }
       });
+
+      // Load supported tokens after AA wallet is initialized
+      const tokenStore = useTokenStore.getState();
+      await tokenStore.loadSupportedTokens(aaSigner);
+      
+      // Load token balances for the AA wallet
+      await tokenStore.loadTokenBalances(aaWallet, tokenStore.supportedTokens);
+
     } catch (error) {
       console.error('Failed to initialize AA wallet:', error);
       set({ error: 'Failed to initialize AA wallet' });

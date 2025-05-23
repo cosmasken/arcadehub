@@ -23,8 +23,8 @@
     "react-toastify": "^11.0.5",
     "tailwindcss": "^4.1.7",
     "tailwindcss-animate": "^1.0.7",
-    "zustand": "^5.0.5",
-    "userop": "github:nerochain/aa-userop-sdk"
+    "userop": "github:nerochain/aa-userop-sdk",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -36,7 +36,6 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
-    "postcss": "^8.4.47",
     "process": "^0.11.10",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.30.1",

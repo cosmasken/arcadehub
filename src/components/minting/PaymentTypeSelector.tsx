@@ -33,10 +33,10 @@ const PaymentTypeSelector: React.FC<PaymentTypeSelectorProps> = ({
               <p>In your code, you can set the payment type with:</p>
               <CodeBlock
                 code={`
-// Set the payment type
-builder.setPaymasterOptions({
-  type: "SPONSORED" // or "PREPAY" or "POSTPAY"
-});`}
+                // Set the payment type
+                builder.setPaymasterOptions({
+                  type: "SPONSORED" // or "PREPAY" or "POSTPAY"
+                });`}
                 language="javascript"
               />
             </>

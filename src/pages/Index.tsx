@@ -136,14 +136,6 @@ const Index = () => {
               </CardContent>
             </Card>
           </div>
-
-          <div className="mt-16 text-center">
-            <h2 className="text-3xl font-bold mb-6">Updates in This Wave</h2>
-            <p className="text-blue-200 mb-4 max-w-3xl mx-auto">
-              Note: Claims / Minting are only available if you sign in via wallet (Work in progress, keep checking). 
-              All other functions are available via social logins.
-            </p>
-          </div>
         </div>
       ) : (
         // Game Library for Authenticated Users

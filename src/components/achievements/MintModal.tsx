@@ -12,7 +12,6 @@ import { mintNFT } from '../../utils/aaUtils';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { toast } from '../ui/use-toast';
 import { Loader2, ExternalLink, Copy, CheckCircle, XCircle } from 'lucide-react';
 import AdvancedSettings from './AdvancedSettings';
 import TokenSelector from './TokenSelector';

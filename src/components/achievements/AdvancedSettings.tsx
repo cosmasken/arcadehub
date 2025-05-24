@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Slider } from '../ui/slider';
 import { Button } from '../ui/button';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useGasPriceStore } from '../../stores/useGasPriceStore';

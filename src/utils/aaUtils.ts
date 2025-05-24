@@ -6,9 +6,7 @@ import {
   TESTNET_CONFIG,
   getGasParameters,
   API_OPTIMIZATION,
-  getApiKey
 } from '../config';
-import NeroNFTABI from '../contracts/NeroNFT.json';
 
 const API_KEY = import.meta.env.VITE_NEROCHAIN_API_KEY;
 // get api from

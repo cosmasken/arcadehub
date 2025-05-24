@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, User, Settings, LogOut, Wallet, Menu, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { User, LogOut, Wallet, Menu, X } from 'lucide-react';
 import UserDropdown from './UserDropdown';
 import { useWalletStore } from '../stores/useWalletStore';
 import { Link } from 'react-router-dom';

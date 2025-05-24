@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { CoinsIcon, Users, Trophy } from "lucide-react";
-import { Link } from "react-router-dom";
 import { useWalletStore } from "../stores/useWalletStore";
 import { Button } from "../components/ui/button";
 
@@ -29,8 +28,7 @@ const Rewards = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {/* Navbar component should be imported and used here */}
-      {/* <Navbar /> */}
+
       <main className="flex-grow pt-16 pb-16">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">

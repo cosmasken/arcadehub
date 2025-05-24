@@ -1,4 +1,5 @@
 import { Trophy } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Achievement {
   id: number;
@@ -30,7 +31,7 @@ const achievements: Achievement[] = [
 
 const AchievementMinting = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <main className="flex-grow pt-16">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
@@ -42,17 +43,24 @@ const AchievementMinting = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {achievements.map((achievement) => (
-                <div key={achievement.id} className="border border-muted rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-center mb-4">
-                    <img 
-                      src={achievement.image} 
-                      alt={achievement.name} 
-                      className="w-20 h-20 object-contain"
-                    />
-                  </div>
-                  <h3 className="font-medium mb-2">{achievement.name}</h3>
-                  <p className="text-sm text-muted-foreground">{achievement.description}</p>
-                </div>
+                <Card key={achievement.id}>
+                  <CardContent>
+                    <div className="flex flex-col items-center text-center">
+                      <div className="mb-4">
+                        <img 
+                          src={achievement.image} 
+                          alt={achievement.name} 
+                          className="w-20 h-20 object-contain"
+                        />
+                      </div>
+                      <h3 className="font-semibold mb-2">{achievement.name}</h3>
+                      <p className="text-muted-foreground">{achievement.description}</p>
+                      <button className="mt-4 w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary/90 transition-colors">
+                        Mint Achievement
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>

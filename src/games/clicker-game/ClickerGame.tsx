@@ -1,13 +1,10 @@
 import React from "react";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star } from "lucide-react";
 
 const ClickerGame = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <Navbar />
       <main className="flex-grow pt-16">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-4xl mx-auto">
@@ -160,7 +157,6 @@ const ClickerGame = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

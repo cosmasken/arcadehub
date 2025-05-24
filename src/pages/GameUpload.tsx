@@ -1,11 +1,8 @@
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
 import { GameUploadMock } from "@/components/games/GameUploadMock";
 
 const GameUpload = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <Navbar />
       <main className="flex-grow pt-16">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-2xl mx-auto">
@@ -17,7 +14,6 @@ const GameUpload = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

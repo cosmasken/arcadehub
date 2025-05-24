@@ -1,6 +1,5 @@
 
 import React from 'react';
-import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search } from 'lucide-react';
@@ -115,7 +114,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-blue-900 text-white">
-      <Navbar />
       
       {!walletState.isConnected ? (
         // Landing Page for Non-Authenticated Users

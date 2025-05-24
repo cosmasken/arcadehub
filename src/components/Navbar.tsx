@@ -2,90 +2,96 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, User, Settings, LogOut, Wallet, Menu, X } from 'lucide-react';
 import UserDropdown from './UserDropdown';
 import { useWalletStore } from '@/stores/useWalletStore';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
-      const { 
-        walletState, 
-        aaWalletAddress,
-        initializeWeb3Auth, 
-        connectWallet, 
-        disconnectWallet 
-      } = useWalletStore();
+  const { 
+    walletState, 
+    aaWalletAddress,
+    initializeWeb3Auth, 
+    connectWallet, 
+    disconnectWallet 
+  } = useWalletStore();
 
-        useEffect(() => {
-          const init = async () => {
-            try {
-              if (!walletState.isInitialized) {
-                await initializeWeb3Auth();
-              }
-            } catch (error) {
-              console.error('Failed to initialize Web3Auth:', error);
-            }
-          };
-          init();
-        }, []);
-
-      const [isConnecting, setIsConnecting] = useState(false);
-
-      const handleConnect = async () => {
-        setIsConnecting(true);
-        try {
-          await connectWallet();
-        } catch (error) {
-          console.error('Failed to connect wallet:', error);
-        } finally {
-          setIsConnecting(false);
+  useEffect(() => {
+    const init = async () => {
+      try {
+        if (!walletState.isInitialized) {
+          await initializeWeb3Auth();
         }
-      };
-    
-      const handleDisconnect = async () => {
-        try {
-          await disconnectWallet();
-        } catch (error) {
-          console.error('Failed to disconnect wallet:', error);
-        }
-      };
+      } catch (error) {
+        console.error('Failed to initialize Web3Auth:', error);
+      }
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
+    if (walletState.isConnected && !aaWalletAddress) {
+      connectWallet();
+    }
+  }, [walletState.isConnected]);
+
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      await connectWallet();
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectWallet();
+    } catch (error) {
+      console.error('Failed to disconnect wallet:', error);
+    }
+  };
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   const navigationItems = [
-    { name: 'Home', href: '#', public: true },
+    { name: 'Home', href: '/', public: true },
     { name: 'About', href: '#', public: true },
-    { name: 'Dashboard', href: '#', public: false },
-    { name: 'Transactions', href: '#', public: false },
+    { name: 'Developers', href: '/developers', public: false },
+    { name: 'Rewards', href: '/rewards', public: false },
+    { name: 'Achievements', href: '/achievement-minting', public: false },
   ];
 
   return (
-    <nav className="bg-white shadow-lg border-b">
+    <nav className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Wallet className="h-8 w-8 text-blue-600" />
               <span className="ml-2 text-xl font-bold text-gray-900">ArcadeHub</span>
             </div>
-          </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navigationItems
-              .filter(item => item.public || walletState.isConnected)
-              .map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  {item.name}
-                </a>
-              ))}
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              {navigationItems
+                .filter(item => item.public || walletState.isConnected)
+                .map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+            </div>
           </div>
 
           {/* Desktop Auth Section */}
@@ -100,7 +106,11 @@ const Navbar = () => {
               </button>
             ) : (
               <UserDropdown
-                wallet={walletState}
+                wallet={{
+                  address: walletState.address,
+                  abstractedAddress: aaWalletAddress || '',
+                  isConnected: walletState.isConnected
+                }}
                 onDisconnect={handleDisconnect}
                 truncateAddress={truncateAddress}
               />
@@ -125,13 +135,13 @@ const Navbar = () => {
               {navigationItems
                 .filter(item => item.public || walletState.isConnected)
                 .map((item) => (
-                  <a
+                  <Link
                     key={item.name}
-                    href={item.href}
+                    to={item.href}
                     className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 ))}
               
               {/* Mobile Auth Section */}
@@ -162,14 +172,14 @@ const Navbar = () => {
                     </div>
                     )}
                    
-                    <a href="#" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
+                    <Link to="#" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
                       <User className="inline h-4 w-4 mr-2" />
                       Profile
-                    </a>
-                    <a href="#" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
+                    </Link>
+                    <Link to="#" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
                       <Settings className="inline h-4 w-4 mr-2" />
                       Settings
-                    </a>
+                    </Link>
                     <button
                       onClick={handleDisconnect}
                       className="w-full text-left px-3 py-2 text-red-600 hover:text-red-700 rounded-md cursor-pointer"

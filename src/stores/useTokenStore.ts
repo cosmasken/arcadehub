@@ -176,7 +176,7 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
     set({ selectedToken: tokenAddress });
   },
   hasEnoughTokens: (tokenAddress) => {
-    const { supportedTokens, tokenBalances } = get();
+    const { tokenBalances } = get();
     // const token = supportedTokens.find((t) => t.address === tokenAddress);
     const balance = tokenBalances[tokenAddress] || '0';
     return parseFloat(balance) >= 0.0001;

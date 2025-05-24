@@ -162,7 +162,7 @@ export const initAABuilder = async (accountSigner: ethers.Signer) => {
 
 
 // Get the AA wallet address with caching
-export const getAAWalletAddress = async (accountSigner: ethers.Signer, apiKey?: string) => {
+export const getAAWalletAddress = async (accountSigner: ethers.Signer) => {
   // Check if we have a cached address for this signer
   if (API_OPTIMIZATION.enableCaching) {
     const signerAddress = await accountSigner.getAddress();

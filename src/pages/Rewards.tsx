@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { CoinsIcon, Users, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useWalletStore } from "@/stores/useWalletStore";
-import Button from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 
 const Rewards = () => {
   const { walletState, aaWalletAddress } = useWalletStore();

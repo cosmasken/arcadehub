@@ -10,7 +10,7 @@ import Developers from "./pages/Developers";
 import Rewards from "./pages/Rewards";
 import GameView from "./pages/GameView";
 import MemoryGame from "./games/memory-game/MemoryGame";
-import AchievementMinting from "./pages/AchievementMinting";
+import Achievements from "./pages/Achievements";
 import Navbar from "./components/Navbar";
 
 const queryClient = new QueryClient();
@@ -32,7 +32,7 @@ const App = () => (
               <Route path="/rewards" element={<Rewards />} />
               {/* <Route path="/games/clicker" element={<ClickerGame />} /> */}
               <Route path="/games/memory-game" element={<MemoryGame />} />
-              <Route path="/achievement-minting" element={<AchievementMinting />} />
+              <Route path="/achievements" element={<Achievements />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

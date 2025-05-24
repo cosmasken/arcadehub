@@ -65,7 +65,7 @@ const Navbar = () => {
     { name: 'About', href: '#', public: true },
     { name: 'Developers', href: '/developers', public: false },
     { name: 'Rewards', href: '/rewards', public: false },
-    { name: 'Achievements', href: '/achievement-minting', public: false },
+    { name: 'Achievements', href: '/achievements', public: false },
   ];
 
   return (

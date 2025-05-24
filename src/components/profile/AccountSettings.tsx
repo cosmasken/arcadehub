@@ -5,11 +5,14 @@ import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
-import  useProfile  from '../../stores/useProfileStore';
 import { useToast } from '../../hooks/use-toast';
 
 export const AccountSettings = () => {
-  const { user, updateProfile } = useProfile();
+  const [user, setUser] = useState({
+    username: 'demo_user',
+    bio: 'This is a demo bio.',
+  });
+
   const { toast } = useToast();
   const [settings, setSettings] = useState({
     emailNotifications: true,
@@ -20,10 +23,6 @@ export const AccountSettings = () => {
   });
 
   const handleSaveProfile = () => {
-    updateProfile({
-      username: user.username,
-      bio: user.bio,
-    });
     toast({
       title: "Profile Updated",
       description: "Your profile has been successfully updated.",
@@ -49,7 +48,7 @@ export const AccountSettings = () => {
             <Input
               id="username"
               value={user.username}
-              onChange={(e) => updateProfile({ username: e.target.value })}
+              onChange={(e) => setUser({ ...user, username: e.target.value })}
               className="mt-1"
             />
           </div>
@@ -58,7 +57,7 @@ export const AccountSettings = () => {
             <Input
               id="bio"
               value={user.bio}
-              onChange={(e) => updateProfile({ bio: e.target.value })}
+              onChange={(e) => setUser({ ...user, bio: e.target.value })}
               className="mt-1"
             />
           </div>

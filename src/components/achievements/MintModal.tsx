@@ -34,7 +34,6 @@ const MintModal: React.FC<MintModalProps> = ({
   onMintSuccess
 }) => {
   const { walletState } = useWalletStore();
-  const { gasPriceInfo, tokenGasPrices } = useGasPriceStore();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [paymentType, setPaymentType] = useState('sponsored');
   const [selectedToken, setSelectedToken] = useState('');
@@ -55,12 +54,10 @@ const MintModal: React.FC<MintModalProps> = ({
   const handleGasMultiplierChange = (multiplier: number) => {
     if (multiplier < 500) {
       setGasMultiplier(500);
-      toast.warning('Gas multiplier must be at least 50%');
       return;
     }
     if (multiplier > 500) {
       setGasMultiplier(500);
-      toast.warning('Gas multiplier cannot exceed 500%');
       return;
     }
     setGasMultiplier(multiplier);

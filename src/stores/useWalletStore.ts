@@ -7,7 +7,7 @@ import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
 import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
 import type { CustomChainConfig } from "@web3auth/base";
 import type { IProvider } from "@web3auth/base";
-import type { WalletConnectionState } from '@/types/wallet';
+import type { WalletConnectionState } from '../types/wallet';
 import {  getAAWalletAddress, initAABuilder } from '../utils/aaUtils';
 import useTokenStore from './useTokenStore';
 

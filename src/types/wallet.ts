@@ -4,11 +4,11 @@ import { ethers } from 'ethers';
 /**
  * Enum for payment types
  */
-export enum PaymentType {
-  Sponsored = 0,  // Free sponsored transaction
-  Prepay = 1,     // Pay for gas before execution
-  Postpay = 2     // Pay for gas after execution
-}
+// export enum PaymentType {
+//   Sponsored = 0,  // Free sponsored transaction
+//   Prepay = 1,     // Pay for gas before execution
+//   Postpay = 2     // Pay for gas after execution
+// }
 
 /**
  * Interface for wallet connection state

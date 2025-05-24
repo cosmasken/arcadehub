@@ -61,14 +61,7 @@ export const throttledRequest = async (key: string, requestFn: () => Promise<any
   return promise;
 };
 
-// Generic ERC20 ABI for minting tokens
-const ERC20_MINT_ABI = [
-  "function mint(address to, uint256 amount) returns (bool)",
-  "function name() view returns (string)",
-  "function symbol() view returns (string)",
-  "function decimals() view returns (uint8)",
-  "function balanceOf(address account) view returns (uint256)"
-];
+
 
 // Initialize Ethereum provider
 export const getProvider = () => {
@@ -323,16 +316,16 @@ export const directGetSupportedTokens = async (sender: string, apiKey: string) =
     if (API_OPTIMIZATION.debugLogs) console.log("Making direct RPC call to pm_supported_tokens");
     
     // Create proper JSON-RPC request format
-    const jsonRpcRequest = {
-      jsonrpc: "2.0",
-      method: "pm_supported_tokens",
-      params: [
-        minimalUserOp,
-        apiKey,
-        TESTNET_CONFIG.contracts.entryPoint
-      ],
-      id: 1
-    };
+    // const jsonRpcRequest = {
+    //   jsonrpc: "2.0",
+    //   method: "pm_supported_tokens",
+    //   params: [
+    //     minimalUserOp,
+    //     apiKey,
+    //     TESTNET_CONFIG.contracts.entryPoint
+    //   ],
+    //   id: 1
+    // };
     
     // Send the request
     const result = await provider.send("pm_supported_tokens", [

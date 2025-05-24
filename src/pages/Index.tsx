@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useWalletStore } from '@/stores/useWalletStore';
 
 // Mock data for games
 const gamesData = [
@@ -75,17 +76,24 @@ const gamesData = [
 ];
 
 const Index = () => {
-  const [wallet, setWallet] = useState({ isConnected: false });
+    const { 
+      walletState, 
+      initializeWeb3Auth, 
+    } = useWalletStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   
-  // For demo purposes - this would be controlled by actual wallet connection
   useEffect(() => {
-    // Check if there's a wallet connection status in localStorage
-    const storedWalletStatus = localStorage.getItem('walletConnected');
-    if (storedWalletStatus === 'true') {
-      setWallet({ isConnected: true });
-    }
+    const init = async () => {
+      try {
+        if (!walletState.isInitialized) {
+          await initializeWeb3Auth();
+        }
+      } catch (error) {
+        console.error('Failed to initialize Web3Auth:', error);
+      }
+    };
+    init();
   }, []);
 
   // Filter games based on search term and category
@@ -97,7 +105,7 @@ const Index = () => {
   });
 
   // Launch game function
-  const launchGame = (gameId) => {
+  const launchGame = (gameId: any) => {
     console.log(`Launching game with ID: ${gameId}`);
     // This would redirect to the game page or launch a modal with the game
   };
@@ -109,7 +117,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-blue-900 text-white">
       <Navbar />
       
-      {!wallet.isConnected ? (
+      {!walletState.isConnected ? (
         // Landing Page for Non-Authenticated Users
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center mb-16">
@@ -119,15 +127,6 @@ const Index = () => {
             <p className="text-xl md:text-2xl text-blue-200 mb-8 max-w-3xl mx-auto">
               A cutting-edge Web3 gaming platform blending social accessibility with blockchain innovation
             </p>
-            <Button 
-              onClick={() => {
-                localStorage.setItem('walletConnected', 'true');
-                setWallet({ isConnected: true });
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg rounded-full"
-            >
-              Get Started
-            </Button>
           </div>
 
           {/* Features Section */}
@@ -225,17 +224,6 @@ const Index = () => {
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
-              
-              <Button 
-                onClick={() => {
-                  localStorage.removeItem('walletConnected');
-                  setWallet({ isConnected: false });
-                }}
-                variant="outline"
-                className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-              >
-                Disconnect (Demo)
-              </Button>
             </div>
           </div>
           

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { Trophy, Star, Target, Gamepad2 } from 'lucide-react';
 import MintModal from '../components/achievements/MintModal';
 
@@ -53,33 +52,38 @@ const achievementsData = [
   }
 ];
 
+type Rarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
+
 const Achievements = () => {
-  const [selectedAchievement, setSelectedAchievement] = useState(null);
+  interface Achievement {
+    id: number;
+    title: string;
+    description: string;
+    icon: React.ComponentType<{ size?: number }>;
+    isUnlocked: boolean;
+    progress: number;
+    maxProgress: number;
+    rarity: Rarity;
+    isMinted: boolean;
+  }
+
+  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleMintClick = (achievement) => {
-    setSelectedAchievement(achievement);
-    setIsModalOpen(true);
-  };
 
-  const handleMintSuccess = (achievement, txHash) => {
+  const handleMintSuccess = (achievement: { title: any; }, txHash: any) => {
     console.log(`Achievement ${achievement.title} minted successfully. TX: ${txHash}`);
     // Update achievement as minted in real implementation
     setIsModalOpen(false);
     setSelectedAchievement(null);
   };
 
-  const getRarityColor = (rarity) => {
-    switch (rarity) {
-      case 'Common': return 'bg-gray-500';
-      case 'Rare': return 'bg-blue-500';
-      case 'Epic': return 'bg-purple-500';
-      case 'Legendary': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
-    }
-  };
+  interface Progress {
+    progress: number;
+    maxProgress: number;
+  }
 
-  const getProgressPercentage = (progress, maxProgress) => {
+  const getProgressPercentage = (progress: Progress['progress'], maxProgress: Progress['maxProgress']): number => {
     return Math.min((progress / maxProgress) * 100, 100);
   };
 
@@ -115,9 +119,9 @@ const Achievements = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-bold">{achievement.title}</h3>
-                        <Badge className={`text-xs ${getRarityColor(achievement.rarity)}`}>
+                        {/* <Badge className={`text-xs ${getRarityColor(achievement.rarity)}`}>
                           {achievement.rarity}
-                        </Badge>
+                        </Badge> */}
                       </div>
                     </div>
                   </div>
@@ -140,7 +144,7 @@ const Achievements = () => {
                   </div>
                   
                   <Button
-                    onClick={() => handleMintClick(achievement)}
+                  
                     disabled={!achievement.isUnlocked || achievement.isMinted}
                     className={`w-full ${
                       achievement.isUnlocked && !achievement.isMinted

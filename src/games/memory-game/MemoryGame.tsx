@@ -32,7 +32,6 @@ const MemoryGame = () => {
   const [moves, setMoves] = useState(0);
   const [matches, setMatches] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
-  const [arcPoints, setArcPoints] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
   const [gameStatus, setGameStatus] = useState<'waiting'|'checking'>('waiting');
 
@@ -96,8 +95,6 @@ const MemoryGame = () => {
     setMoves(0);
     setMatches(0);
     setCurrentStreak(0);
-    setArcPoints(0);
-    setTotalEarned(0);
     setGameStatus('waiting');
     setAchievements([
       {
@@ -178,7 +175,6 @@ const MemoryGame = () => {
         const earned = 10 + (currentStreak * 2);
         setMatches(m => m + 1);
         setCurrentStreak(s => s + 1);
-        setArcPoints(p => p + earned);
         setTotalEarned(t => t + earned);
         toast.success("Match!", { description: `Earned ${earned} ARC!` });
         
@@ -202,7 +198,7 @@ const MemoryGame = () => {
 
   useEffect(() => {
     const newAchievements = [...achievements];
-    let updated = false;
+    const updated = false;
     
     newAchievements.forEach(achievement => {
       if (achievement.unlocked) return;
@@ -224,9 +220,7 @@ const MemoryGame = () => {
       if (requirement) {
         achievement.unlocked = true;
         const reward = achievement.reward;
-        setArcPoints(prev => prev + reward);
         setTotalEarned(prev => prev + reward);
-        updated = true;
         
         toast.success(`Achievement Unlocked: ${achievement.name}!`, {
           description: `Reward: ${reward} ARC`,

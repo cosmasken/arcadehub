@@ -13,7 +13,7 @@ const LEVELS = {
 function generateSudoku(level: keyof typeof LEVELS) {
   // Simple sudoku generator using a fixed solved board and removing cells
   // For production, use a real sudoku generator!
-  const solved = [
+  const solved: number[][] = [
     [5,3,4,6,7,8,9,1,2],
     [6,7,2,1,9,5,3,4,8],
     [1,9,8,3,4,2,5,6,7],
@@ -24,7 +24,7 @@ function generateSudoku(level: keyof typeof LEVELS) {
     [2,8,7,4,1,9,6,3,5],
     [3,4,5,2,8,6,1,7,9],
   ];
-  const puzzle = solved.map(row => [...row]);
+  const puzzle: (number | null)[][] = solved.map(row => [...row]);
   let cellsToRemove = 81 - LEVELS[level];
   while (cellsToRemove > 0) {
     const i = Math.floor(Math.random() * 9);

@@ -46,9 +46,6 @@ const MintModal: React.FC<MintModalProps> = ({
     error?: string;
   } | null>(null);
     const { toast } = useToast();
-
-  const [mintStatus, setMintStatus] = useState<string>('');
-  const [mintError, setMintError] = useState<string>('');
   const { supportedTokens } = useTokenStore();
 
   const handleGasMultiplierChange = (multiplier: number) => {
@@ -125,6 +122,17 @@ const MintModal: React.FC<MintModalProps> = ({
     setMintResult(null);
 
     try {
+
+        if (!walletState.signer) {
+          toast({
+            title: "Error",
+            description: "Wallet signer is not available. Please connect your wallet.",
+            variant: "destructive",
+          });
+          setIsMinting(false);
+          return;
+        }
+
     
           // Sample NFT metadata URI - In a real app, this would be dynamic
           const metadataUri = 'https://neroapi.com/nfts/metadata/sample';
@@ -142,7 +150,6 @@ const MintModal: React.FC<MintModalProps> = ({
             }
           );
     
-          setMintStatus('Transaction completed!');
           toast({
         title: "Mint Successful!",
         description: (
@@ -163,7 +170,6 @@ const MintModal: React.FC<MintModalProps> = ({
           // onMintSuccess(result.transactionHash);
         } catch (error) {
           console.error('Error minting NFT:', error);
-          setMintError('Failed to mint NFT. Please try again.');
         //  onMintError(error as Error);
         } finally {
           setIsMinting(false);

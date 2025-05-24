@@ -190,7 +190,7 @@ export const UserProfile = () => {
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
                       </div>
-                      <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${getRarityColor(asset.rarity)}`}></div>
+                      <div className={`absolute top-2 right-2 w-3 h-3 rounded-full ${getRarityColor(asset.rarity ?? '')}`}></div>
                       <div className="mt-2">
                         <div className="text-white font-medium text-sm">{asset.name}</div>
                         <div className="text-purple-300 text-xs">{asset.value} ARC</div>
@@ -272,7 +272,7 @@ export const UserProfile = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-white font-medium">{game.title}</h3>
-                          <Badge className={`${getStatusColor(game.status)} text-white text-xs`}>
+                          <Badge className={`${getStatusColor(game.status ?? '')} text-white text-xs`}>
                             {game.status}
                           </Badge>
                         </div>

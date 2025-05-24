@@ -32,16 +32,12 @@ const Navbar = () => {
     }
   }, [walletState.isConnected]);
 
-  const [isConnecting, setIsConnecting] = useState(false);
 
   const handleConnect = async () => {
-    setIsConnecting(true);
     try {
       await connectWallet();
     } catch (error) {
       console.error('Failed to connect wallet:', error);
-    } finally {
-      setIsConnecting(false);
     }
   };
 
@@ -53,7 +49,6 @@ const Navbar = () => {
     }
   };
 
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const truncateAddress = (address: string) => {
@@ -106,7 +101,7 @@ const Navbar = () => {
             ) : (
               <UserDropdown
                 wallet={{
-                  address: walletState.address,
+                  address: walletState.address || '',
                   abstractedAddress: aaWalletAddress || '',
                   isConnected: walletState.isConnected
                 }}
@@ -161,7 +156,7 @@ const Navbar = () => {
                     <div className="space-y-2">
                       <div>
                         <p className="text-xs text-gray-600 font-mono">EOA Address:</p>
-                        <p className="text-xs text-gray-500 font-mono">{truncateAddress(walletState.address)}</p>
+                        <p className="text-xs text-gray-500 font-mono">{walletState.address ? truncateAddress(walletState.address) : 'Not available'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600 font-mono">AA Wallet:</p>

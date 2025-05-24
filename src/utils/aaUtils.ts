@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ethers } from 'ethers';
 import { Client, Presets } from 'userop';
 import { 
@@ -104,7 +102,7 @@ export const initAAClient = async (accountSigner: ethers.Signer) => {
 };
 
 // Initialize SimpleAccount Builder with caching
-export const initAABuilder = async (accountSigner: ethers.Signer, apiKey?: string) => {
+export const initAABuilder = async (accountSigner: ethers.Signer) => {
   // Only rebuild if signer changes and caching is enabled
   if (API_OPTIMIZATION.enableCaching) {
     const signerAddress = await accountSigner.getAddress();
@@ -176,7 +174,7 @@ export const getAAWalletAddress = async (accountSigner: ethers.Signer, apiKey?: 
   
   // Otherwise, get a fresh builder and address
   console.log("Getting fresh AA wallet address");
-  const builder = await initAABuilder(accountSigner, apiKey);
+  const builder = await initAABuilder(accountSigner);
   return builder.getSender();
 };
 
@@ -293,7 +291,7 @@ export const getTokenBalance = async (address: string, tokenAddress: string) => 
     
     try {
       decimals = await tokenContract.decimals();
-    } catch (decimalErr) {
+    } catch (_) {
       console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`);
     }
     
@@ -470,7 +468,7 @@ const executeOperation = async (
     try {
       // Initialize client and builder with caching
       const client = await initAAClient(accountSigner);
-      const builder = await initAABuilder(accountSigner, options?.apiKey || API_KEY);
+      const builder = await initAABuilder(accountSigner);
       
       // Apply settings
       applyBuilderSettings(builder, paymentType, selectedToken, options);
@@ -570,7 +568,7 @@ export const mintERC20Token = async (
           // Otherwise try to get it using SimpleAccount (if available)
           else if (Presets && Presets.SimpleAccount) {
             // Get the account address
-            const accountAddress = await getAAWalletAddress(accountSigner);
+            // const accountAddress = await getAAWalletAddress(accountSigner);
             const simpleAccountInstance = await Presets.SimpleAccount.init(
               accountSigner,
               TESTNET_CONFIG.chain.rpcUrl,
@@ -698,7 +696,7 @@ export const mintNFT = async (
           // Otherwise try to get it using SimpleAccount (if available)
           else if (Presets && Presets.SimpleAccount) {
             // Get the account address
-            const accountAddress = await getAAWalletAddress(accountSigner);
+            // const accountAddress = await getAAWalletAddress(accountSigner);
             const simpleAccountInstance = await Presets.SimpleAccount.init(
               accountSigner,
               TESTNET_CONFIG.chain.rpcUrl,
@@ -774,7 +772,7 @@ export const getNFTsForAddress = async (address: string) => {
       // Cap at a reasonable number to avoid excessive requests
       totalSupply = Math.min(totalSupply, 500);
     } catch (err) {
-      console.log("Contract doesn't support totalSupply, using default range");
+      console.log("Contract doesn't support totalSupply, using default range",err);
     }
 
     // Prepare batched requests
@@ -884,7 +882,7 @@ export const checkTokenAllowance = async (provider: ethers.BrowserProvider, toke
     try {
       decimals = await tokenContract.decimals();
     } catch (err) {
-      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`);
+      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`,err);
     }
     
     return ethers.formatUnits(allowance, decimals);
@@ -1129,7 +1127,7 @@ export const transferERC20Token = async (
           // Otherwise try to get it using SimpleAccount (if available)
           else if (Presets && Presets.SimpleAccount) {
             // Get the account address
-            const accountAddress = await getAAWalletAddress(accountSigner);
+            // const accountAddress = await getAAWalletAddress(accountSigner);
             const simpleAccountInstance = await Presets.SimpleAccount.init(
               accountSigner,
               TESTNET_CONFIG.chain.rpcUrl,
@@ -1200,7 +1198,7 @@ export const checkAAWalletTokenAllowance = async (
     try {
       decimals = await tokenContract.decimals();
     } catch (err) {
-      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`);
+      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`,err);
     }
     
     return ethers.formatUnits(allowance, decimals);

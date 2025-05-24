@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
@@ -178,7 +177,7 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
   },
   hasEnoughTokens: (tokenAddress) => {
     const { supportedTokens, tokenBalances } = get();
-    const token = supportedTokens.find((t) => t.address === tokenAddress);
+    // const token = supportedTokens.find((t) => t.address === tokenAddress);
     const balance = tokenBalances[tokenAddress] || '0';
     return parseFloat(balance) >= 0.0001;
   },

@@ -36,7 +36,7 @@ interface ERC20Addresses {
   dai: string;
   usdt: string;
   usdc: string;
-  testToken: string;
+  gmxhub: string;
 }
 
 interface GasConfig {
@@ -83,14 +83,14 @@ export const TESTNET_CONFIG: {
     entryPoint: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
     accountFactory: '0x9406Cc6185a346906296840746125a0E44976454',
     multiCall: '0x343A0DdD8e58bEaf29d69936c82F1516C6677B0E',
-    nftContract: '0xD3821bD2ec70ED37709e7DD0D5003fdC3e0556F8',
-    testTokenContract: '0xc2c2387288ba55ce6fd63c06a0b314666f704f5b',
+    nftContract: '0x31e34B3884Ec2Fff40623855D0B15981Cfc31314',
+    testTokenContract: '0xe4f95D88f440F138e525E658D984F08De3b5f1EC',
   },
   erc20: {
     dai: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345',
     usdt: '0x1dA998CfaA0C044d7205A17308B20C7de1bdCf74',
     usdc: '0xC86Fed58edF0981e927160C50ecB8a8B05B32fed',
-    testToken: '0xc2c2387288ba55ce6fd63c06a0b314666f704f5b',
+    gmxhub: '0xe4f95D88f440F138e525E658D984F08De3b5f1EC',
   },
 };
 
@@ -127,7 +127,7 @@ const MAINNET_CONFIG: {
     dai: '0x...',
     usdt: '0x...',
     usdc: '0x...',
-    testToken: '0x...',
+    gmxhub: '0x...',
   },
 };
 
@@ -146,16 +146,6 @@ export const API_OPTIMIZATION: ApiOptimizationConfig = {
   debugLogs: !isProduction, // Disable debug logs in production
 };
 
-// Gas configuration
-// export const GAS_CONFIG: GasConfig = {
-//   callGasLimit: BigInt(35000), // 0x88b8
-//   verificationGasLimit: BigInt(210000), // 0x33450
-//   preVerificationGas: BigInt(51770), // 0xea60 - Increased from 50000 to ensure it's above 51770
-//   maxFeePerGas: BigInt(2500000000), // ~90 Gwei
-//   maxPriorityFeePerGas: BigInt(250000000), // ~1.08 Gwei
-//   feeMultiplier: 100,
-//   priorityFeeMultiplier: 100,
-// };
 export const GAS_CONFIG: GasConfig = {
   callGasLimit: BigInt(250000), // Standard transaction gas limit
   verificationGasLimit: BigInt(210000), // Reasonable verification limit

@@ -109,7 +109,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({
           {/* Menu Items */}
           <div className="py-1">
             <a
-              href="#"
+              href="/profile"
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <User className="h-4 w-4 mr-3 text-gray-500" />

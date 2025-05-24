@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogDescription
 } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { mintNFT } from '../../utils/aaUtils';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ const MintModal: React.FC<MintModalProps> = ({
     txHash?: string;
     error?: string;
   } | null>(null);
+    const { toast } = useToast();
 
   const [mintStatus, setMintStatus] = useState<string>('');
   const [mintError, setMintError] = useState<string>('');
@@ -145,6 +147,22 @@ const MintModal: React.FC<MintModalProps> = ({
           );
     
           setMintStatus('Transaction completed!');
+          toast({
+        title: "Mint Successful!",
+        description: (
+          <span>
+            <span>Transaction:&nbsp;</span>
+            <a
+              href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline"
+            >
+              View on Etherscan
+            </a>
+          </span>
+        ),
+      });
           onMintSuccess(achievement, result.transactionHash);
           // onMintSuccess(result.transactionHash);
         } catch (error) {
@@ -164,7 +182,7 @@ const MintModal: React.FC<MintModalProps> = ({
       setPaymentType('sponsored');
       setSelectedToken('');
       setTokenApproved(false);
-      setGasMultiplier(1.0);
+      setGasMultiplier(100);
       setMintResult(null);
       onClose();
     }
@@ -225,57 +243,6 @@ const MintModal: React.FC<MintModalProps> = ({
               </span>
             </div>
           </div>
-
-          {/* Show mint result if available */}
-          {mintResult && (
-            <div className={`p-4 rounded-lg border ${mintResult.success
-                ? 'bg-green-900/20 border-green-600'
-                : 'bg-red-900/20 border-red-600'
-              }`}>
-              <div className="flex items-center space-x-2 mb-2">
-                {mintResult.success ? (
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                ) : (
-                  <XCircle className="w-5 h-5 text-red-400" />
-                )}
-                <span className="font-semibold">
-                  {mintResult.success ? 'Mint Successful!' : 'Mint Failed'}
-                </span>
-              </div>
-
-              {mintResult.success && mintResult.txHash ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-300">Transaction Hash:</p>
-                  <div className="flex items-center space-x-2 p-2 bg-gray-800 rounded border">
-                    <code className="text-xs text-blue-400 flex-1 break-all">
-                      {mintResult.txHash}
-                    </code>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => copyToClipboard(mintResult.txHash!)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <Copy size={12} />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openEtherscan(mintResult.txHash!)}
-                      className="h-6 w-6 p-0"
-                    >
-                      <ExternalLink size={12} />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-400">
-                    Click the external link icon to view on Etherscan
-                  </p>
-                </div>
-              ) : mintResult.error && (
-                <p className="text-sm text-red-300">{mintResult.error}</p>
-              )}
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="recipient">Recipient Address</Label>
@@ -359,36 +326,59 @@ const MintModal: React.FC<MintModalProps> = ({
               )}
             </Button>
           </div>
+          {mintResult && (
+          <div className={`p-4 rounded-lg border ${mintResult.success
+              ? 'bg-green-900/20 border-green-600'
+              : 'bg-red-900/20 border-red-600'
+            }`}>
+            <div className="flex items-center space-x-2 mb-2">
+              {mintResult.success ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-400" />
+              )}
+              <span className="font-semibold">
+                {mintResult.success ? 'Mint Successful!' : 'Mint Failed'}
+              </span>
+            </div>
+            {mintResult.success && mintResult.txHash ? (
+              <div className="space-y-2">
+                <p className="text-sm text-gray-300">Transaction Hash:</p>
+                <div className="flex items-center space-x-2 p-2 bg-gray-800 rounded border">
+                  <code className="text-xs text-blue-400 flex-1 break-all">
+                    {mintResult.txHash}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => copyToClipboard(mintResult.txHash!)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Copy size={12} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openEtherscan(mintResult.txHash!)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <ExternalLink size={12} />
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Click the external link icon to view on Etherscan
+                </p>
+              </div>
+            ) : mintResult.error && (
+              <p className="text-sm text-red-300">{mintResult.error}</p>
+            )}
+          </div>
+        )}
+        {/* ...rest of modal content... */}
         </div>
       </DialogContent>
     </Dialog>
-     {/* Transaction Result Section  */}
-    {mintResult?.success && mintResult.txHash && (
-      <div className="transaction-result mt-6 flex flex-col items-center">
-        <h4 className="text-green-400 text-lg font-semibold mb-2">Transaction Successful!</h4>
-        <div className="transaction-info bg-gray-800 p-4 rounded-lg border border-green-600 w-full max-w-md">
-          <p className="text-gray-300 mb-1">Transaction Hash:</p>
-          <div className="hash-container flex items-center space-x-2 mb-2">
-            <code className="transaction-hash text-blue-400 break-all flex-1">{mintResult.txHash}</code>
-            <button
-              onClick={() => navigator.clipboard.writeText(mintResult.txHash!)}
-              className="copy-hash-btn px-2 py-1 bg-gray-700 rounded text-xs text-white"
-              title="Copy transaction hash"
-            >
-              Copy
-            </button>
-          </div>
-          <a
-            href={`https://testnet.neroscan.io/tx/${mintResult.txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="view-tx-link text-blue-400 underline text-xs"
-          >
-            View on Explorer
-          </a>
-        </div>
-      </div>
-    )}
+ 
     </>
   );
 };

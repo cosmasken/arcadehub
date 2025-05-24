@@ -61,11 +61,10 @@ const Navbar = () => {
   };
 
   const navigationItems = [
-    { name: 'Home', href: '/', public: true },
-    { name: 'About', href: '#', public: true },
     { name: 'Developers', href: '/developers', public: false },
     { name: 'Rewards', href: '/rewards', public: false },
     { name: 'Achievements', href: '/achievements', public: false },
+    { name: 'Collections', href: '/collections', public: false },
   ];
 
   return (
@@ -75,7 +74,7 @@ const Navbar = () => {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Wallet className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">ArcadeHub</span>
+              <Link to="/" className="ml-2 text-xl font-bold text-gray-900">ArcadeHub</Link>
             </div>
 
             {/* Desktop Navigation */}
@@ -172,14 +171,14 @@ const Navbar = () => {
                     </div>
                     )}
                    
-                    <Link to="#" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
+                    <Link to="/profile" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
                       <User className="inline h-4 w-4 mr-2" />
                       Profile
                     </Link>
-                    <Link to="#" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
+                    {/* <Link to="/settings" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
                       <Settings className="inline h-4 w-4 mr-2" />
                       Settings
-                    </Link>
+                    </Link> */}
                     <button
                       onClick={handleDisconnect}
                       className="w-full text-left px-3 py-2 text-red-600 hover:text-red-700 rounded-md cursor-pointer"

@@ -65,7 +65,7 @@ const Achievements = () => {
   const handleMintSuccess = (achievement, txHash) => {
     console.log(`Achievement ${achievement.title} minted successfully. TX: ${txHash}`);
     // Update achievement as minted in real implementation
-    // setIsModalOpen(false);
+    setIsModalOpen(false);
     setSelectedAchievement(null);
   };
 

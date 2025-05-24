@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -9,69 +10,24 @@ import { useWalletStore } from '@/stores/useWalletStore';
 // Mock data for games
 const gamesData = [
   {
-    id: 1, 
-    title: 'Star Blaster',
+    id: 1,
+    title: 'Clicker Game',
     description: 'Arcade shooter with intense action',
     category: 'Arcade',
     rewards: '1-5 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1614294149010-950b698f72c0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
+    image: 'https://images.unsplash.com/photo-1614294149010-950b698f72c0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    url: '/games/clicker-game'
   },
   {
-    id: 2, 
-    title: 'Puzzle Pop',
-    description: 'Match-3 puzzle game with colorful challenges',
+    id: 2,
+    title: 'Sudoku',
+    description: 'Classic Sudoku puzzle game',
     category: 'Puzzle',
     rewards: '2-4 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1642484865851-111e68695d94?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-  },
-  {
-    id: 3, 
-    title: 'Turbo Dash',
-    description: 'High-octane racing experience',
-    category: 'Racing',
-    rewards: '3-7 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-  },
-  {
-    id: 4, 
-    title: 'Clicker Craze',
-    description: 'Addictive idle game with upgrades',
-    category: 'Idle',
-    rewards: '1-3 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1551431009-a802eeec77b1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-  },
-  {
-    id: 5, 
-    title: 'Alien Quest',
-    description: 'Adventure platformer with alien worlds',
-    category: 'Platformer',
-    rewards: '2-6 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1596727147705-61a532a659bd?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-  },
-  {
-    id: 6, 
-    title: 'Crypto Raiders',
-    description: 'Blockchain-themed adventure game',
-    category: 'Adventure',
-    rewards: '3-8 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-  },
-  {
-    id: 7, 
-    title: 'Block Breaker',
-    description: 'Classic arcade with a crypto twist',
-    category: 'Arcade',
-    rewards: '1-4 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1553481187-be93c21490a9?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
-  },
-  {
-    id: 8, 
-    title: 'Metaverse Miner',
-    description: 'Resource gathering and strategy',
-    category: 'Strategy',
-    rewards: '4-9 ARC/hr',
-    image: 'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3'
+    image: 'https://images.unsplash.com/photo-1596727147705-61a532a659bd?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+    url: '/games/sudoku'
   }
+
 ];
 
 const Index = () => {
@@ -81,6 +37,12 @@ const Index = () => {
     } = useWalletStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  const navigate = useNavigate();
+
+  const launchGame = (gameUrl: string) => {
+    navigate(gameUrl);
+  };
+
   
   useEffect(() => {
     const init = async () => {
@@ -102,12 +64,6 @@ const Index = () => {
     const matchesCategory = filterCategory === '' || game.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
-
-  // Launch game function
-  const launchGame = (gameId: any) => {
-    console.log(`Launching game with ID: ${gameId}`);
-    // This would redirect to the game page or launch a modal with the game
-  };
 
   // Get unique categories for filter
   const categories = ['', ...new Set(gamesData.map(game => game.category))];
@@ -231,7 +187,7 @@ const Index = () => {
               <div 
                 key={game.id} 
                 className="bg-blue-800/30 border border-blue-700/50 rounded-xl overflow-hidden transition-all hover:scale-105 cursor-pointer"
-                onClick={() => launchGame(game.id)}
+                onClick={() => launchGame(game.url)}
               >
                 <div className="aspect-w-16 aspect-h-9 relative">
                   <img 

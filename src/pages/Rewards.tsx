@@ -5,85 +5,96 @@ import { Link } from "react-router-dom";
 import { useWalletStore } from "@/stores/useWalletStore";
 import { Button } from "@/components/ui/button";
 
+// Dummy data for demonstration
+const balance = 1200;
+const totalEarned = 3400;
+const totalSpent = 2200;
+const achievements = [
+  { id: 1, name: "First Win", description: "Win your first game", progress: 1, goal: 1 },
+  { id: 2, name: "Collector", description: "Collect 10 NFTs", progress: 7, goal: 10 },
+];
+const referrals = [
+  { name: "Alice", joined: "2 days ago" },
+  { name: "Bob", joined: "1 week ago" },
+];
+const transactions = [
+  { id: 1, type: "Earn", amount: 100, date: "2025-05-20", description: "Game Reward" },
+  { id: 2, type: "Spend", amount: 50, date: "2025-05-19", description: "NFT Purchase" },
+];
+
 const Rewards = () => {
   const { walletState, aaWalletAddress } = useWalletStore();
 
   const isLoading = !walletState.isInitialized || !aaWalletAddress;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <main className="flex-grow pt-16">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header Section */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Rewards Dashboard</h2>
-              {aaWalletAddress && (
-                <p className="text-muted-foreground">
-                  Connected AA Wallet: {aaWalletAddress.slice(0, 6)}...{aaWalletAddress.slice(-4)}
-                </p>
-              )}
-            </div>
-            
-            <Button 
-              disabled={isLoading}
-              className="bg-accent hover:bg-accent/90 text-accent-foreground"
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <CoinsIcon className="animate-spin mr-2 h-4 w-4" />
-                  Processing...
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <CoinsIcon className="mr-2 h-4 w-4" />
-                  Claim Rewards
-                </span>
-              )}
-            </Button>
-          </div>
-
-          {/* Stats Cards */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      {/* Navbar component should be imported and used here */}
+      {/* <Navbar /> */}
+      <main className="flex-grow pt-16 pb-16">
+        <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <StatCard
-              title="Available Balance"
-              value="0 ARC"
-              icon={<CoinsIcon className="text-yellow-500" />}
-            />
-            <StatCard
-              title="Total Earned"
-              value="0 ARC"
-              icon={<CoinsIcon className="text-green-500" />}
-            />
-            <StatCard
-              title="Total Spent"
-              value="0 ARC"
-              icon={<CoinsIcon className="text-red-500" />}
-            />
+            <Card className="bg-black/50 border-purple-500/30">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-white">Available Balance</CardTitle>
+                  <CoinsIcon className="text-yellow-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">{isLoading ? '...' : (balance || '0')} ARC</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/50 border-purple-500/30">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-white">Total Earned</CardTitle>
+                  <CoinsIcon className="text-green-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">{totalEarned} ARC</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-black/50 border-purple-500/30">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-medium text-white">Total Spent</CardTitle>
+                  <CoinsIcon className="text-red-500" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">{totalSpent} ARC</div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Transactions Table */}
-          <Card className="mb-8">
+          <Card className="mb-8 bg-black/50 border-purple-500/30">
             <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
+              <CardTitle className="text-white">Recent Transactions</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Details</TableHead>
+                    <TableHead className="text-white">Type</TableHead>
+                    <TableHead className="text-white">Amount</TableHead>
+                    <TableHead className="text-white">Date</TableHead>
+                    <TableHead className="text-white">Description</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>No transactions yet</TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
+                  {transactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell>
+                        <TypeBadge type={tx.type} />
+                      </TableCell>
+                      <TableCell className="text-white">{tx.amount} ARC</TableCell>
+                      <TableCell className="text-white">{tx.date}</TableCell>
+                      <TableCell className="text-white">{tx.description}</TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
@@ -91,30 +102,18 @@ const Rewards = () => {
 
           {/* Additional Sections (Achievements, Referrals) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <AchievementsSection achievements={[]} />
-            <ReferralsSection referrals={[]} />
+            <AchievementsSection achievements={achievements} />
+            <ReferralsSection referrals={referrals} />
           </div>
         </div>
       </main>
+      {/* Footer component should be imported and used here */}
+      {/* <Footer /> */}
     </div>
   );
 };
 
 // Helper Components
-const StatCard = ({ title, value, icon }: { title: string; value: string; icon: JSX.Element }) => (
-  <Card>
-    <CardHeader className="pb-2">
-      <div className="flex items-center justify-between">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        {icon}
-      </div>
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-    </CardContent>
-  </Card>
-);
-
 const TypeBadge = ({ type }: { type: string }) => (
   <span className={`px-2 py-1 rounded-full text-xs ${
     type === "Earn" ? 'bg-green-100 text-green-800' :
@@ -126,9 +125,9 @@ const TypeBadge = ({ type }: { type: string }) => (
 );
 
 const AchievementsSection = ({ achievements }: { achievements: any[] }) => (
-  <Card>
+  <Card className="bg-black/50 border-purple-500/30">
     <CardHeader>
-      <CardTitle>Achievements</CardTitle>
+      <CardTitle className="text-white">Achievements</CardTitle>
     </CardHeader>
     <CardContent>
       {achievements.length === 0 ? (
@@ -141,11 +140,11 @@ const AchievementsSection = ({ achievements }: { achievements: any[] }) => (
             <div key={ach.id} className="flex items-start gap-4">
               <Trophy className="h-6 w-6 text-yellow-500 mt-1" />
               <div className="flex-1">
-                <div className="font-medium">{ach.name}</div>
-                <div className="text-sm text-muted-foreground">{ach.description}</div>
-                <div className="mt-2 w-full bg-muted rounded-full h-2">
+                <div className="font-medium text-white">{ach.name}</div>
+                <div className="text-sm text-purple-200">{ach.description}</div>
+                <div className="mt-2 w-full bg-purple-900/40 rounded-full h-2">
                   <div
-                    className="bg-primary h-2 rounded-full"
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
                     style={{ width: `${(ach.progress / ach.goal) * 100}%` }}
                   />
                 </div>
@@ -159,9 +158,9 @@ const AchievementsSection = ({ achievements }: { achievements: any[] }) => (
 );
 
 const ReferralsSection = ({ referrals }: { referrals: any[] }) => (
-  <Card>
+  <Card className="bg-black/50 border-purple-500/30">
     <CardHeader>
-      <CardTitle>Referrals</CardTitle>
+      <CardTitle className="text-white">Referrals</CardTitle>
     </CardHeader>
     <CardContent>
       {referrals.length === 0 ? (
@@ -172,14 +171,14 @@ const ReferralsSection = ({ referrals }: { referrals: any[] }) => (
         <div className="space-y-4">
           {referrals.map((ref, index) => (
             <div key={index} className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-muted-foreground" />
+              <Users className="h-5 w-5 text-purple-300" />
               <div>
-                <div className="font-medium">{ref.name}</div>
-                <div className="text-sm text-muted-foreground">Joined {ref.joined}</div>
+                <div className="font-medium text-white">{ref.name}</div>
+                <div className="text-sm text-purple-200">Joined {ref.joined}</div>
               </div>
             </div>
           ))}
-          <Button variant="outline" className="w-full mt-4">
+          <Button variant="outline" className="w-full mt-4 border-purple-500/50 text-purple-300 hover:bg-purple-500/10">
             <Users className="mr-2 h-4 w-4" />
             Invite Friends
           </Button>

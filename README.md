@@ -1,54 +1,80 @@
-# React + TypeScript + Vite
+# ArcadeHub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+ArcadeHub is a decentralized gaming platform on the NERO Chain, blending Web2 simplicity with Web3 ownership. Players enjoy casual arcade games, earn ARC tokens and NFTs, and own their rewards. Developers upload games, earning 70% of revenue, fostering a creator-driven ecosystem. Built with React, Pixi.js, and Solidity, ArcadeHub uses NERO’s Paymaster for gasless transactions, making Web3 gaming accessible to all.
 
-Currently, two official plugins are available:
+**URL**: arcadehub-neon-nights.lovable.app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- **Gasless Gameplay**: Play 5 arcade games (Star Blaster, Puzzle Pop, Turbo Dash, Clicker Craze, Alien Quest) with social logins (Web3Auth, MetaMask), no gas fees via Paymaster (Type 0, 1, 2).
+- **NFT Rewards**: Claim NFTs for achievements (e.g., 100 points, no-restart completion) using `NeroNFT.sol`, tradeable in-game.
+- **Developer Ecosystem**: Upload games via `GameHub.sol`, earn 70% revenue (30% to platform), with gasless uploads.
+- **Tokenomics**: 100M ARC tokens (`ARCToken.sol`) reward players (40%), developers (20%), and fund Paymaster (20%), with vesting and burns for sustainability.
+- **Vibrant UI**: React-based interface with Pixi.js games, featuring game library, profiles, rewards tracker, and developer portal.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tokenomics
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- **Total Supply**: 100,000,000 ARC
+- **Allocation**:
+  - Players (40%): Gameplay (5–50 ARC/game, 200 ARC/day cap), referrals (20 ARC/friend), NFT claims (10 ARC).
+  - Developers (20%): 70% revenue from in-game purchases (e.g., 1 ARC per 10 ARC spent).
+  - Treasury (20%): Paymaster funding (100 ARC/user), buy-backs.
+  - Team & Marketing (15%): Community campaigns.
+  - Liquidity & Staking (5%): Future features.
+- **Sustainability**: 7-day vesting for players, 30-day for developers; 1% burn on purchases; 50% platform revenue buys back ARC.
+
+## Setup Instructions
+
+### Prerequisites
+
+- Node.js (v16+)
+- Hardhat
+- NERO Chain testnet wallet with test tokens
+- Pinata API key for IPFS
+
+### Setup
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone https://github.com/cosmasken/arcadehub.git
+
+# Step 2: Navigate to the project directory.
+cd arcadehub
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Demo
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Watch our 3-minute demo showcasing ArcadeHub’s features:
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+- Gameplay with ARC/NFT rewards (Star Blaster, Puzzle Pop)
+- Developer game upload (Alien Quest)
+- Gasless UX with Paymaster
+- Profiles and rewards tracker
+
+[Demo Video](https://youtu.be/8kZshneuNps) | [Live Demo](https://arcadehub.vercel.app)
+
+## Smart Contracts
+
+- **ARCToken.sol**: ERC-20, 100M ARC for rewards and payouts
+- **NeroNFT.sol**: ERC-721 for NFT achievements (e.g., 100 points, no-restart)
+- **GameHub.sol**: Manages game uploads, 70/30 revenue split
+
+## Contract Addresses
+
+- **ArcadeHub**: `0xeBb9C0143416C300bab3107B37841Dde6d63A416`
+- **ArcadeNFT**: `0x31e34B3884Ec2Fff40623855D0B15981Cfc31314`
+- **ArcToken**: `0xe4f95D88f440F138e525E658D984F08De3b5f1EC`
+
+## Testing
+
+- Simulate 100 players: Play games, claim NFTs, refer friends
+- Simulate 5 developers: Upload games, claim payouts
+- Run tests: `npx hardhat test` (contracts), `npm test` (UI)
+
+Feedback welcome! Try ArcadeHub and share your thoughts

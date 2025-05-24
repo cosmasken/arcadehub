@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import { CoinsIcon, Star, Zap, Flame, Clock } from "lucide-react";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "../../components/ui/progress";
 
 const EMOJIS = ['🎮', '👾', '🕹️', '🎲', '🎯', '🧩', '🛸', '👑'];
 const PAIRS = 8; // 4x4 grid

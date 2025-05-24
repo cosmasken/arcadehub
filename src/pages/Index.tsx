@@ -1,11 +1,10 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useWalletStore } from '@/stores/useWalletStore';
+import { useWalletStore } from '../stores/useWalletStore';
 
 // Mock data for games
 const gamesData = [

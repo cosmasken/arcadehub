@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
+import { Button } from "../ui/button";
 import { Star } from "lucide-react";
 
 export interface Game {

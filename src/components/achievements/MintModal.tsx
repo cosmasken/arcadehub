@@ -5,14 +5,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription
-} from '@/components/ui/dialog';
-import { useToast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
+} from '../ui/dialog';
+import { useToast } from '../ui/use-toast';
+import { Button } from '../ui/button';
 import { mintNFT } from '../../utils/aaUtils';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from '@/components/ui/use-toast';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { toast } from '../ui/use-toast';
 import { Loader2, ExternalLink, Copy, CheckCircle, XCircle } from 'lucide-react';
 import AdvancedSettings from './AdvancedSettings';
 import TokenSelector from './TokenSelector';

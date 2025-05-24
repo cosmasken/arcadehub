@@ -1,4 +1,4 @@
-import { GameUploadMock } from "@/components/games/GameUploadMock";
+import { GameUploadMock } from "../components/games/GameUploadMock";
 
 const GameUpload = () => {
   return (

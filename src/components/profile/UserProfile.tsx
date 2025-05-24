@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Input } from '../ui/input';
 import { Edit, Share, Settings, User, Users } from 'lucide-react';
-import  useProfileStore  from '@/stores/useProfileStore';
+import  useProfileStore  from '../../stores/useProfileStore';
 import { AccountSettings } from './AccountSettings';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '../../hooks/use-toast';
 
 export const UserProfile = () => {
   const { stats, history, friends, } = useProfileStore();

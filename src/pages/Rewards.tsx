@@ -1,9 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { CoinsIcon, Users, Trophy } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useWalletStore } from "@/stores/useWalletStore";
-import { Button } from "@/components/ui/button";
+import { useWalletStore } from "../stores/useWalletStore";
+import { Button } from "../components/ui/button";
 
 // Dummy data for demonstration
 const balance = 1200;

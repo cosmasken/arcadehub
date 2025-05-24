@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/components/ui/use-toast";
+import { Button } from "../ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Progress } from "../ui/progress";
+import { useToast } from "../ui/use-toast";
 import {  Loader2, CheckCircle2, Upload } from "lucide-react";
 
 const GAME_UPLOAD_STEPS = [

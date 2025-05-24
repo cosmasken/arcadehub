@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import  useProfileStore  from '@/stores/useProfileStore';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import { Switch } from '../ui/switch';
+import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
+import  useProfile  from '../../stores/useProfileStore';
+import { useToast } from '../../hooks/use-toast';
 
 export const AccountSettings = () => {
   const { user, updateProfile } = useProfile();

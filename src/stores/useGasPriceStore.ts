@@ -71,6 +71,8 @@ export const useGasPriceStore = create<GasPriceStore>((set,get) => ({
       const estimatedGasLimit = BigInt(100000);
       const estimatedGasCostWei = gasPrice * estimatedGasLimit;
       const newTokenGasPrices: TokenGasPrices = {};
+      // ...inside fetchTokenGasPrices...
+     // ...existing code...
       for (const token of supportedTokens) {
         try {
           const tokenContract = new ethers.Contract(
@@ -80,13 +82,18 @@ export const useGasPriceStore = create<GasPriceStore>((set,get) => ({
           );
           const decimals = await tokenContract.decimals();
           const conversionRate = token.price || 1;
+
+          // All math as bigint, but use decimals as number for exponentiation
+          const conversionRateInt = BigInt(Math.floor(conversionRate * 100));
+          const decimalsNum = Number(decimals); // <-- fix here
           const gasCostInToken =
-            (BigInt(estimatedGasCostWei) *
-              BigInt(Math.floor(conversionRate * 100)) *
-              BigInt(10 ** decimals)) /
-            BigInt('1000000000000000000') /
-            BigInt('100');
-          const formattedGasCost = ethers.formatUnits(gasCostInToken, decimals);
+            estimatedGasCostWei
+              * conversionRateInt
+              * (10n ** BigInt(decimalsNum))
+              / 1000000000000000000n
+              / 100n;
+
+          const formattedGasCost = ethers.formatUnits(gasCostInToken, decimalsNum);
           newTokenGasPrices[token.address] = {
             priceInToken: formattedGasCost,
             lastUpdated: new Date(),
@@ -95,6 +102,32 @@ export const useGasPriceStore = create<GasPriceStore>((set,get) => ({
           console.error(`Error calculating gas price for token ${token.symbol}:`, error);
         }
       }
+// ...existing code...
+// ...existing code...
+      // for (const token of supportedTokens) {
+      //   try {
+      //     const tokenContract = new ethers.Contract(
+      //       token.address,
+      //       ['function decimals() view returns (uint8)'],
+      //       signer
+      //     );
+      //     const decimals = await tokenContract.decimals();
+      //     const conversionRate = token.price || 1;
+      //     const gasCostInToken =
+      //       (BigInt(estimatedGasCostWei) *
+      //         BigInt(Math.floor(conversionRate * 100)) *
+      //         BigInt(10 ** decimals)) /
+      //       BigInt('1000000000000000000') /
+      //       BigInt('100');
+      //     const formattedGasCost = ethers.formatUnits(gasCostInToken, decimals);
+      //     newTokenGasPrices[token.address] = {
+      //       priceInToken: formattedGasCost,
+      //       lastUpdated: new Date(),
+      //     };
+      //   } catch (error) {
+      //     console.error(`Error calculating gas price for token ${token.symbol}:`, error);
+      //   }
+      // }
       set({ tokenGasPrices: newTokenGasPrices });
     } catch (error: any) {
       console.error('Error fetching token gas prices:', error);

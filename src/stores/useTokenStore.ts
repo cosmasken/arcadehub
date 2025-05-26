@@ -10,15 +10,18 @@ import {
 import { getApiKey, API_OPTIMIZATION } from '../config';
 import type { SupportedToken, TokenBalances, TokenApprovals } from '../types/tokens';
 
+
 interface TokenStore {
   supportedTokens: SupportedToken[];
   tokenBalances: TokenBalances;
   eoaTokenBalances: TokenBalances;
+  aaTokenBalances: TokenBalances;
   tokenApprovals: TokenApprovals;
   selectedToken: string;
   isLoadingTokens: boolean;
   isLoadingBalances: boolean;
   isApproving: boolean;
+  setTokenApproval: (tokenAddress: string, approved: boolean) => void;
   loadSupportedTokens: (signer: ethers.Signer) => Promise<void>;
   loadTokenBalances: (aaWalletAddress: string, supportedTokens: SupportedToken[]) => Promise<void>;
   loadEoaTokenBalances: (userAddress: string, supportedTokens: SupportedToken[]) => Promise<void>;
@@ -29,21 +32,29 @@ interface TokenStore {
   hasEnoughTokens: (tokenAddress: string) => boolean;
 }
 
+
 export const useTokenStore = create<TokenStore>((set, get) => ({
+  
   supportedTokens: [],
   tokenBalances: {},
   eoaTokenBalances: {},
+  aaTokenBalances: {},
   tokenApprovals: {},
   selectedToken: '',
   isLoadingTokens: false,
   isLoadingBalances: false,
   isApproving: false,
+  setTokenApproval: (tokenAddress: string, approved: boolean) => {
+  set((state) => ({
+    tokenApprovals: { ...state.tokenApprovals, [tokenAddress]: approved },
+  }));
+},
   loadSupportedTokens: async (signer) => {
     try {
       set({ isLoadingTokens: true });
-      const client = await initAAClient(signer);
+     const client = await initAAClient(signer);
       const builder = await initAABuilder(signer);
-      const tokens = await getSupportedTokens(client, builder);
+      const tokens = await getSupportedTokens(client,builder);
       set({ supportedTokens: tokens });
       if (API_OPTIMIZATION.debugLogs) {
         console.log('Supported tokens loaded:', tokens);
@@ -114,7 +125,8 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
       builder.setPaymasterOptions({
         apikey: getApiKey(),
         rpc: 'https://paymaster-testnet.nerochain.io',
-        type: '0',
+        type: '0',//use sposnosrship for approval
+        
       });
       const tokenContract = new ethers.Contract(
         tokenAddress,

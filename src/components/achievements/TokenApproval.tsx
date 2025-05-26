@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
+import { useTokenStore } from '../../stores/useTokenStore';
+import { useWalletStore } from '../../stores/useWalletStore';
 
 interface TokenApprovalProps {
   selectedToken: string;
@@ -12,26 +14,40 @@ const TokenApproval: React.FC<TokenApprovalProps> = ({
   onApprovalComplete,
 }) => {
   const [isApproving, setIsApproving] = useState<boolean>(false);
-  const [isApproved, setIsApproved] = useState<boolean>(false);
   const [approvalError, setApprovalError] = useState<string>('');
+  const { tokenApprovals, approveToken } = useTokenStore();
+  const { aaWalletAddress,aaSigner } = useWalletStore();
 
+  const isApproved = tokenApprovals[selectedToken];
   const handleApprove = async () => {
     setIsApproving(true);
     setApprovalError('');
-
     try {
-      // Simulate approval process
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setIsApproved(true);
-      onApprovalComplete();
+      let success = false;
+        // AA wallet approval
+        if (!aaSigner || !aaWalletAddress) {
+          setApprovalError('AA wallet not available.');
+          setIsApproving(false);
+          return;
+        }
+        success = await approveToken(
+          selectedToken,
+          aaSigner,
+          aaWalletAddress
+        );
+     
+      if (success) {
+        onApprovalComplete();
+      } else {
+        setApprovalError('Failed to approve token. Please try again.');
+      }
     } catch (error) {
-      console.error('Error approving token:', error);
+      console.error('Token approval error:', error);
       setApprovalError('Failed to approve token. Please try again.');
     } finally {
       setIsApproving(false);
     }
   };
-
   if (!selectedToken) return null;
 
   return (

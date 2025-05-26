@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Trophy, Star, Target, Gamepad2 } from 'lucide-react';
+import { Trophy, Star, Target, Gamepad2, Badge } from 'lucide-react';
 import MintModal from '../components/achievements/MintModal';
 
 // Mock achievements data
@@ -49,7 +49,52 @@ const achievementsData = [
     maxProgress: 10,
     rarity: 'Legendary',
     isMinted: false
+  },
+  {
+    id: 5,
+    title: 'First Blood',
+    description: 'Win your first multiplayer match',
+    icon: Gamepad2,
+    isUnlocked: true,
+    progress: 1,
+    maxProgress: 1,
+    rarity: 'Common',
+    isMinted: false
+  },
+  {
+    id: 6,
+    title: 'Collector',
+    description: 'Collect 50 unique in-game items',
+    icon: Star,
+    isUnlocked: false,
+    progress: 20,
+    maxProgress: 50,
+    rarity: 'Rare',
+    isMinted: false
+  },
+  {
+    id: 7,
+    title: 'Master Strategist',
+    description: 'Win a strategy game without losing a single unit',
+    icon: Target,
+    isUnlocked: false,
+    progress: 0,
+    maxProgress: 1,
+    rarity: 'Epic',
+    isMinted: false
+  },
+  {
+    id: 8,
+    title: 'Ultimate Gamer',
+    description: 'Achieve all achievements in the game',
+    icon: Trophy,
+    isUnlocked: false,
+    progress: 0,
+    maxProgress: 8,
+    rarity: 'Legendary',
+    isMinted: false
   }
+
 ];
 
 type Rarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
@@ -68,7 +113,7 @@ const Achievements = () => {
   }
 
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(true);
 
 
   const handleMintSuccess = (achievement: { title: any; }, txHash: any) => {
@@ -119,9 +164,9 @@ const Achievements = () => {
                       </div>
                       <div>
                         <h3 className="text-lg font-bold">{achievement.title}</h3>
-                        {/* <Badge className={`text-xs ${getRarityColor(achievement.rarity)}`}>
+                        <Badge className={`text-xs ${achievement.isUnlocked ? 'bg-green-500' : 'bg-gray-500'}`}>
                           {achievement.rarity}
-                        </Badge> */}
+                        </Badge>
                       </div>
                     </div>
                   </div>
@@ -144,7 +189,10 @@ const Achievements = () => {
                   </div>
                   
                   <Button
-                  
+                  onClick={() => {
+              setSelectedAchievement(achievement);
+                  setIsModalOpen(true);
+                 }}
                     disabled={!achievement.isUnlocked || achievement.isMinted}
                     className={`w-full ${
                       achievement.isUnlocked && !achievement.isMinted

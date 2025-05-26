@@ -7,8 +7,7 @@ import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
 import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
 import type { CustomChainConfig } from "@web3auth/base";
 import type { IProvider } from "@web3auth/base";
-import type { WalletConnectionState } from '../types/wallet';
-import {  getAAWalletAddress, initAABuilder } from '../utils/aaUtils';
+import {  getAAWalletAddress } from '../utils/aaUtils';
 import useTokenStore from './useTokenStore';
 
 
@@ -40,7 +39,9 @@ const web3AuthOptions: Web3AuthOptions = {
 };
 
 interface WalletStore {
-  walletState: WalletConnectionState;
+  isConnected: boolean;
+  isInitialized: boolean;
+  address: string;
   supportedTokens: any[];
   web3auth: Web3Auth | null;
   provider: IProvider | null;
@@ -64,18 +65,9 @@ adapters.forEach((adapter) => {
 });
 
 export const useWalletStore = create<WalletStore>((set, get) => ({
-  walletState: {
-    isConnected: false,
-    isLoading: false,
-    isInitialized: false,
-    userAddress: '',
-    aaWalletAddress: '',
-    signer: null,
-    EOAProvider: undefined,
-    eoaAddress: '',
-    smartAccount: null,
-    address: '',
-  },
+  address: '',
+  isConnected: false,
+   isInitialized: false,
   supportedTokens: [],
   web3auth: null,
   provider: null,
@@ -95,7 +87,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         web3auth,
         provider: web3auth.provider,
         isLoading: false,
-        walletState: { ...get().walletState, isInitialized: true }
+        isInitialized: true,
       });
     } catch (error) {
       console.error('Failed to initialize Web3Auth:', error);
@@ -128,16 +120,9 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         aaProvider,
         aaSigner,
         isLoading: false,
-        walletState: { 
-          ...get().walletState,
-          isConnected: true,
-          isLoading: false,
-          userAddress: address,
-          signer: aaSigner,
-          EOAProvider: aaProvider,
-          eoaAddress: address,
-          address: address
-        }
+        isConnected: true,
+        isInitialized: true,
+        address:address,
       });
 
       await get().initAAWallet();
@@ -158,18 +143,9 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         await web3auth.logout();
       }
       set({ 
-        walletState: {
-          isConnected: false,
-          isLoading: false,
-          isInitialized: false,
-          userAddress: '',
-          aaWalletAddress: '',
-          signer: null,
-          EOAProvider: undefined,
-          eoaAddress: '',
-          smartAccount: null,
-          address: '',
-        },
+        address: '',
+        isConnected: false,
+        isInitialized: false,
         web3auth: null,
         provider: null,
         aaProvider: null,
@@ -186,7 +162,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   updateSigner: (signer: ethers.Signer) => {
     set((state) => ({
-      walletState: { ...state.walletState, signer },
+      ...state,
       aaSigner: signer
     }));
   },
@@ -197,23 +173,20 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
     try {
       const aaWallet = await getAAWalletAddress(aaSigner);
-      const aaBuilder = await initAABuilder(aaSigner);
+      // const aaBuilder = await initAABuilder(aaSigner);
       
       set({ 
         aaWalletAddress: aaWallet,
-        walletState: { 
-          ...get().walletState,
-          aaWalletAddress: aaWallet,
-          smartAccount: aaBuilder
-        }
       });
 
       // Load supported tokens after AA wallet is initialized
       const tokenStore = useTokenStore.getState();
       await tokenStore.loadSupportedTokens(aaSigner);
+      console.log('Supported tokens loaded:', tokenStore.supportedTokens);
       
       // Load token balances for the AA wallet
-      await tokenStore.loadTokenBalances(aaWallet, tokenStore.supportedTokens);
+      await tokenStore.loadTokenBalances(aaWallet, await tokenStore.supportedTokens);
+      console.log(`Token balances loaded for ${aaWallet}`, await tokenStore.tokenBalances);
 
     } catch (error) {
       console.error('Failed to initialize AA wallet:', error);

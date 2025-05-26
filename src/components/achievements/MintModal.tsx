@@ -11,6 +11,7 @@ import { Button } from '../ui/button';
 import { mintNFT } from '../../utils/aaUtils';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Loader2, ExternalLink, Copy, CheckCircle, XCircle } from 'lucide-react';
 import AdvancedSettings from './AdvancedSettings';
@@ -33,7 +34,7 @@ const MintModal: React.FC<MintModalProps> = ({
   achievement,
   onMintSuccess
 }) => {
-  const { walletState } = useWalletStore();
+  const { isConnected, aaSigner,aaWalletAddress } = useWalletStore();
   const [recipientAddress, setRecipientAddress] = useState('');
   const [paymentType, setPaymentType] = useState('sponsored');
   const [selectedToken, setSelectedToken] = useState('');
@@ -61,22 +62,22 @@ const MintModal: React.FC<MintModalProps> = ({
   };
 
   useEffect(() => {
-    if (walletState.isConnected) {
-      useGasPriceStore.getState().fetchGasPrice(walletState.signer);
+    if (isConnected) {
+      useGasPriceStore.getState().fetchGasPrice(aaSigner);
 
       // Set up interval to refresh gas price every 30 seconds
       const interval = setInterval(() => {
-        useGasPriceStore.getState().fetchGasPrice(walletState.signer);
+        useGasPriceStore.getState().fetchGasPrice(aaSigner);
       }, 30000);
 
       return () => clearInterval(interval);
     }
-  }, [walletState.isConnected]);
+  }, [isConnected]);
 
   // Fetch token gas prices when tokens are loaded or payment type changes
   useEffect(() => {
     if (supportedTokens.length > 0 && paymentType !== 'SPONSORED') {
-      useGasPriceStore.getState().fetchTokenGasPrices(supportedTokens, walletState.signer);
+      useGasPriceStore.getState().fetchTokenGasPrices(supportedTokens, aaSigner);
     }
   }, [supportedTokens]);
 
@@ -123,10 +124,19 @@ const MintModal: React.FC<MintModalProps> = ({
 
     try {
 
-        if (!walletState.signer) {
+        if (!aaSigner) {
           toast({
             title: "Error",
             description: "Wallet signer is not available. Please connect your wallet.",
+            variant: "destructive",
+          });
+          setIsMinting(false);
+          return;
+        }
+        if (!aaWalletAddress) {
+          toast({
+            title: "Error",
+            description: "AA wallet address is not available. Please connect your wallet.",
             variant: "destructive",
           });
           setIsMinting(false);
@@ -139,8 +149,8 @@ const MintModal: React.FC<MintModalProps> = ({
     
           // Perform mint operation
           const result = await mintNFT(
-            walletState.signer,
-            recipientAddress,
+            aaSigner,
+            aaWalletAddress,
             metadataUri,
             // paymentType, use 0 for now
             0,
@@ -161,7 +171,7 @@ const MintModal: React.FC<MintModalProps> = ({
               rel="noopener noreferrer"
               className="text-blue-500 underline"
             >
-              View on Etherscan
+              View on Neroscan
             </a>
           </span>
         ),

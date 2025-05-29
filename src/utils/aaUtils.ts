@@ -8,7 +8,10 @@ import {
 
 const API_KEY = import.meta.env.VITE_NEROCHAIN_API_KEY;
 // get api from
-
+// Cache to avoid excessive API calls
+let tokenCache: any[] = [];
+let lastFetchTime: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 // Cache variables to prevent redundant initialization
 let cachedClient: any = null;
 let cachedBuilder: any = null;
@@ -197,16 +200,18 @@ export const setPaymentType = (builder: any, paymentType: number, tokenAddress: 
 
 // Create a minimal UserOp for pm_supported_tokens
 const createMinimalUserOp = (sender: string) => {
+  // Create a minimal valid UserOp structure
+  // Using simpler values that don't cause nonce validation errors
   return {
     sender: sender,
-    nonce: "0x0",
+    nonce: "0x0", // Use 0x0 to avoid nonce issues
     initCode: "0x",
     callData: "0x",
-    callGasLimit: "0x0",
-    verificationGasLimit: "0x0",
-    preVerificationGas: "0x0",
-    maxFeePerGas: "0x0",
-    maxPriorityFeePerGas: "0x0",
+    callGasLimit: "0x88b8",
+    verificationGasLimit: "0x33450",
+    preVerificationGas: "0xc350",
+    maxFeePerGas: "0x2162553062",
+    maxPriorityFeePerGas: "0x40dbcf36",
     paymasterAndData: "0x",
     signature: "0x"
   };
@@ -256,7 +261,19 @@ const transformTokensResponse = (response: any) => {
       type: token.type || 1,
       price: token.price
     }));
+  } else if (typeof response === 'object') {
+  // Try to find tokens in the response object
+  const possibleTokensArray = Object.values(response).find(val => Array.isArray(val));
+  if (possibleTokensArray && Array.isArray(possibleTokensArray)) {
+    tokens = possibleTokensArray.map((token: any) => ({
+      address: token.address || token.token,
+      symbol: token.symbol,
+      decimal: token.decimal || token.decimals,
+      type: token.type || 1,
+      price: token.price
+    }));
   }
+}
   
   if (API_OPTIMIZATION.debugLogs) {
     console.log("Transformed tokens response:", tokens);
@@ -264,6 +281,7 @@ const transformTokensResponse = (response: any) => {
   
   return tokens;
 };
+
 
 // Get token balance
 export const getTokenBalance = async (address: string, tokenAddress: string) => {
@@ -305,6 +323,7 @@ export const getTokenBalance = async (address: string, tokenAddress: string) => 
 // Direct RPC call to pm_supported_tokens without building a full UserOperation
 export const directGetSupportedTokens = async (sender: string, apiKey: string) => {
   try {
+    // Create a provider connected to the paymaster RPC
     const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.aaPlatform.paymasterRpc);
     
     // Create minimal UserOp - avoid full UserOp creation that causes extra API calls
@@ -313,39 +332,26 @@ export const directGetSupportedTokens = async (sender: string, apiKey: string) =
     // Make direct RPC call
     if (API_OPTIMIZATION.debugLogs) console.log("Making direct RPC call to pm_supported_tokens");
     
-    // Create proper JSON-RPC request format
-    // const jsonRpcRequest = {
-    //   jsonrpc: "2.0",
-    //   method: "pm_supported_tokens",
-    //   params: [
-    //     minimalUserOp,
-    //     apiKey,
-    //     TESTNET_CONFIG.contracts.entryPoint
-    //   ],
-    //   id: 1
-    // };
-    
-    // Send the request
     const result = await provider.send("pm_supported_tokens", [
-      minimalUserOp,
+      minimalUserOp, 
       apiKey,
       TESTNET_CONFIG.contracts.entryPoint
     ]);
+
+   
     
     if (API_OPTIMIZATION.debugLogs) {
       console.log("Direct pm_supported_tokens response:", result);
     }
     
-    // Ensure we return the proper JSON-RPC response format
     return result;
   } catch (error) {
     console.error("Error in direct RPC call to pm_supported_tokens:", error);
     // Fall back to SDK method
     console.log("Falling back to SDK method for getting supported tokens");
-    throw error;
+    return null;
   }
 };
-
 // Get all token balances for a list of tokens
 export const getAllTokenBalances = async (userAddress: string, tokens: any[]) => {
   const balances: { [key: string]: string } = {};
@@ -360,7 +366,7 @@ export const getAllTokenBalances = async (userAddress: string, tokens: any[]) =>
   return balances;
 };
 
-// Get supported tokens with fallback and caching
+// Get supported tokens from Paymaster API
 export const getSupportedTokens = async (client: any, builder: any) => {
   // Check for token request limits
   if (tokenRequestCount >= API_OPTIMIZATION.maxTokenRefreshes) {
@@ -398,6 +404,8 @@ export const getSupportedTokens = async (client: any, builder: any) => {
       
       // Get API key
       const apiKeyToUse = API_KEY;
+
+      console.log('getSupportedTokens params:', { client, builder, sender, apiKeyToUse });
       
       // Try direct method first
       let response = await directGetSupportedTokens(sender, apiKeyToUse);
@@ -616,7 +624,7 @@ export const mintNFT = async (
   accountSigner: ethers.Signer, 
   recipientAddress: string,
   metadataUri: string,
-  paymentType: number = 0, // 0: free, 1: prepay, 2: postpay
+  paymentType: number, // 0: free, 1: prepay, 2: postpay
   selectedToken: string = '', // Token address for ERC20 payment
   options?: {
     apiKey?: string;
@@ -908,7 +916,15 @@ export const approveToken = async (provider: ethers.BrowserProvider, tokenAddres
     );
     
     // Send approval transaction
-    const tx = await tokenContract.approve(spenderAddress, amount);
+    const tx = await tokenContract.approve(
+      spenderAddress,
+      amount,
+      {
+        maxPriorityFeePerGas: ethers.parseUnits('1', 'gwei'),
+        maxFeePerGas: ethers.parseUnits('2', 'gwei'),
+      }
+    );
+    // const tx = await tokenContract.approve(spenderAddress, amount);
     
     // Wait for transaction confirmation
     const receipt = await tx.wait();

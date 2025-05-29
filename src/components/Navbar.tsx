@@ -6,7 +6,9 @@ import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const { 
-    walletState, 
+    isInitialized,
+    isConnected, 
+    address,
     aaWalletAddress,
     initializeWeb3Auth, 
     connectWallet, 
@@ -16,7 +18,7 @@ const Navbar = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        if (!walletState.isInitialized) {
+        if (!isInitialized) {
           await initializeWeb3Auth();
         }
       } catch (error) {
@@ -27,10 +29,10 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    if (walletState.isConnected && !aaWalletAddress) {
+    if (isConnected && !aaWalletAddress) {
       connectWallet();
     }
-  }, [walletState.isConnected]);
+  }, [isConnected]);
 
 
   const handleConnect = async () => {
@@ -75,7 +77,7 @@ const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               {navigationItems
-                .filter(item => item.public || walletState.isConnected)
+                .filter(item => item.public || isConnected)
                 .map((item) => (
                   <Link
                     key={item.name}
@@ -90,7 +92,7 @@ const Navbar = () => {
 
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center">
-            {!walletState.isConnected ? (
+            {!isConnected ? (
               <button
                 onClick={handleConnect}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 cursor-pointer"
@@ -101,9 +103,9 @@ const Navbar = () => {
             ) : (
               <UserDropdown
                 wallet={{
-                  address: walletState.address || '',
+                  address: address || '',
                   abstractedAddress: aaWalletAddress || '',
-                  isConnected: walletState.isConnected
+                  isConnected: isConnected
                 }}
                 onDisconnect={handleDisconnect}
                 truncateAddress={truncateAddress}
@@ -127,7 +129,7 @@ const Navbar = () => {
           <div className="md:hidden border-t border-gray-200">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigationItems
-                .filter(item => item.public || walletState.isConnected)
+                .filter(item => item.public || isConnected)
                 .map((item) => (
                   <Link
                     key={item.name}
@@ -140,7 +142,7 @@ const Navbar = () => {
               
               {/* Mobile Auth Section */}
               <div className="pt-4 border-t border-gray-200">
-                {!walletState.isConnected ? (
+                {!isConnected ? (
                   <button
                     onClick={handleConnect}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
@@ -150,13 +152,13 @@ const Navbar = () => {
                   </button>
                 ) : (
                   <div className="space-y-2">
-                    {walletState.isConnected && (
+                    {isConnected && (
                     <div className="px-3 py-2 bg-gray-50 rounded-lg">
                     <p className="text-sm font-medium text-gray-900">Connected Addresses</p>
                     <div className="space-y-2">
                       <div>
                         <p className="text-xs text-gray-600 font-mono">EOA Address:</p>
-                        <p className="text-xs text-gray-500 font-mono">{walletState.address ? truncateAddress(walletState.address) : 'Not available'}</p>
+                        <p className="text-xs text-gray-500 font-mono">{address ? truncateAddress(address) : 'Not available'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-600 font-mono">AA Wallet:</p>

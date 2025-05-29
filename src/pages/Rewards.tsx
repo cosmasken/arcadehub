@@ -22,9 +22,9 @@ const transactions = [
 ];
 
 const Rewards = () => {
-  const { walletState, aaWalletAddress } = useWalletStore();
+  const { isInitialized, aaWalletAddress } = useWalletStore();
 
-  const isLoading = !walletState.isInitialized || !aaWalletAddress;
+  const isLoading = !isInitialized || !aaWalletAddress;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">

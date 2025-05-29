@@ -29,7 +29,8 @@ const gamesData = [
 
 const Index = () => {
     const { 
-      walletState, 
+      isInitialized,
+      isConnected, 
       initializeWeb3Auth, 
     } = useWalletStore();
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,7 +45,7 @@ const Index = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        if (!walletState.isInitialized) {
+        if (!isInitialized) {
           await initializeWeb3Auth();
         }
       } catch (error) {
@@ -52,7 +53,7 @@ const Index = () => {
       }
     };
     init();
-  }, []);
+  }, [initializeWeb3Auth, isInitialized]);
 
   // Filter games based on search term and category
   const filteredGames = gamesData.filter(game => {
@@ -68,7 +69,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-blue-900 text-white">
       
-      {!walletState.isConnected ? (
+      {!isConnected ? (
         // Landing Page for Non-Authenticated Users
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center mb-16">

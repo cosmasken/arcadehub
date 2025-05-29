@@ -6,19 +6,23 @@ import {
   getAllTokenBalances,
   initAAClient,
   initAABuilder,
+  approveAAWalletToken,
 } from '../utils/aaUtils';
-import { getApiKey, API_OPTIMIZATION } from '../config';
+import { API_OPTIMIZATION } from '../config';
 import type { SupportedToken, TokenBalances, TokenApprovals } from '../types/tokens';
+
 
 interface TokenStore {
   supportedTokens: SupportedToken[];
   tokenBalances: TokenBalances;
   eoaTokenBalances: TokenBalances;
+  aaTokenBalances: TokenBalances;
   tokenApprovals: TokenApprovals;
   selectedToken: string;
   isLoadingTokens: boolean;
   isLoadingBalances: boolean;
   isApproving: boolean;
+  setTokenApproval: (tokenAddress: string, approved: boolean) => void;
   loadSupportedTokens: (signer: ethers.Signer) => Promise<void>;
   loadTokenBalances: (aaWalletAddress: string, supportedTokens: SupportedToken[]) => Promise<void>;
   loadEoaTokenBalances: (userAddress: string, supportedTokens: SupportedToken[]) => Promise<void>;
@@ -29,21 +33,29 @@ interface TokenStore {
   hasEnoughTokens: (tokenAddress: string) => boolean;
 }
 
+
 export const useTokenStore = create<TokenStore>((set, get) => ({
+  
   supportedTokens: [],
   tokenBalances: {},
   eoaTokenBalances: {},
+  aaTokenBalances: {},
   tokenApprovals: {},
   selectedToken: '',
   isLoadingTokens: false,
   isLoadingBalances: false,
   isApproving: false,
+  setTokenApproval: (tokenAddress: string, approved: boolean) => {
+  set((state) => ({
+    tokenApprovals: { ...state.tokenApprovals, [tokenAddress]: approved },
+  }));
+},
   loadSupportedTokens: async (signer) => {
     try {
       set({ isLoadingTokens: true });
-      const client = await initAAClient(signer);
+     const client = await initAAClient(signer);
       const builder = await initAABuilder(signer);
-      const tokens = await getSupportedTokens(client, builder);
+      const tokens = await getSupportedTokens(client,builder);
       set({ supportedTokens: tokens });
       if (API_OPTIMIZATION.debugLogs) {
         console.log('Supported tokens loaded:', tokens);
@@ -103,43 +115,76 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
     }
   },
   approveToken: async (tokenAddress, signer, aaWalletAddress) => {
-    if (!signer || !aaWalletAddress) {
-      toast.error('Connect your wallet first');
-      return false;
-    }
-    set({ isApproving: true });
-    try {
-      const client = await initAAClient(signer);
-      const builder = await initAABuilder(signer);
-      builder.setPaymasterOptions({
-        apikey: getApiKey(),
-        rpc: 'https://paymaster-testnet.nerochain.io',
-        type: '0',
-      });
-      const tokenContract = new ethers.Contract(
-        tokenAddress,
-        ['function approve(address spender, uint256 amount) returns (bool)'],
-        signer
-      );
-      const paymasterAddress = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789';
-      const maxApproval = ethers.parseUnits('1000000000', 18);
-      const callData = tokenContract.interface.encodeFunctionData('approve', [paymasterAddress, maxApproval]);
-      const userOp = await builder.execute(tokenAddress, 0, callData);
-      const result = await client.sendUserOperation(userOp);
-      await result.wait();
+  if (!signer || !aaWalletAddress) {
+    toast.error('Connect your wallet first');
+    return false;
+  }
+  set({ isApproving: true });
+  try {
+    // Use a large approval amount (unlimited)
+    const maxApproval = ethers.parseUnits('1000000000', 18);
+    const result = await approveAAWalletToken(
+      signer,
+      tokenAddress,
+      maxApproval
+    );
+    if (result && result.success) {
       set((state) => ({
         tokenApprovals: { ...state.tokenApprovals, [tokenAddress]: true },
       }));
       toast.success('Token approved successfully!');
       return true;
-    } catch (error: any) {
-      console.error('Error approving token:', error);
-      toast.error(`Error approving token: ${error.message || 'Unknown error'}`);
+    } else {
+      toast.error('Token approval failed');
       return false;
-    } finally {
-      set({ isApproving: false });
     }
-  },
+  } catch (error: any) {
+    console.error('Error approving token:', error);
+    toast.error(`Error approving token: ${error.message || 'Unknown error'}`);
+    return false;
+  } finally {
+    set({ isApproving: false });
+  }
+},
+  // approveToken: async (tokenAddress, signer, aaWalletAddress) => {
+  //   if (!signer || !aaWalletAddress) {
+  //     toast.error('Connect your wallet first');
+  //     return false;
+  //   }
+  //   set({ isApproving: true });
+  //   try {
+  //     const client = await initAAClient(signer);
+  //     const builder = await initAABuilder(signer);
+  //     builder.setPaymasterOptions({
+  //       apikey: getApiKey(),
+  //       rpc: 'https://paymaster-testnet.nerochain.io',
+  //       type: '0',//use sposnosrship for approval
+        
+  //     });
+  //     const tokenContract = new ethers.Contract(
+  //       tokenAddress,
+  //       ['function approve(address spender, uint256 amount) returns (bool)'],
+  //       signer
+  //     );
+  //     const paymasterAddress = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789';
+  //     const maxApproval = ethers.parseUnits('1000000000', 18);
+  //     const callData = tokenContract.interface.encodeFunctionData('approve', [paymasterAddress, maxApproval]);
+  //     const userOp = await builder.execute(tokenAddress, 0, callData);
+  //     const result = await client.sendUserOperation(userOp);
+  //     await result.wait();
+  //     set((state) => ({
+  //       tokenApprovals: { ...state.tokenApprovals, [tokenAddress]: true },
+  //     }));
+  //     toast.success('Token approved successfully!');
+  //     return true;
+  //   } catch (error: any) {
+  //     console.error('Error approving token:', error);
+  //     toast.error(`Error approving token: ${error.message || 'Unknown error'}`);
+  //     return false;
+  //   } finally {
+  //     set({ isApproving: false });
+  //   }
+  // },
   transferTokensToAAWallet: async (tokenAddress, amount, signer, userAddress, aaWalletAddress) => {
     if (!signer || !userAddress || !aaWalletAddress) {
       toast.error('Wallet not connected');

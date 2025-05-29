@@ -20,9 +20,7 @@ export interface WalletConnectionState {
   userAddress: string;
   aaWalletAddress: string;
   signer: ethers.Signer | null;
-  EOAProvider?: ethers.BrowserProvider;
   eoaAddress?: string;
-  smartAccount?: any;
   address?: string;
 }
 

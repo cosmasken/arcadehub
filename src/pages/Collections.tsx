@@ -46,13 +46,13 @@ const Spinner = () => (
 );
 
 const Collections: React.FC = () => {
-  const { walletState,aaWalletAddress } = useWalletStore();
+  const { isConnected,aaWalletAddress } = useWalletStore();
   const [nfts, setNfts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
   const loadNFTs = useCallback(async () => {
-    if (!walletState.isConnected || !aaWalletAddress) {
+    if (!isConnected || !aaWalletAddress) {
       setNfts([]);
       return;
     }
@@ -62,22 +62,23 @@ const Collections: React.FC = () => {
       const fetchedNFTs = await getNFTs(aaWalletAddress);
       setNfts(fetchedNFTs);
     } catch (err) {
+      console.log("Error fetching NFTs:", err);
       setError("Failed to load NFTs. Please try again later.");
     } finally {
       setIsLoading(false);
     }
-  }, [walletState.isConnected, aaWalletAddress]);
+  }, [isConnected, aaWalletAddress]);
 
   useEffect(() => {
-    if (walletState.isConnected) {
+    if (isConnected) {
       loadNFTs();
     } else {
       setNfts([]);
     }
-  }, [walletState.isConnected, loadNFTs]);
+  }, [isConnected, loadNFTs]);
 
   // Show mock data if not connected
-  const displayNFTs = walletState.isConnected ? nfts : mockNFTs;
+  const displayNFTs = isConnected ? nfts : mockNFTs;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center py-12">
@@ -87,7 +88,7 @@ const Collections: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="gallery-header mb-4">
-            {walletState.isConnected && nfts.length > 0 && (
+            {isConnected && nfts.length > 0 && (
               <button
                 onClick={loadNFTs}
                 className="px-3 py-1 rounded bg-purple-700 text-white hover:bg-purple-800 transition"

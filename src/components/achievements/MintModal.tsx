@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,17 +9,15 @@ import {
 import { useToast } from '../ui/use-toast';
 import { Button } from '../ui/button';
 import { mintNFT } from '../../utils/aaUtils';
-import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Loader2, ExternalLink, Copy, CheckCircle, XCircle } from 'lucide-react';
 import AdvancedSettings from './AdvancedSettings';
 import TokenSelector from './TokenSelector';
 import TokenApproval from './TokenApproval';
 import { useWalletStore } from '../../stores/useWalletStore';
-import { useGasPriceStore } from '../../stores/useGasPriceStore';
-import { useTokenStore } from '../../stores/useTokenStore';
+// import { useGasPriceStore } from '../../stores/useGasPriceStore';
+// import { useTokenStore } from '../../stores/useTokenStore';
 
 interface MintModalProps {
   isOpen: boolean;
@@ -34,8 +32,7 @@ const MintModal: React.FC<MintModalProps> = ({
   achievement,
   onMintSuccess
 }) => {
-  const { isConnected, aaSigner,aaWalletAddress } = useWalletStore();
-  const [recipientAddress, setRecipientAddress] = useState('');
+  const { aaSigner, aaWalletAddress } = useWalletStore();
   const [paymentType, setPaymentType] = useState('sponsored');
   const [selectedToken, setSelectedToken] = useState('');
   const [gasMultiplier, setGasMultiplier] = useState(100);
@@ -46,62 +43,23 @@ const MintModal: React.FC<MintModalProps> = ({
     txHash?: string;
     error?: string;
   } | null>(null);
-    const { toast } = useToast();
-  const { supportedTokens } = useTokenStore();
+  const { toast } = useToast();
+  // const { supportedTokens } = useTokenStore();
 
   const handleGasMultiplierChange = (multiplier: number) => {
-    if (multiplier < 500) {
-      setGasMultiplier(500);
-      return;
-    }
-    if (multiplier > 500) {
-      setGasMultiplier(500);
-      return;
-    }
-    setGasMultiplier(multiplier);
+    setGasMultiplier(Math.max(50, Math.min(500, multiplier)));
   };
 
-  useEffect(() => {
-    if (isConnected) {
-      useGasPriceStore.getState().fetchGasPrice(aaSigner);
-
-      // Set up interval to refresh gas price every 30 seconds
-      const interval = setInterval(() => {
-        useGasPriceStore.getState().fetchGasPrice(aaSigner);
-      }, 30000);
-
-      return () => clearInterval(interval);
-    }
-  }, [isConnected]);
-
-  // Fetch token gas prices when tokens are loaded or payment type changes
-  useEffect(() => {
-    if (supportedTokens.length > 0 && paymentType !== 'SPONSORED') {
-      useGasPriceStore.getState().fetchTokenGasPrices(supportedTokens, aaSigner);
-    }
-  }, [supportedTokens]);
-
   const handleMint = async () => {
-    if (!recipientAddress) {
+    if (!aaWalletAddress) {
       toast({
         title: "Error",
-        description: "Please enter a recipient address",
+        description: "AA wallet address is not available. Please connect your wallet.",
         variant: "destructive",
       });
       return;
     }
-
-    // Basic address validation (simplified)
-    if (!recipientAddress.startsWith('0x') || recipientAddress.length !== 42) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid Ethereum address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (paymentType === 'token' && !selectedToken) {
+    if ((paymentType === 'prepay' || paymentType === 'postpay') && !selectedToken) {
       toast({
         title: "Error",
         description: "Please select a token for gas payment",
@@ -109,8 +67,7 @@ const MintModal: React.FC<MintModalProps> = ({
       });
       return;
     }
-
-    if (paymentType === 'token' && !tokenApproved) {
+    if ((paymentType === 'prepay' || paymentType === 'postpay') && !tokenApproved) {
       toast({
         title: "Error",
         description: "Please approve the token before minting",
@@ -123,44 +80,32 @@ const MintModal: React.FC<MintModalProps> = ({
     setMintResult(null);
 
     try {
+      if (!aaSigner) {
+        toast({
+          title: "Error",
+          description: "Wallet signer is not available. Please connect your wallet.",
+          variant: "destructive",
+        });
+        setIsMinting(false);
+        return;
+      }
 
-        if (!aaSigner) {
-          toast({
-            title: "Error",
-            description: "Wallet signer is not available. Please connect your wallet.",
-            variant: "destructive",
-          });
-          setIsMinting(false);
-          return;
-        }
-        if (!aaWalletAddress) {
-          toast({
-            title: "Error",
-            description: "AA wallet address is not available. Please connect your wallet.",
-            variant: "destructive",
-          });
-          setIsMinting(false);
-          return;
-        }
+      const metadataUri = 'https://neroapi.com/nfts/metadata/sample';
+      const paymentTypeNum =
+        paymentType === 'sponsored' ? 0 :
+        paymentType === 'prepay' ? 1 :
+        paymentType === 'postpay' ? 2 : 0;
 
-    
-          // Sample NFT metadata URI - In a real app, this would be dynamic
-          const metadataUri = 'https://neroapi.com/nfts/metadata/sample';
-    
-          // Perform mint operation
-          const result = await mintNFT(
-            aaSigner,
-            aaWalletAddress,
-            metadataUri,
-            // paymentType, use 0 for now
-            0,
-            selectedToken,
-            {
-              gasMultiplier : gasMultiplier,
-            }
-          );
-    
-          toast({
+      const result = await mintNFT(
+        aaSigner,
+        aaWalletAddress,
+        metadataUri,
+        paymentTypeNum,
+        selectedToken,
+        { gasMultiplier }
+      );
+
+      toast({
         title: "Mint Successful!",
         description: (
           <span>
@@ -176,21 +121,17 @@ const MintModal: React.FC<MintModalProps> = ({
           </span>
         ),
       });
-          onMintSuccess(achievement, result.transactionHash);
-          // onMintSuccess(result.transactionHash);
-        } catch (error) {
-          console.error('Error minting NFT:', error);
-        //  onMintError(error as Error);
-        } finally {
-          setIsMinting(false);
-        }
-
- 
+      onMintSuccess(achievement, result.transactionHash);
+    } catch (error: any) {
+      console.error('Error minting NFT:', error);
+      setMintResult({ success: false, error: error.message || 'Mint error' });
+    } finally {
+      setIsMinting(false);
+    }
   };
 
   const handleClose = () => {
     if (!isMinting) {
-      setRecipientAddress('');
       setPaymentType('sponsored');
       setSelectedToken('');
       setTokenApproved(false);
@@ -209,16 +150,19 @@ const MintModal: React.FC<MintModalProps> = ({
       await navigator.clipboard.writeText(text);
       toast({
         title: "Copied!",
-        description: "Transaction hash copied to clipboard",
+        description: "Transaction hash copied to clipboard.",
       });
-    } catch (error) {
-      console.error('Failed to copy:', error);
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to copy transaction hash.",
+        variant: "destructive",
+      });
     }
   };
 
   const openEtherscan = (txHash: string) => {
-    // Open in new tab - in a real app this would be the actual network explorer
-    window.open(`https://etherscan.io/tx/${txHash}`, '_blank');
+    window.open(`https://testnet.neroscan.io/tx/${txHash}`, '_blank');
   };
 
   if (!achievement) return null;
@@ -226,7 +170,6 @@ const MintModal: React.FC<MintModalProps> = ({
   const IconComponent = achievement.icon;
 
   return (
-    <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md bg-gray-900 border-gray-700 text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -240,38 +183,7 @@ const MintModal: React.FC<MintModalProps> = ({
             Mint "{achievement.title}" as an NFT to showcase your gaming achievement.
           </DialogDescription>
         </DialogHeader>
-
         <div className="space-y-6">
-          <div className="bg-blue-800/20 p-4 rounded-lg">
-            <h4 className="font-semibold mb-2">{achievement.title}</h4>
-            <p className="text-sm text-gray-300">{achievement.description}</p>
-            <div className="mt-2">
-              <span className={`inline-block px-2 py-1 rounded text-xs ${achievement.rarity === 'Common' ? 'bg-gray-600' :
-                  achievement.rarity === 'Rare' ? 'bg-blue-600' :
-                    achievement.rarity === 'Epic' ? 'bg-purple-600' :
-                      'bg-yellow-600'
-                }`}>
-                {achievement.rarity}
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="recipient">Recipient Address</Label>
-            <Input
-              id="recipient"
-              type="text"
-              placeholder="0x..."
-              value={recipientAddress}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRecipientAddress(e.target.value)}
-              className="bg-gray-800 border-gray-600 text-white"
-              disabled={isMinting}
-            />
-            <p className="text-sm text-gray-400">
-              Enter the Ethereum address where you want to mint this achievement NFT
-            </p>
-          </div>
-
           <div className="space-y-3">
             <Label>Payment Method</Label>
             <Select
@@ -286,13 +198,16 @@ const MintModal: React.FC<MintModalProps> = ({
                 <SelectItem value="sponsored" className="text-white hover:bg-gray-700">
                   Sponsored (Free) - Gas fees covered by platform
                 </SelectItem>
-                <SelectItem value="token" className="text-white hover:bg-gray-700">
-                  Pay with Token - Use your tokens for gas fees
+                <SelectItem value="prepay" className="text-white hover:bg-gray-700">
+                  Prepay - Pay upfront with token
+                </SelectItem>
+                <SelectItem value="postpay" className="text-white hover:bg-gray-700">
+                  Postpay - Pay after transaction with token
                 </SelectItem>
               </SelectContent>
             </Select>
 
-            {paymentType === 'token' && (
+            {(paymentType === 'prepay' || paymentType === 'postpay') && (
               <div className="space-y-4 pl-6 border-l-2 border-gray-700">
                 <TokenSelector
                   selectedToken={selectedToken}
@@ -325,7 +240,12 @@ const MintModal: React.FC<MintModalProps> = ({
             </Button>
             <Button
               onClick={handleMint}
-              disabled={isMinting || !recipientAddress || (paymentType === 'token' && (!selectedToken || !tokenApproved))}
+              disabled={
+                isMinting ||
+                !aaWalletAddress ||
+                ((paymentType === 'prepay' || paymentType === 'postpay') &&
+                  (!selectedToken || !tokenApproved))
+              }
               className="flex-1 bg-purple-600 hover:bg-purple-700"
             >
               {isMinting ? (
@@ -339,59 +259,56 @@ const MintModal: React.FC<MintModalProps> = ({
             </Button>
           </div>
           {mintResult && (
-          <div className={`p-4 rounded-lg border ${mintResult.success
+            <div className={`p-4 rounded-lg border ${mintResult.success
               ? 'bg-green-900/20 border-green-600'
               : 'bg-red-900/20 border-red-600'
-            }`}>
-            <div className="flex items-center space-x-2 mb-2">
-              {mintResult.success ? (
-                <CheckCircle className="w-5 h-5 text-green-400" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-400" />
-              )}
-              <span className="font-semibold">
-                {mintResult.success ? 'Mint Successful!' : 'Mint Failed'}
-              </span>
-            </div>
-            {mintResult.success && mintResult.txHash ? (
-              <div className="space-y-2">
-                <p className="text-sm text-gray-300">Transaction Hash:</p>
-                <div className="flex items-center space-x-2 p-2 bg-gray-800 rounded border">
-                  <code className="text-xs text-blue-400 flex-1 break-all">
-                    {mintResult.txHash}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => copyToClipboard(mintResult.txHash!)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Copy size={12} />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openEtherscan(mintResult.txHash!)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <ExternalLink size={12} />
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-400">
-                  Click the external link icon to view on Etherscan
-                </p>
+              }`}>
+              <div className="flex items-center space-x-2 mb-2">
+                {mintResult.success ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <XCircle className="w-5 h-5 text-red-400" />
+                )}
+                <span className="font-semibold">
+                  {mintResult.success ? 'Mint Successful!' : 'Mint Failed'}
+                </span>
               </div>
-            ) : mintResult.error && (
-              <p className="text-sm text-red-300">{mintResult.error}</p>
-            )}
-          </div>
-        )}
-        {/* ...rest of modal content... */}
+              {mintResult.success && mintResult.txHash ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-300">Transaction Hash:</p>
+                  <div className="flex items-center space-x-2 p-2 bg-gray-800 rounded border">
+                    <code className="text-xs text-blue-400 flex-1 break-all">
+                      {mintResult.txHash}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(mintResult.txHash!)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Copy size={12} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openEtherscan(mintResult.txHash!)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <ExternalLink size={12} />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Click the external link icon to view on Etherscan
+                  </p>
+                </div>
+              ) : mintResult.error && (
+                <p className="text-sm text-red-300">{mintResult.error}</p>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
- 
-    </>
   );
 };
 

@@ -624,7 +624,7 @@ export const mintNFT = async (
   accountSigner: ethers.Signer, 
   recipientAddress: string,
   metadataUri: string,
-  paymentType: number = 0, // 0: free, 1: prepay, 2: postpay
+  paymentType: number, // 0: free, 1: prepay, 2: postpay
   selectedToken: string = '', // Token address for ERC20 payment
   options?: {
     apiKey?: string;

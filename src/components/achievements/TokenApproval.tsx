@@ -20,6 +20,8 @@ const TokenApproval: React.FC<TokenApprovalProps> = ({
 
   const isApproved = tokenApprovals[selectedToken];
   const handleApprove = async () => {
+    console.log(`[TokenApproval] Starting approval for token: ${selectedToken}`);
+
     setIsApproving(true);
     setApprovalError('');
     try {
@@ -28,6 +30,7 @@ const TokenApproval: React.FC<TokenApprovalProps> = ({
         if (!aaSigner || !aaWalletAddress) {
           setApprovalError('AA wallet not available.');
           setIsApproving(false);
+           console.log('[TokenApproval] AA wallet or signer missing');
           return;
         }
         success = await approveToken(
@@ -36,11 +39,13 @@ const TokenApproval: React.FC<TokenApprovalProps> = ({
           aaWalletAddress
         );
      
-      if (success) {
-        onApprovalComplete();
-      } else {
-        setApprovalError('Failed to approve token. Please try again.');
-      }
+       if (success) {
+      console.log(`[TokenApproval] Approval successful for token: ${selectedToken}`);
+      onApprovalComplete();
+    } else {
+      setApprovalError('Failed to approve token. Please try again.');
+      console.log(`[TokenApproval] Approval failed for token: ${selectedToken}`);
+    }
     } catch (error) {
       console.error('Token approval error:', error);
       setApprovalError('Failed to approve token. Please try again.');

@@ -4,7 +4,7 @@ import { ChevronDown, User, Settings, LogOut, Copy, Check } from 'lucide-react';
 
 interface WalletInfo {
   address: string;
-  abstractedAddress: string;
+  // abstractedAddress: string;
   isConnected: boolean;
 }
 
@@ -68,7 +68,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({
             {/* Normal Wallet Address */}
             <div className="mb-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 uppercase tracking-wide">Wallet Address</span>
+                <span className="text-xs text-gray-500 uppercase tracking-wide">Address</span>
                 <button
                   onClick={() => copyToClipboard(wallet.address, 'wallet')}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -86,7 +86,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({
             </div>
 
             {/* Account Abstracted Address */}
-            <div>
+            {/* <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500 uppercase tracking-wide">Abstract Account</span>
                 <button
@@ -103,7 +103,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({
               <p className="text-sm font-mono text-gray-700 bg-gray-50 p-2 rounded mt-1 break-all">
                 {wallet.abstractedAddress}
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Menu Items */}

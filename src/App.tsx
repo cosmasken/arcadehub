@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
@@ -16,7 +17,10 @@ import Achievements from "./pages/Achievements";
 import Navbar from "./components/Navbar";
 import ClickerGame from "./games/clicker-game/ClickerGame";
 
+
 const queryClient = new QueryClient();
+;
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

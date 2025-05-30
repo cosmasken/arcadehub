@@ -3,6 +3,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useWalletStore } from '../stores/useWalletStore';
+import useProfileStore from '../stores/useProfileStore';
 
 // Mock data for games
 const gamesData = [
@@ -31,8 +32,17 @@ const Index = () => {
     const { 
       isInitialized,
       isConnected, 
+      address,
       initializeWeb3Auth, 
     } = useWalletStore();
+    
+
+   useEffect(() => {
+  if (isConnected && address) {
+    console.log('Fetching profile for address:', address);
+    useProfileStore.getState().fetchProfile(address);
+  }
+}, [isConnected, address])
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const navigate = useNavigate();

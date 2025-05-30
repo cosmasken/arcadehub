@@ -30,6 +30,7 @@ interface ContractAddresses {
   multiCall: string;
   nftContract: string;
   testTokenContract: string;
+  gameregistry: string;
 }
 
 interface ERC20Addresses {
@@ -85,6 +86,7 @@ export const TESTNET_CONFIG: {
     multiCall: '0x343A0DdD8e58bEaf29d69936c82F1516C6677B0E',
     nftContract: '0x31e34B3884Ec2Fff40623855D0B15981Cfc31314',
     testTokenContract: '0xe4f95D88f440F138e525E658D984F08De3b5f1EC',
+    gameregistry: '0x8b712105397e9676C618FB44182F6ED30803386b',
   },
   erc20: {
     dai: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345',
@@ -122,6 +124,7 @@ const MAINNET_CONFIG: {
     multiCall: '0x...',
     nftContract: '0x...',
     testTokenContract: '0x...',
+    gameregistry: '0x...',
   },
   erc20: {
     dai: '0x...',

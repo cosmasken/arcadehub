@@ -16,6 +16,7 @@ import Sudoku from "./games/sudoku/Sudoku";
 import Achievements from "./pages/Achievements";
 import Navbar from "./components/Navbar";
 import ClickerGame from "./games/clicker-game/ClickerGame";
+import GameUpload from "./pages/GameUpload";
 
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
                 <Route path="/games/sudoku" element={<Sudoku />} />
                 {/* Add more game routes here */}
               </Route>
+              <Route path="/upload" element={<GameUpload />} />
               <Route path="/achievements" element={<Achievements />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

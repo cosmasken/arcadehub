@@ -109,8 +109,6 @@ const Developers = () => {
           </Card>
         </div>
       </main>
-      {/* Footer component should be imported and used here */}
-      {/* <Footer /> */}
     </div>
   );
 };

@@ -3,6 +3,10 @@ import { User, LogOut, Wallet, Menu, X } from 'lucide-react';
 import UserDropdown from './UserDropdown';
 import { useWalletStore } from '../stores/useWalletStore';
 import { Link } from 'react-router-dom';
+import OnboardingModal from './onboarding/Onboarding';
+import supabase from '../hooks/use-supabase';
+import useProfileStore from '../stores/useProfileStore';
+
 
 const Navbar = () => {
   const { 
@@ -14,6 +18,42 @@ const Navbar = () => {
     connectWallet, 
     disconnectWallet 
   } = useWalletStore();
+
+   const [showOnboarding, setShowOnboarding] = useState(false);
+
+   useEffect(() => {
+  if (isConnected && address) {
+    console.log('Fetching profile for address:', address);
+    useProfileStore.getState().fetchProfile(address);
+  }
+}, [isConnected, address]);
+
+    useEffect(() => {
+    if (isConnected) {
+      // Check if user profile exists in Supabase
+      const checkProfile = async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('wallet_address', address)
+          .single();
+        if (!data) setShowOnboarding(true);
+      };
+      if (address) checkProfile();
+    }
+  }, [isConnected, address]);
+
+  const handleOnboardingComplete = async (userData: any) => {
+    // Save onboarding data to Supabase
+    await supabase.from('profiles').insert([
+      {
+        wallet_address: address,
+        ...userData,
+      },
+    ]);
+    setShowOnboarding(false);
+  };
+
 
   useEffect(() => {
     const init = async () => {
@@ -65,6 +105,7 @@ const Navbar = () => {
   ];
 
   return (
+    <>
     <nav className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
@@ -104,7 +145,7 @@ const Navbar = () => {
               <UserDropdown
                 wallet={{
                   address: address || '',
-                  abstractedAddress: aaWalletAddress || '',
+                  // abstractedAddress: aaWalletAddress || '',
                   isConnected: isConnected
                 }}
                 onDisconnect={handleDisconnect}
@@ -157,11 +198,7 @@ const Navbar = () => {
                     <p className="text-sm font-medium text-gray-900">Connected Addresses</p>
                     <div className="space-y-2">
                       <div>
-                        <p className="text-xs text-gray-600 font-mono">EOA Address:</p>
-                        <p className="text-xs text-gray-500 font-mono">{address ? truncateAddress(address) : 'Not available'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-600 font-mono">AA Wallet:</p>
+                        <p className="text-xs text-gray-600 font-mono">AA Address:</p>
                         <p className="text-xs text-gray-500 font-mono">{aaWalletAddress || 'Not available'}</p>
                       </div>
                     </div>
@@ -172,10 +209,6 @@ const Navbar = () => {
                       <User className="inline h-4 w-4 mr-2" />
                       Profile
                     </Link>
-                    {/* <Link to="/settings" className="block px-3 py-2 text-gray-700 hover:text-blue-600 rounded-md">
-                      <Settings className="inline h-4 w-4 mr-2" />
-                      Settings
-                    </Link> */}
                     <button
                       onClick={handleDisconnect}
                       className="w-full text-left px-3 py-2 text-red-600 hover:text-red-700 rounded-md cursor-pointer"
@@ -191,6 +224,11 @@ const Navbar = () => {
         )}
       </div>
     </nav>
+    <OnboardingModal
+        isOpen={showOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
+    </>
   );
 };
 

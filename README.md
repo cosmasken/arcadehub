@@ -2,7 +2,7 @@
 
 ArcadeHub is a decentralized gaming platform on the NERO Chain, blending Web2 simplicity with Web3 ownership. Players enjoy casual arcade games, earn ARC tokens and NFTs, and own their rewards. Developers upload games, earning 70% of revenue, fostering a creator-driven ecosystem. Built with React, Pixi.js, and Solidity, ArcadeHub uses NERO’s Paymaster for gasless transactions, making Web3 gaming accessible to all.
 
-**URL**: arcadehub-neon-nights.lovable.app
+**URL**: [arcadehub](https://arcadehub.vercel.app)
 
 ## Features
 

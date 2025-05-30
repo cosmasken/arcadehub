@@ -1,4 +1,6 @@
 import {create} from 'zustand';
+import supabase from '../hooks/use-supabase';
+
 
 interface ProfileState {
   username: string;
@@ -7,6 +9,7 @@ interface ProfileState {
   arcBalance: number;
   gamesPlayed: number;
   achievements: number;
+  role: 'gamer' | 'developer' | 'admin'; // Optional, can be used to differentiate roles
  assets: {
     id: string;
     name: string;
@@ -48,46 +51,57 @@ interface ProfileState {
     totalRevenue: number;
     avgRating: number;
   };
+  loading: boolean;
+  error: string | null;
+  fetchProfile: (walletAddress: string) => Promise<void>;
+  setUsername: (username: string) => void;
+  setBio: (bio: string) => void;
+  setAvatar: (avatar: string) => void;
 }
 
-const user = {
-  username: "GamerX",
-  avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=GamerX",
-  bio: "Passionate arcade gamer and developer. I love puzzle games and racing games.",
-  arcBalance: 1234.45,
-  gamesPlayed: 45,
-  achievements: 12,
-assets: [
-    { id: "nft1", name: "Star Trophy", image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", rarity: "legendary", value: 100 },
-    { id: "nft2", name: "Race Car", image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", rarity: "rare", value: 50 },
-  ],
-  history: [
-    { id: "1", game: "Star Blaster", score: 1028, date: "2025-05-18", duration: "10m" },
-    { id: "2", game: "Puzzle Pop", score: 325, date: "2025-05-17", duration: "5m" },
-    { id: "3", game: "Turbo Dash", score: 582, date: "2025-05-15", duration: "8m" },
-  ],
-  developerGames: [
-    { id: "game1", title: "Space Adventure", plays: 235, revenue: 50, image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", status: "published" },
-    { id: "game2", title: "Puzzle Pop", plays: 120, revenue: 30, image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", status: "draft" },
-  ],
-  friends: [
-    { id: "f1", username: "PlayerOne", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=PlayerOne", online: true },
-    { id: "f2", username: "ArcQueen", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=ArcQueen", online: false },
-  ],
-};
+// const user = {
+//   username: "",
+//   avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=GamerX",
+//   bio: "",
+//   arcBalance: 1234.45,
+//   gamesPlayed: 45,
+//   achievements: 12,
+
+// assets: [
+//     { id: "nft1", name: "Star Trophy", image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", rarity: "legendary", value: 100 },
+//     { id: "nft2", name: "Race Car", image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", rarity: "rare", value: 50 },
+//   ],
+//   history: [
+//     { id: "1", game: "Star Blaster", score: 1028, date: "2025-05-18", duration: "10m" },
+//     { id: "2", game: "Puzzle Pop", score: 325, date: "2025-05-17", duration: "5m" },
+//     { id: "3", game: "Turbo Dash", score: 582, date: "2025-05-15", duration: "8m" },
+//   ],
+//   developerGames: [
+//     { id: "game1", title: "Space Adventure", plays: 235, revenue: 50, image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", status: "published" },
+//     { id: "game2", title: "Puzzle Pop", plays: 120, revenue: 30, image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", status: "draft" },
+//   ],
+//   friends: [
+//     { id: "f1", username: "PlayerOne", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=PlayerOne", online: true },
+//     { id: "f2", username: "ArcQueen", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=ArcQueen", online: false },
+//   ],
+// };
 
 
 const useProfileStore = create<ProfileState>((set,get) => ({
- username: user.username,
-  bio: user.bio,
-  avatar: user.avatar,
-  arcBalance: user.arcBalance,
-  gamesPlayed: user.gamesPlayed,
-  achievements: user.achievements,
-  assets: user.assets,
-  history: user.history,
-  developerGames: user.developerGames,
-  friends: user.friends,
+ username:'',
+  bio: '',
+  avatar: 'user.avatar',
+  arcBalance: 0,
+  gamesPlayed: 0,
+  achievements: 0,
+  null:[],
+  assets: [],
+  history: [],
+  developerGames: [],
+  friends: [],
+  role: 'gamer', // Default role, can be changed later
+  loading: false,
+  error: null,
   get stats() {
     return {
       gamesPlayed: get().gamesPlayed,
@@ -118,6 +132,26 @@ const useProfileStore = create<ProfileState>((set,get) => ({
   setAssets: (assets: ProfileState['assets']) => set({ assets }),
   setHistory: (history: ProfileState['history']) => set({ history }),
   setDeveloperGames: (developerGames: ProfileState['developerGames']) => set({ developerGames }),
+  fetchProfile: async (walletAddress: string) => {
+    set({ loading: true, error: null });
+    // Use the supabase client from the use-supabase hook
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username, bio')
+      .eq('wallet_address', walletAddress)
+      .single();
+    if (error) {
+      set({ loading: false, error: error.message });
+      return;
+    }
+    set({
+      username: data.username,
+      bio: data.bio,
+      avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${data.username}`,
+      loading: false,
+      error: null,
+    });
+  },
 }));
 
 export default useProfileStore;

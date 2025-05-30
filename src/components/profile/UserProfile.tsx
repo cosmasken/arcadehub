@@ -7,22 +7,57 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Input } from '../ui/input';
 import { Edit, Share, Settings, User, Users } from 'lucide-react';
 import  useProfileStore  from '../../stores/useProfileStore';
+import useWalletStore  from '../../stores/useWalletStore';
 import { AccountSettings } from './AccountSettings';
+import supabase from '../../hooks/use-supabase';
 import { useToast } from '../../hooks/use-toast';
 
 export const UserProfile = () => {
   const { stats, history, friends, } = useProfileStore();
   const { toast } = useToast();
-  const {
-  username,
-  bio,
-  avatar,
-  arcBalance,
-  assets,
-  developerGames,
-  developerStats,
-} = useProfileStore();
+  const {address } = useWalletStore();
+    const {
+    username,
+    bio,
+    avatar,
+    arcBalance,
+    assets,
+    developerGames,
+    developerStats,
+    setUsername,
+    setBio,
+    fetchProfile,
+  } = useProfileStore();
   const [inviteEmail, setInviteEmail] = useState('');
+  const [editUsername, setEditUsername] = useState(username);
+  const [editBio, setEditBio] = useState(bio);
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ username: editUsername, bio: editBio })
+      .eq('username', username); // or use wallet_address if available
+    setSaving(false);
+    if (error) {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      setUsername(editUsername);
+      setBio(editBio);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been successfully updated.",
+      });
+      // Optionally refetch profile from supabase
+      await fetchProfile(address);
+    }
+  };
+
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -66,7 +101,7 @@ export const UserProfile = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Profile Header */}
-        <Card className="mb-6 bg-black/50 border-purple-500/30 backdrop-blur-sm">
+        <Card className="mb-6 bg-white/50 border-purple-500/30 backdrop-blur-sm">
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
               <Avatar className="w-24 h-24 ring-4 ring-purple-500/50">
@@ -114,7 +149,7 @@ export const UserProfile = () => {
         </Card>
 
         {/* Mobile ARC Balance */}
-        <Card className="lg:hidden mb-6 bg-gradient-to-br from-purple-600/20 to-pink-600/20 border-purple-500/30">
+        <Card className="lg:hidden mb-6 bg-white">
           <CardContent className="p-4 text-center">
             <div className="text-xl font-bold text-white mb-1">
               {arcBalance.toFixed(2)} ARC
@@ -125,7 +160,7 @@ export const UserProfile = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="gamer" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-black/50 border-purple-500/30">
+          <TabsList className="grid w-full grid-cols-4 bg-white/50 border-purple-500/30">
             <TabsTrigger value="gamer" className="data-[state=active]:bg-purple-600">
               <User className="w-4 h-4 mr-2" />
               Gamer
@@ -148,25 +183,25 @@ export const UserProfile = () => {
           <TabsContent value="gamer" className="space-y-6">
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-white">{stats.gamesPlayed}</div>
                   <div className="text-gray-400 text-sm">Games Played</div>
                 </CardContent>
               </Card>
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-white">{stats.achievements}</div>
                   <div className="text-gray-400 text-sm">Achievements</div>
                 </CardContent>
               </Card>
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-white">{stats.totalScore.toLocaleString()}</div>
                   <div className="text-gray-400 text-sm">Total Score</div>
                 </CardContent>
               </Card>
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-purple-400">{stats.rank}</div>
                   <div className="text-gray-400 text-sm">Rank</div>
@@ -175,7 +210,7 @@ export const UserProfile = () => {
             </div>
 
             {/* Assets Grid */}
-            <Card className="bg-black/50 border-purple-500/30">
+            <Card className="bg-white/50 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white">NFT Assets</CardTitle>
               </CardHeader>
@@ -202,7 +237,7 @@ export const UserProfile = () => {
             </Card>
 
             {/* Game History */}
-            <Card className="bg-black/50 border-purple-500/30">
+            <Card className="bg-white/50 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white">Recent Games</CardTitle>
               </CardHeader>
@@ -229,25 +264,25 @@ export const UserProfile = () => {
           <TabsContent value="developer" className="space-y-6">
             {/* Developer Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-white">{developerStats.totalGames}</div>
                   <div className="text-gray-400 text-sm">Total Games</div>
                 </CardContent>
               </Card>
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-white">{developerStats.totalPlays.toLocaleString()}</div>
                   <div className="text-gray-400 text-sm">Total Plays</div>
                 </CardContent>
               </Card>
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-green-400">${developerStats.totalRevenue.toFixed(2)}</div>
                   <div className="text-gray-400 text-sm">Revenue</div>
                 </CardContent>
               </Card>
-              <Card className="bg-black/50 border-purple-500/30">
+              <Card className="bg-white/50 border-purple-500/30">
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-yellow-400">{developerStats.avgRating}</div>
                   <div className="text-gray-400 text-sm">Avg Rating</div>
@@ -256,7 +291,7 @@ export const UserProfile = () => {
             </div>
 
             {/* Developer Games */}
-            <Card className="bg-black/50 border-purple-500/30">
+            <Card className="bg-white/50 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white">My Games</CardTitle>
               </CardHeader>
@@ -294,7 +329,7 @@ export const UserProfile = () => {
           {/* Friends Tab */}
           <TabsContent value="friends" className="space-y-6">
             {/* Invite Friends */}
-            <Card className="bg-black/50 border-purple-500/30">
+            <Card className="bg-white/50 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white">Invite Friends</CardTitle>
               </CardHeader>
@@ -304,7 +339,7 @@ export const UserProfile = () => {
                     placeholder="Enter email address"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="bg-black/50 border-purple-500/30 text-white"
+                    className="bg-white/50 border-purple-500/30 text-white"
                   />
                   <Button onClick={handleInviteFriend} className="bg-purple-600 hover:bg-purple-700">
                     Invite
@@ -314,7 +349,7 @@ export const UserProfile = () => {
             </Card>
 
             {/* Friends List */}
-            <Card className="bg-black/50 border-purple-500/30">
+            <Card className="bg-white/50 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white">Friends ({friends.length})</CardTitle>
               </CardHeader>
@@ -351,7 +386,44 @@ export const UserProfile = () => {
 
           {/* Settings Tab */}
           <TabsContent value="settings">
-            <AccountSettings />
+            {/* <AccountSettings />
+             */}
+              <Card>
+              <CardHeader>
+                <CardTitle>Edit Profile</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label htmlFor="edit-username" className="block text-sm font-medium text-white mb-1">
+                    Username
+                  </label>
+                  <Input
+                    id="edit-username"
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="edit-bio" className="block text-sm font-medium text-white mb-1">
+                    Bio
+                  </label>
+                  <Input
+                    id="edit-bio"
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveProfile}
+                  className="bg-purple-600 hover:bg-purple-700"
+                  disabled={saving}
+                >
+                  {saving ? "Saving..." : "Save Profile"}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

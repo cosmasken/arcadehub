@@ -67,7 +67,7 @@ adapters.forEach((adapter) => {
 export const useWalletStore = create<WalletStore>((set, get) => ({
   address: '',
   isConnected: false,
-   isInitialized: false,
+  isInitialized: false,
   supportedTokens: [],
   web3auth: null,
   provider: null,

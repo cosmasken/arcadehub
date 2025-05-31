@@ -9,14 +9,32 @@ import {
 const API_KEY = import.meta.env.VITE_NEROCHAIN_API_KEY;
 // get api from
 // Cache to avoid excessive API calls
-let tokenCache: any[] = [];
-let lastFetchTime: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// let tokenCache: any[] = [];
+// let lastFetchTime: number = 0;
+// const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 // Cache variables to prevent redundant initialization
 let cachedClient: any = null;
 let cachedBuilder: any = null;
 let cachedWalletAddress: string | null = null;
 let tokenRequestCount = 0;
+
+const GAME_HUB_ABI = [
+  "function addOwner(address newOwner) external",
+  "function removeOwner(address ownerToRemove) external",
+  "function submitClaim(uint256 amount) external",
+  "function approveClaim(address player) external",
+  "function rejectClaim(address player) external",
+  "function allocateDeveloperRevenue(address developer, uint256 amount) external",
+  "function claimDeveloperPayout() external",
+  "function transferARC(address to, uint256 amount) external",
+  "function transferNFT(address to, uint256 tokenId) external",
+  "function depositTokens(uint256 amount) external"
+];
+
+const getGameHubContract = () =>
+  new ethers.Contract(TESTNET_CONFIG.contracts.gamehub, GAME_HUB_ABI, getProvider());
+
+
 
 // Cache for operation results to prevent duplicate transactions
 const pendingOperations = new Map<string, Promise<any>>();
@@ -309,8 +327,8 @@ export const getTokenBalance = async (address: string, tokenAddress: string) => 
     
     try {
       decimals = await tokenContract.decimals();
-    } catch (_) {
-      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`);
+    } catch (err) {
+      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`,err);
     }
     
     return ethers.formatUnits(balance, decimals);
@@ -462,8 +480,8 @@ const executeOperation = async (
   operationKey: string,
   accountSigner: ethers.Signer,
   executeFn: (client: any, builder: any) => Promise<any>,
-  paymentType: number = 0,
-  selectedToken: string = '',
+  paymentType: number,
+  selectedToken: string ,
   options?: any
 ) => {
   // Check for pending/cached operations
@@ -1305,3 +1323,109 @@ export const approveAAWalletToken = async (
     options
   );
 }; 
+
+export const submitGameAA = async (
+  accountSigner: ethers.Signer,
+  gameId: string,
+  name: string,
+  ipfsHash: string,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: {
+    apiKey?: string;
+    gasMultiplier?: number;
+  }
+) => {
+  const opKey = generateOperationKey('submitGameAA', [
+    await accountSigner.getAddress(),
+    gameId,
+    name,
+    ipfsHash,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      // Convert gameId to bigint for ethers v6
+      let gameIdBigInt: bigint;
+      try {
+        if (typeof gameId === "string" && gameId.startsWith('0x')) {
+          gameIdBigInt = ethers.toBigInt(gameId);
+        } else {
+          gameIdBigInt = BigInt(gameId);
+        }
+      } catch {
+        // fallback: hash the string to get a unique bigint
+        gameIdBigInt = ethers.toBigInt(
+          ethers.keccak256(ethers.toUtf8Bytes(gameId))
+        );
+      }
+
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.gamehub,
+        [
+          "event GameSubmitted(uint256 indexed gameId, address indexed developer, string name, string ipfsHash)",
+          "function submitGame(uint256 gameId, string name, string ipfsHash) external"
+        ],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('submitGame', [
+        gameIdBigInt,
+        name,
+        ipfsHash
+      ]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.gamehub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+
+      // Parse gameId from the GameSubmitted event
+      // let returnedGameId = null;
+      // if (receipt && receipt.logs) {
+      //   for (const log of receipt.logs) {
+      //     try {
+      //       const parsed = contract.interface.parseLog(log);
+      //       if (parsed && parsed.name === "GameSubmitted") {
+      //         returnedGameId = parsed.args.gameId.toString();
+      //         break;
+      //       }
+      //     } catch {
+      //       continue;
+      //     }
+      //   }
+      // }
+       const abi = [
+        "event GameSubmitted(uint256 indexed gameId, address indexed developer, string name, string ipfsHash)",
+        "function submitGame(uint256 gameId, string name, string ipfsHash) external"
+      ];
+      const iface = new ethers.Interface(abi);
+      let returnedGameId = null;
+      if (receipt && receipt.logs) {
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === "GameSubmitted") {
+              returnedGameId = parsed.args.gameId.toString();
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        gameId: returnedGameId,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};

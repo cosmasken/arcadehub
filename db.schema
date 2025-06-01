@@ -1,0 +1,59 @@
+create table achievements (
+  id serial primary key,
+  title text not null,
+  description text,
+  rarity text,
+  max_progress integer default 1,
+  image_url text,
+  created_at timestamp with time zone default now()
+);
+
+create table user_achievements (
+  id uuid primary key default uuid_generate_v4(),
+  user_wallet text not null references profiles(wallet_address),
+  achievement_id integer not null references achievements(id),
+  progress integer default 0,
+  unlocked boolean default false,
+  unlocked_at timestamp with time zone
+);
+
+create table referrals (
+  id uuid primary key default uuid_generate_v4(),
+  referrer_wallet text references profiles(wallet_address),
+  referred_wallet text references profiles(wallet_address),
+  created_at timestamp with time zone default now(),
+  reward_claimed boolean default false
+);
+
+create table transactions (
+  id uuid primary key default uuid_generate_v4(),
+  user_wallet text references profiles(wallet_address),
+  type text, -- e.g. 'reward', 'purchase', 'mint', 'transfer'
+  amount numeric,
+  token_address text,
+  tx_hash text,
+  created_at timestamp with time zone default now(),
+  description text
+);
+
+create table developer_applications (
+  id uuid primary key default uuid_generate_v4(),
+  wallet_address text references profiles(wallet_address),
+  company_name text,
+  status text default 'pending', -- 'pending', 'approved', 'rejected'
+  submitted_at timestamp with time zone default now(),
+  reviewed_at timestamp with time zone
+);
+
+create table collections (
+  id uuid primary key default uuid_generate_v4(),
+  user_wallet text references profiles(wallet_address),
+  name text,
+  created_at timestamp with time zone default now()
+);
+
+create table collection_games (
+  id uuid primary key default uuid_generate_v4(),
+  collection_id uuid references collections(id),
+  game_id text references games(game_id)
+);

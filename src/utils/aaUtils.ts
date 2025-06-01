@@ -1429,3 +1429,206 @@ export const submitGameAA = async (
     options
   );
 };
+
+//TODO: Test this 
+
+// Claim tokens from points (calls claimTokens)
+export const claimTokensAA = async (
+  accountSigner: ethers.Signer,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('claimTokensAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.gamehub,
+        ["function claimTokens() external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('claimTokens', []);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.gamehub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Submit points claim (calls submitPointsClaim)
+export const submitPointsClaimAA = async (
+  accountSigner: ethers.Signer,
+  points: number,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('submitPointsClaimAA', [
+    await accountSigner.getAddress(),
+    points,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.gamehub,
+        ["function submitPointsClaim(uint256 points) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('submitPointsClaim', [points]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.gamehub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Apply for admin (calls applyForAdmin)
+export const applyForAdminAA = async (
+  accountSigner: ethers.Signer,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('applyForAdminAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.gamehub,
+        ["function applyForAdmin() external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('applyForAdmin', []);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.gamehub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Stake tokens (calls stakeTokens)
+export const stakeTokensAA = async (
+  accountSigner: ethers.Signer,
+  amount: bigint,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('stakeTokensAA', [
+    await accountSigner.getAddress(),
+    amount.toString(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.gamehub,
+        ["function stakeTokens(uint256 amount) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('stakeTokens', [amount]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.gamehub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Unstake tokens (calls unstakeTokens)
+export const unstakeTokensAA = async (
+  accountSigner: ethers.Signer,
+  amount: bigint,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('unstakeTokensAA', [
+    await accountSigner.getAddress(),
+    amount.toString(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.gamehub,
+        ["function unstakeTokens(uint256 amount) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('unstakeTokens', [amount]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.gamehub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};

@@ -13,7 +13,7 @@ import { HistoryModal } from "./components/HistoryModal";
 import { TokenClaimModal } from "./components/TokenClaimModal";
 import { LeaderboardModal } from "./components/LeaderboardModal";
 import { SettingsModal } from "./components/SettingsModal";
-import { Slider } from "../components/ui/slider";
+import supabase from "../hooks/use-supabase";
 
 interface GameSession {
   id: string;
@@ -43,26 +43,28 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
   const [activeSection, setActiveSection] = useState("shop");
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
 
-  // Add this useEffect hook
-useEffect(() => {
-  const initializeGame = async () => {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Match LoadingScreen delay
-      setIsLoading(false);
-      setGameStarted(true);
-      setGameStartTime(new Date());
-    } catch (error) {
-      console.error('Failed to initialize game:', error);
-      toast({
-        title: "Error",
-        description: "Failed to initialize game. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
+  // Track if the user dismissed the claim modal
+  const [tokenClaimModalDismissed, setTokenClaimModalDismissed] = useState(false);
 
-  initializeGame();
-}, []); // Empty dependency array means this runs once on mount
+  useEffect(() => {
+    const initializeGame = async () => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Match LoadingScreen delay
+        setIsLoading(false);
+        setGameStarted(true);
+        setGameStartTime(new Date());
+      } catch (error) {
+        console.error('Failed to initialize game:', error);
+        toast({
+          title: "Error",
+          description: "Failed to initialize game. Please try again.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    initializeGame();
+  }, []); // Empty dependency array means this runs once on mount
 
   // Pass isPaused to useGameState to control honey development
   const {
@@ -100,10 +102,10 @@ useEffect(() => {
   // Check for token claiming eligibility
   useEffect(() => {
     const unclaimedTokens = Math.floor(points / TOKEN_CLAIM_THRESHOLD) - claimedTokens;
-    if (unclaimedTokens > 0 && gameStarted && !isPaused) {
+    if (unclaimedTokens > 0 && gameStarted && !isPaused && !tokenClaimModalDismissed) {
       setShowTokenClaimModal(true);
     }
-  }, [points, claimedTokens, gameStarted, isPaused]);
+  }, [points, claimedTokens, gameStarted, isPaused, tokenClaimModalDismissed]);
 
   const handleLoadComplete = () => setIsLoading(false);
 
@@ -115,11 +117,16 @@ useEffect(() => {
   const handleClaimTokens = () => {
     const unclaimedTokens = Math.floor(points / TOKEN_CLAIM_THRESHOLD) - claimedTokens;
     setClaimedTokens(prev => prev + unclaimedTokens);
-    setShowTokenClaimModal(false);
+    setTokenClaimModalDismissed(false); // Reset so modal can show again next time
     toast({
       title: "🪙 Tokens Claimed!",
       description: `You claimed ${unclaimedTokens} tokens worth ${unclaimedTokens * TOKEN_CLAIM_THRESHOLD} honey!`,
     });
+  };
+
+  const handleCloseTokenClaimModal = () => {
+    setShowTokenClaimModal(false);
+    setTokenClaimModalDismissed(true);
   };
 
   const saveGameSession = (endReason: string) => {
@@ -469,7 +476,7 @@ useEffect(() => {
       {showTokenClaimModal && (
         <TokenClaimModal 
           open={showTokenClaimModal} 
-          onClose={() => setShowTokenClaimModal(false)} 
+          onClose={handleCloseTokenClaimModal}
           onClaim={handleClaimTokens} 
           tokens={Math.floor(points / TOKEN_CLAIM_THRESHOLD) - claimedTokens}
         />

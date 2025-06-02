@@ -12,11 +12,12 @@ import Profile from "./pages/Profile";
 import Developers from "./pages/Developers";
 import Rewards from "./pages/Rewards";
 import GameView from "./pages/GameView";
-import Sudoku from "./games/sudoku/Sudoku";
+import Sudoku from "./games1/sudoku/Sudoku";
 import Achievements from "./pages/Achievements";
 import Navbar from "./components/Navbar";
-import ClickerGame from "./games/clicker-game/ClickerGame";
+// import ClickerGame from "./games/clicker-game/ClickerGame";
 import GameUpload from "./pages/GameUpload";
+import HiveGame from './games1/hive-game/HiveGame';
 
 
 const queryClient = new QueryClient();
@@ -41,7 +42,7 @@ const App = () => (
               <Route path="collections" element={<Collections />} />
               <Route element={<GameLayout />}>
                 <Route path="/games/:gameId" element={<GameView />} />
-                <Route path="/games/clicker-game" element={<ClickerGame />} />
+                <Route path="/games/hive-game" element={<HiveGame />} />
                 <Route path="/games/sudoku" element={<Sudoku />} />
                 {/* Add more game routes here */}
               </Route>

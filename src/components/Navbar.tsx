@@ -98,10 +98,7 @@ const Navbar = () => {
   };
 
   const navigationItems = [
-    { name: 'Developers', href: '/developers', public: false },
-    { name: 'Rewards', href: '/rewards', public: false },
-    { name: 'Achievements', href: '/achievements', public: false },
-    { name: 'Collections', href: '/collections', public: false },
+    { name: 'Games', href: '/', public: true },
   ];
 
   return (
@@ -169,6 +166,12 @@ const Navbar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden border-t border-gray-200">
             <div className="px-2 pt-2 pb-3 space-y-1">
+                <Link
+             to='/'
+              className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+              Games
+             </Link>
               {navigationItems
                 .filter(item => item.public || isConnected)
                 .map((item) => (

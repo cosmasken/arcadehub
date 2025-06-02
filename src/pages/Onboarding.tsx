@@ -1,5 +1,7 @@
 import { useState } from "react";
 import useProfileStore from "../stores/useProfileStore";
+import useWalletStore from "../stores/useWalletStore";
+import {supabase} from "../hooks/use-supabase";
 
 const Onboarding = () => {
   const { setUsername, setBio, setAvatar, setDeveloperGames, setRole } = useProfileStore();
@@ -7,16 +9,26 @@ const Onboarding = () => {
   const [username, setUsernameLocal] = useState("");
   const [bio, setBioLocal] = useState("");
   const [avatar, setAvatarLocal] = useState("");
-  // Add developer-specific fields as needed
+  const { address } = useWalletStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setRole(role);
     setUsername(username);
     setBio(bio);
     setAvatar(avatar);
-    // Set developerGames or other fields if developer
-    // Redirect to main app/profile page
+     // Persist to Supabase
+    if (address) {
+      await supabase.from("profiles").upsert([
+        {
+          wallet_address: address,
+          username,
+          bio,
+          avatar,
+          role,
+        },
+      ]);
+    }
   };
 
   return (

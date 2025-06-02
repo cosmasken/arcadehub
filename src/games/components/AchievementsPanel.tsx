@@ -98,7 +98,7 @@ export const AchievementsPanel = ({
                   <Button
                     size="sm"
                     className="bg-purple-600 hover:bg-purple-700 text-white"
-                  onClick={() => onMintClick(achievement)}
+                  onClick={() => onMintClick && onMintClick(achievement)}
                   >
                     Mint
                   </Button>

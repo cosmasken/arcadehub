@@ -1,135 +1,55 @@
 import { useState } from 'react';
+import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
-import { Trophy, Star, Target, Gamepad2, Badge } from 'lucide-react';
 import MintModal from '../components/achievements/MintModal';
+import { achievements as achievementsObj } from '../games/data/achievements';
 
-// Mock achievements data
-const achievementsData = [
-  {
-    id: 1,
-    title: 'Played 100 Games',
-    description: 'Complete 100 games across any genre',
-    icon: Gamepad2,
-    isUnlocked: true,
-    progress: 100,
-    maxProgress: 100,
-    rarity: 'Common',
-    isMinted: false
-  },
-  {
-    id: 2,
-    title: 'High Scorer',
-    description: 'Achieve a score above 10,000 points',
-    icon: Star,
-    isUnlocked: true,
-    progress: 1,
-    maxProgress: 1,
-    rarity: 'Rare',
-    isMinted: false
-  },
-  {
-    id: 3,
-    title: 'Speed Demon',
-    description: 'Complete a racing game in under 2 minutes',
-    icon: Target,
-    isUnlocked: false,
-    progress: 85,
-    maxProgress: 120,
-    rarity: 'Epic',
-    isMinted: false
-  },
-  {
-    id: 4,
-    title: 'Gaming Legend',
-    description: 'Unlock all other achievements',
-    icon: Trophy,
-    isUnlocked: false,
-    progress: 2,
-    maxProgress: 10,
-    rarity: 'Legendary',
-    isMinted: false
-  },
-  {
-    id: 5,
-    title: 'First Blood',
-    description: 'Win your first multiplayer match',
-    icon: Gamepad2,
-    isUnlocked: true,
-    progress: 1,
-    maxProgress: 1,
-    rarity: 'Common',
-    isMinted: false
-  },
-  {
-    id: 6,
-    title: 'Collector',
-    description: 'Collect 50 unique in-game items',
-    icon: Star,
-    isUnlocked: false,
-    progress: 20,
-    maxProgress: 50,
-    rarity: 'Rare',
-    isMinted: false
-  },
-  {
-    id: 7,
-    title: 'Master Strategist',
-    description: 'Win a strategy game without losing a single unit',
-    icon: Target,
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 1,
-    rarity: 'Epic',
-    isMinted: false
-  },
-  {
-    id: 8,
-    title: 'Ultimate Gamer',
-    description: 'Achieve all achievements in the game',
-    icon: Trophy,
-    isUnlocked: false,
-    progress: 0,
-    maxProgress: 8,
-    rarity: 'Legendary',
-    isMinted: false
-  }
-
-];
-
-type Rarity = 'Common' | 'Rare' | 'Epic' | 'Legendary';
+// Replace these with real values from your game/user state
+const totalClicks = 1234;
+const maxPoints = 56789;
+const totalPurchases = 42;
 
 const Achievements = () => {
-  interface Achievement {
-    id: number;
-    title: string;
-    description: string;
-    icon: React.ComponentType<{ size?: number }>;
-    isUnlocked: boolean;
-    progress: number;
-    maxProgress: number;
-    rarity: Rarity;
-    isMinted: boolean;
-  }
+  const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [mintedAchievements, setMintedAchievements] = useState<string[]>([]);
 
-  const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(true);
+  // Calculate progress/unlocked/completed for each achievement
+  const achievementsList = Object.entries(achievementsObj).map(([id, achievement]) => {
+    let current = 0;
+    let requirement = 0;
+    let completed = false;
 
+    if (achievement.requirement) {
+      current = Math.floor(maxPoints);
+      requirement = achievement.requirement;
+      completed = maxPoints >= achievement.requirement;
+    } else if (achievement.clicksRequired) {
+      current = totalClicks;
+      requirement = achievement.clicksRequired;
+      completed = totalClicks >= achievement.clicksRequired;
+    } else if (achievement.purchasesRequired) {
+      current = totalPurchases;
+      requirement = achievement.purchasesRequired;
+      completed = totalPurchases >= achievement.purchasesRequired;
+    }
 
-  const handleMintSuccess = (achievement: { title: any; }, txHash: any) => {
-    console.log(`Achievement ${achievement.title} minted successfully. TX: ${txHash}`);
-    // Update achievement as minted in real implementation
+    const isMinted = mintedAchievements.includes(id);
+
+    return {
+      id,
+      ...achievement,
+      current,
+      requirement,
+      completed,
+      isMinted,
+    };
+  });
+
+  const handleMintSuccess = (achievement: any, txHash: string) => {
+    setMintedAchievements(prev => [...prev, achievement.id]);
     setIsModalOpen(false);
     setSelectedAchievement(null);
-  };
-
-  interface Progress {
-    progress: number;
-    maxProgress: number;
-  }
-
-  const getProgressPercentage = (progress: Progress['progress'], maxProgress: Progress['maxProgress']): number => {
-    return Math.min((progress / maxProgress) * 100, 100);
   };
 
   return (
@@ -143,77 +63,64 @@ const Achievements = () => {
             Unlock and mint your gaming achievements as NFTs. Show off your gaming prowess on the blockchain!
           </p>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {achievementsData.map((achievement) => {
-            const IconComponent = achievement.icon;
-            const progressPercentage = getProgressPercentage(achievement.progress, achievement.maxProgress);
-            
-            return (
-              <Card 
-                key={achievement.id} 
-                className={`bg-blue-800/30 border-blue-700/50 text-white transition-all hover:scale-105 ${
-                  !achievement.isUnlocked ? 'opacity-60' : ''
-                }`}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-3 rounded-full ${achievement.isUnlocked ? 'bg-blue-600' : 'bg-gray-600'}`}>
-                        <IconComponent size={24} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold">{achievement.title}</h3>
-                        <Badge className={`text-xs ${achievement.isUnlocked ? 'bg-green-500' : 'bg-gray-500'}`}>
-                          {achievement.rarity}
-                        </Badge>
-                      </div>
-                    </div>
+          {achievementsList.map((achievement) => (
+            <Card key={achievement.id} className={`p-3 ${achievement.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">{achievement.emoji}</span>
+                <div className="flex-1">
+                  <h3 className={`font-semibold ${achievement.completed ? 'text-green-800' : 'text-gray-800'}`}>
+                    {achievement.title}
+                  </h3>
+                  <p className="text-sm text-gray-600">{achievement.description}</p>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500">
+                      {achievement.current} / {achievement.requirement}
+                    </span>
+                    {achievement.completed && (
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                        Completed! 🎉
+                      </span>
+                    )}
                   </div>
-                  
-                  <p className="text-blue-200 text-sm mb-4">{achievement.description}</p>
-                  
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>Progress</span>
-                      <span>{achievement.progress}/{achievement.maxProgress}</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all ${
-                          achievement.isUnlocked ? 'bg-green-500' : 'bg-blue-500'
-                        }`}
-                        style={{ width: `${progressPercentage}%` }}
-                      ></div>
-                    </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                    <div
+                      className={`h-2 rounded-full ${achievement.completed ? 'bg-green-500' : 'bg-amber-500'}`}
+                      style={{
+                        width: `${Math.min((achievement.current / achievement.requirement) * 100, 100)}%`
+                      }}
+                    />
                   </div>
-                  
-                  <Button
-                  onClick={() => {
-              setSelectedAchievement(achievement);
-                  setIsModalOpen(true);
-                 }}
-                    disabled={!achievement.isUnlocked || achievement.isMinted}
-                    className={`w-full ${
-                      achievement.isUnlocked && !achievement.isMinted
-                        ? 'bg-purple-600 hover:bg-purple-700'
-                        : 'bg-gray-600 cursor-not-allowed'
-                    }`}
-                  >
-                    {achievement.isMinted 
-                      ? 'Already Minted' 
-                      : achievement.isUnlocked 
-                        ? 'Mint Achievement' 
-                        : 'Locked'
-                    }
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+                </div>
+              </div>
+              {achievement.completed && (
+                <div className="mt-2 flex flex-col gap-2">
+                  <div className="text-xs text-green-700 bg-green-100 p-2 rounded">
+                    Reward: {achievement.reward ? `${achievement.reward} honey` : "Achievement unlocked!"}
+                  </div>
+                  {!achievement.isMinted && (
+                    <Button
+                      size="sm"
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      onClick={() => {
+                        setSelectedAchievement(achievement);
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      Mint
+                    </Button>
+                  )}
+                  {achievement.isMinted && (
+                    <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded">
+                      Minted
+                    </span>
+                  )}
+                </div>
+              )}
+            </Card>
+          ))}
         </div>
       </div>
-
       <MintModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

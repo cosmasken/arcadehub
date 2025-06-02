@@ -225,15 +225,16 @@ const createMinimalUserOp = (sender: string) => {
     nonce: "0x0", // Use 0x0 to avoid nonce issues
     initCode: "0x",
     callData: "0x",
-    callGasLimit: "0x88b8",
-    verificationGasLimit: "0x33450",
-    preVerificationGas: "0xc350",
-    maxFeePerGas: "0x2162553062",
-    maxPriorityFeePerGas: "0x40dbcf36",
+    callGasLimit: "0x0",
+    verificationGasLimit: "0x0",
+    preVerificationGas: "0x0",
+    maxFeePerGas: "0x0",
+    maxPriorityFeePerGas: "0x0",
     paymasterAndData: "0x",
     signature: "0x"
   };
 };
+
 
 // Use the SDK's built-in method to get tokens
 export const getSupportedTokensFromSDK = async (client: any, builder: any) => {

@@ -167,7 +167,7 @@ const MintModal: React.FC<MintModalProps> = ({
 
   if (!achievement) return null;
 
-  const IconComponent = achievement.icon;
+  // const IconComponent = achievement.icon;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -175,7 +175,7 @@ const MintModal: React.FC<MintModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
             <div className="p-2 rounded-full bg-blue-600">
-              <IconComponent size={20} />
+              {/* <IconComponent size={20} /> */}
             </div>
             <span>Mint Achievement NFT</span>
           </DialogTitle>

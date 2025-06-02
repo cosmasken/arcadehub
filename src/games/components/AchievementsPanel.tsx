@@ -1,21 +1,27 @@
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import { Card } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 import { achievements, Achievement } from '../data/achievements';
-import MintModal from '../../components/achievements/MintModal';
 
 interface AchievementsPanelProps {
   totalClicks: number;
   maxPoints: number;
   totalPurchases: number;
+  mintedAchievements?: string[];
+  // onMintSuccess?: (id: string) => void;
+  onMintClick?: (achievement:any) => void; // Add this
 }
 
-export const AchievementsPanel = ({ totalClicks, maxPoints, totalPurchases }: AchievementsPanelProps) => {
-  // Modal state
-  const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+export const AchievementsPanel = ({
+  totalClicks,
+  maxPoints,
+  totalPurchases,
+  mintedAchievements,
+  // onMintSuccess,
+  onMintClick
+}: AchievementsPanelProps) => {
 
-  // Convert achievements object to array with completion status
+  // Calculate achievements with progress and unlock status
   const achievementsList = Object.entries(achievements).map(([id, achievement]: [string, Achievement]) => {
     let current = 0;
     let requirement = 0;
@@ -35,30 +41,20 @@ export const AchievementsPanel = ({ totalClicks, maxPoints, totalPurchases }: Ac
       completed = totalPurchases >= achievement.purchasesRequired;
     }
 
-    // For demo: assume not minted yet. Replace with real minted status from user_achievements if available.
-    const isMinted = false;
+    // Use mintedAchievements prop to determine if this achievement is minted
+  const isMinted = mintedAchievements?.includes(id) ?? false;
 
     return {
       id,
-      title: achievement.title,
-      description: achievement.description,
-      longDescription: achievement.longDescription,
-      icon: achievement.emoji,
-      requirement,
+      ...achievement,
       current,
+      requirement,
       completed,
-      reward: achievement.reward ? `${achievement.reward} honey` : "Achievement unlocked!",
       isMinted,
-      achievementObj: achievement,
     };
   });
 
-  const handleMintSuccess = (achievement: any, txHash: string) => {
-    // Optionally update achievement as minted in your state here
-    setIsModalOpen(false);
-    setSelectedAchievement(null);
-    cosnole.log("achievemt minted",achievemnt,txHash);
-  };
+
 
   return (
     <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -67,7 +63,7 @@ export const AchievementsPanel = ({ totalClicks, maxPoints, totalPurchases }: Ac
         {achievementsList.map((achievement) => (
           <Card key={achievement.id} className={`p-3 ${achievement.completed ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
             <div className="flex items-center space-x-3">
-              <span className="text-2xl">{achievement.icon}</span>
+              <span className="text-2xl">{achievement.emoji}</span>
               <div className="flex-1">
                 <h3 className={`font-semibold ${achievement.completed ? 'text-green-800' : 'text-gray-800'}`}>
                   {achievement.title}
@@ -96,16 +92,13 @@ export const AchievementsPanel = ({ totalClicks, maxPoints, totalPurchases }: Ac
             {achievement.completed && (
               <div className="mt-2 flex flex-col gap-2">
                 <div className="text-xs text-green-700 bg-green-100 p-2 rounded">
-                  Reward: {achievement.reward}
+                  Reward: {achievement.reward ? `${achievement.reward} honey` : "Achievement unlocked!"}
                 </div>
                 {!achievement.isMinted && (
                   <Button
                     size="sm"
                     className="bg-purple-600 hover:bg-purple-700 text-white"
-                    onClick={() => {
-                      // setSelectedAchievement(achievement.achievementObj);
-                      setIsModalOpen(true);
-                    }}
+                  onClick={() => onMintClick(achievement)}
                   >
                     Mint
                   </Button>
@@ -120,13 +113,7 @@ export const AchievementsPanel = ({ totalClicks, maxPoints, totalPurchases }: Ac
           </Card>
         ))}
       </div>
-      {/* Mint Modal */}
-      <MintModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        achievement={selectedAchievement}
-        onMintSuccess={handleMintSuccess}
-      />
+      
     </div>
   );
 };

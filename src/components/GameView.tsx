@@ -1,7 +1,16 @@
 import React from 'react';
 import { ArrowLeft, Star, Users, Share, Heart } from 'lucide-react';
-import { Game } from '../pages/Index';
 import HoneyClicker from '../games/HoneyClicker';
+
+ interface Game {
+  id: string;
+  title: string;
+  thumbnail: string;
+  category: string;
+  description: string;
+  rating: number;
+  plays: string;
+}
 
 interface GameViewProps {
   game: Game;

@@ -4,7 +4,7 @@ import { GameLibrary } from '../components/GameLibrary';
 import { GameView } from '../components/GameView';
 // import { Header } from '../components/Header';
 
-export interface Game {
+ interface Game {
   id: string;
   title: string;
   thumbnail: string;

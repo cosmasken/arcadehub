@@ -14,6 +14,8 @@ import { TokenClaimModal } from "./components/TokenClaimModal";
 import { LeaderboardModal } from "./components/LeaderboardModal";
 import { SettingsModal } from "./components/SettingsModal";
 import supabase from "../hooks/use-supabase";
+import MintModal from "../components/achievements/MintModal"; // Add this import
+
 
 interface GameSession {
   id: string;
@@ -30,7 +32,11 @@ interface HoneyClickerProps {
 
 const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
   const { toast } = useToast();
-  
+
+  const [isMintModalOpen, setIsMintModalOpen] = useState(false);
+  const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
+
+
   // Game state
   const [isLoading, setIsLoading] = useState(true);
   const [gameStarted, setGameStarted] = useState(false);
@@ -98,6 +104,18 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
     const saved = localStorage.getItem('honeyClickerHistory');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Achievement state
+  const [mintedAchievements, setMintedAchievements] = useState<string[]>(() => {
+    const saved = localStorage.getItem('honeyClickerMintedAchievements');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Function to mark achievement as minted
+  const markAchievementMinted = (achievementId: string) => {
+    setMintedAchievements(prev => [...prev, achievementId]);
+    localStorage.setItem('honeyClickerMintedAchievements', JSON.stringify([...mintedAchievements, achievementId]));
+  };
 
   // Check for token claiming eligibility
   useEffect(() => {
@@ -230,8 +248,8 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
           const affordable = canAfford(item.id);
 
           return (
-            <Card 
-              key={item.id} 
+            <Card
+              key={item.id}
               className={`
                 p-2 
                 transition-all 
@@ -278,6 +296,19 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
     </div>
   );
 
+  const achievementsPanelProps = {
+    totalClicks,
+    maxPoints,
+    totalPurchases,
+    mintedAchievements,
+    // onMintSuccess: markAchievementMinted,
+    onMintClick: (achievement:any) => {
+      setSelectedAchievement(achievement); 
+      console.log("gets here achievemtn is",achievement);
+      setIsMintModalOpen(true);
+    }
+  };
+
   if (isLoading) {
     return <LoadingScreen onLoadComplete={handleLoadComplete} />;
   }
@@ -294,7 +325,7 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
             Per Second: {isPaused ? '⏸️ Paused' : pointsPerSecond.toFixed(1)}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="ghost"
@@ -352,14 +383,14 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
               🍯
             </Button>
             {showParticles && (
-              <ClickParticles 
-                x={particlePosition.x} 
-                y={particlePosition.y} 
+              <ClickParticles
+                x={particlePosition.x}
+                y={particlePosition.y}
                 points={Math.floor(clickMultiplier)}
               />
             )}
           </div>
-          
+
           <div className="text-center">
             <div className="text-4xl font-bold text-amber-800 mb-2">
               {Math.floor(points)} Honey
@@ -432,11 +463,7 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
           <Card className="p-4 h-96 overflow-hidden">
             {activeSection === "shop" && renderShopSection()}
             {activeSection === "achievements" && (
-              <AchievementsPanel 
-                totalClicks={totalClicks}
-                maxPoints={maxPoints}
-                totalPurchases={totalPurchases}
-              />
+              <AchievementsPanel {...achievementsPanelProps} />
             )}
           </Card>
         </div>
@@ -460,40 +487,55 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
 
       {/* Modals */}
       {showSettingsModal && (
-        <SettingsModal 
-          open={showSettingsModal} 
-          onClose={() => setShowSettingsModal(false)} 
+        <SettingsModal
+          open={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
           volume={volume}
           setVolume={setVolume}
         />
       )}
       {showLeaderboardModal && (
-        <LeaderboardModal 
-          open={showLeaderboardModal} 
-          onClose={() => setShowLeaderboardModal(false)} 
+        <LeaderboardModal
+          open={showLeaderboardModal}
+          onClose={() => setShowLeaderboardModal(false)}
         />
       )}
       {showTokenClaimModal && (
-        <TokenClaimModal 
-          open={showTokenClaimModal} 
+        <TokenClaimModal
+          open={showTokenClaimModal}
           onClose={handleCloseTokenClaimModal}
-          onClaim={handleClaimTokens} 
+          onClaim={handleClaimTokens}
           tokens={Math.floor(points / TOKEN_CLAIM_THRESHOLD) - claimedTokens}
         />
       )}
       {showSaveModal && (
-        <GameModals.SaveModal 
-          open={showSaveModal} 
-          onClose={() => setShowSaveModal(false)} 
+        <GameModals.SaveModal
+          open={showSaveModal}
+          onClose={() => setShowSaveModal(false)}
         />
       )}
       {showHistoryModal && (
-        <HistoryModal 
-          open={showHistoryModal} 
-          onClose={() => setShowHistoryModal(false)} 
-          history={gameHistory} 
+        <HistoryModal
+          open={showHistoryModal}
+          onClose={() => setShowHistoryModal(false)}
+          history={gameHistory}
         />
       )}
+
+      {isMintModalOpen && (
+          <MintModal
+        isOpen={isMintModalOpen}
+        onClose={() => setIsMintModalOpen(false)}
+        achievement={selectedAchievement}
+        onMintSuccess={(achievement, txHash) => {
+          // setIsMintModalOpen(false);
+          // setSelectedAchievement(null);
+          // markAchievementMinted(achievement.id);
+        }}
+      />
+      )}
+
+    
     </div>
   );
 };

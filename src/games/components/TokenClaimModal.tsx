@@ -33,7 +33,7 @@ export const TokenClaimModal = ({ open, onClose, onClaim, tokens }: TokenClaimMo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="transition-all duration-300">
+      <DialogContent className="transition-all duration-300 bg-white">
         <DialogHeader>
           <DialogTitle className="text-center">
             {showSuccess ? "🎉 Success!" : "🪙 Claim Your Tokens!"}

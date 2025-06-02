@@ -1,6 +1,5 @@
-import {create} from 'zustand';
+import { create } from 'zustand';
 import supabase from '../hooks/use-supabase';
-
 
 interface ProfileState {
   username: string;
@@ -9,15 +8,15 @@ interface ProfileState {
   arcBalance: number;
   gamesPlayed: number;
   achievements: number;
-  role: 'gamer' | 'developer' | 'admin'; // Optional, can be used to differentiate roles
- assets: {
+  role: 'gamer' | 'developer' | 'admin';
+  assets: {
     id: string;
     name: string;
     image: string;
     rarity?: string;
     value?: number;
   }[];
- history: {
+  history: {
     id: string;
     game: string;
     score: number;
@@ -31,6 +30,7 @@ interface ProfileState {
     revenue: number;
     image?: string;
     status?: string;
+    game_id?: string;
   }[];
   friends: {
     id: string;
@@ -38,7 +38,6 @@ interface ProfileState {
     avatar: string;
     online: boolean;
   }[];
-  // Computed fields
   stats: {
     gamesPlayed: number;
     achievements: number;
@@ -57,100 +56,172 @@ interface ProfileState {
   setUsername: (username: string) => void;
   setBio: (bio: string) => void;
   setAvatar: (avatar: string) => void;
+  checkUsernameExists: (username: string) => Promise<boolean>;
+  onboardUser: (walletAddress: string, userData: any) => Promise<boolean>;
 }
 
-// const user = {
-//   username: "",
-//   avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=GamerX",
-//   bio: "",
-//   arcBalance: 1234.45,
-//   gamesPlayed: 45,
-//   achievements: 12,
-
-// assets: [
-//     { id: "nft1", name: "Star Trophy", image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", rarity: "legendary", value: 100 },
-//     { id: "nft2", name: "Race Car", image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", rarity: "rare", value: 50 },
-//   ],
-//   history: [
-//     { id: "1", game: "Star Blaster", score: 1028, date: "2025-05-18", duration: "10m" },
-//     { id: "2", game: "Puzzle Pop", score: 325, date: "2025-05-17", duration: "5m" },
-//     { id: "3", game: "Turbo Dash", score: 582, date: "2025-05-15", duration: "8m" },
-//   ],
-//   developerGames: [
-//     { id: "game1", title: "Space Adventure", plays: 235, revenue: 50, image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", status: "published" },
-//     { id: "game2", title: "Puzzle Pop", plays: 120, revenue: 30, image: "https://images.unsplash.com/photo-1614032686099-e648d6dea9b3?w=800", status: "draft" },
-//   ],
-//   friends: [
-//     { id: "f1", username: "PlayerOne", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=PlayerOne", online: true },
-//     { id: "f2", username: "ArcQueen", avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=ArcQueen", online: false },
-//   ],
-// };
-
-
-const useProfileStore = create<ProfileState>((set,get) => ({
- username:'',
+const useProfileStore = create<ProfileState>((set, get) => ({
+  username: '',
   bio: '',
-  avatar: 'user.avatar',
+  avatar: '',
   arcBalance: 0,
   gamesPlayed: 0,
   achievements: 0,
-  null:[],
   assets: [],
   history: [],
   developerGames: [],
   friends: [],
-  role: 'gamer', // Default role, can be changed later
+  role: 'gamer',
+  stats: {
+    gamesPlayed: 0,
+    achievements: 0,
+    totalScore: 0,
+    rank: '',
+  },
+  developerStats: {
+    totalGames: 0,
+    totalPlays: 0,
+    totalRevenue: 0,
+    avgRating: 0,
+  },
   loading: false,
   error: null,
-  get stats() {
-    return {
-      gamesPlayed: get().gamesPlayed,
-      achievements: get().achievements,
-      totalScore: 12345, // Replace with real calculation if needed
-      rank: "Gold",      // Replace with real calculation if needed
-    };
-  },
-   get developerStats() {
-    const games = get().developerGames;
-    const totalGames = games.length;
-    const totalPlays = games.reduce((sum, g) => sum + (g.plays || 0), 0);
-    const totalRevenue = games.reduce((sum, g) => sum + (g.revenue || 0), 0);
-    const avgRating = 4.8; // Placeholder, replace with real calculation if available
-    return {
-      totalGames,
-      totalPlays,
-      totalRevenue,
-      avgRating,
-    };
-  },
+
   setUsername: (username: string) => set({ username }),
   setBio: (bio: string) => set({ bio }),
   setAvatar: (avatar: string) => set({ avatar }),
-  setArcBalance: (arcBalance: number) => set({ arcBalance }),
-  setGamesPlayed: (gamesPlayed: number) => set({ gamesPlayed }),
-  setAchievements: (achievements: number) => set({ achievements }),
-  setAssets: (assets: ProfileState['assets']) => set({ assets }),
-  setHistory: (history: ProfileState['history']) => set({ history }),
-  setDeveloperGames: (developerGames: ProfileState['developerGames']) => set({ developerGames }),
+
   fetchProfile: async (walletAddress: string) => {
     set({ loading: true, error: null });
-    // Use the supabase client from the use-supabase hook
+    try {
+      // 1. Fetch profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('wallet_address', walletAddress)
+        .single();
+
+      if (profileError || !profile) {
+        set({ loading: false, error: profileError?.message || 'Profile not found' });
+        return;
+      }
+
+      set({
+        username: profile.username,
+        bio: profile.bio,
+        avatar: profile.avatar,
+        role: profile.role,
+      });
+
+      // 2. Fetch achievements (gamer)
+      const { data: achievements } = await supabase
+        .from('user_achievements')
+        .select('*, achievement:achievements(*)')
+        .eq('user_wallet', walletAddress);
+
+      set({ achievements: achievements?.length || 0 });
+
+      // 3. Fetch games played count (gamer)
+      const { count: gamesPlayed } = await supabase
+        .from('game_plays')
+        .select('*', { count: 'exact', head: true })
+        .eq('player_wallet', walletAddress);
+
+      set({ gamesPlayed: gamesPlayed || 0 });
+
+      // 4. Fetch developer games (developer)
+      const { data: developerGames } = await supabase
+        .from('games')
+        .select('*')
+        .eq('developer', walletAddress);
+
+      set({ developerGames: developerGames || [] });
+
+      // 5. Fetch developer stats (developer)
+      const gameIds = (developerGames || []).map((g: any) => g.game_id);
+      let devStats = [];
+      if (gameIds.length > 0) {
+        const { data } = await supabase
+          .from('game_stats')
+          .select('*')
+          .in('game_id', gameIds);
+        devStats = data || [];
+      }
+      const totalRevenue = 0;
+      let totalPlays = 0, avgRating = 0 ;
+      if (devStats.length > 0) {
+        totalPlays = devStats.reduce((sum, s) => sum + (s.total_plays || 0), 0);
+        avgRating = devStats.reduce((sum, s) => sum + (s.avg_rating || 0), 0) / devStats.length;
+        // If you have revenue data, sum it here
+        // totalRevenue = devStats.reduce((sum, s) => sum + (s.revenue || 0), 0);
+      }
+
+      set({
+        developerStats: {
+          totalGames: developerGames?.length || 0,
+          totalPlays,
+          totalRevenue,
+          avgRating: isNaN(avgRating) ? 0 : avgRating,
+        },
+      });
+
+      // 6. Fetch assets (if you have an assets table)
+      // const { data: assets } = await supabase.from('assets').select('*').eq('owner', walletAddress);
+      // set({ assets: assets || [] });
+
+      // 7. Fetch history (if you have a history table)
+      // const { data: history } = await supabase.from('history').select('*').eq('user_wallet', walletAddress);
+      // set({ history: history || [] });
+
+      // 8. Fetch friends (if you have a friends table)
+      // const { data: friends } = await supabase.from('friends').select('*').eq('user_wallet', walletAddress);
+      // set({ friends: friends || [] });
+
+      // 9. Set stats (gamer)
+      set({
+        stats: {
+          gamesPlayed: gamesPlayed || 0,
+          achievements: achievements?.length || 0,
+          totalScore: 0, // Replace with real calculation if you have score data
+          rank: '',      // Replace with real calculation if you have rank data
+        },
+      });
+
+      set({ loading: false });
+    } catch (error: any) {
+      set({ loading: false, error: error.message });
+    }
+  },
+
+  checkUsernameExists: async (username: string) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('username, bio')
-      .eq('wallet_address', walletAddress)
-      .single();
-    if (error) {
-      set({ loading: false, error: error.message });
-      return;
+      .select('id')
+      .eq('username', username)
+      .maybeSingle();
+    return !!data;
+  },
+
+  onboardUser: async (walletAddress: string, userData: any) => {
+    set({ loading: true, error: null });
+    try {
+      const { error } = await supabase.from('profiles').upsert([
+        {
+          wallet_address: walletAddress,
+          ...userData,
+        },
+      ]);
+      if (error) {
+        set({ loading: false, error: error.message });
+        return false;
+      }
+      await get().fetchProfile(walletAddress);
+      set({ loading: false });
+      return true;
+    } catch (err: any) {
+      set({ loading: false, error: err.message });
+      return false;
     }
-    set({
-      username: data.username,
-      bio: data.bio,
-      avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${data.username}`,
-      loading: false,
-      error: null,
-    });
   },
 }));
 

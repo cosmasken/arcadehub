@@ -1,11 +1,14 @@
 
-import UserProfile from "../components/profile/UserProfile";
+import useProfileStore from "../stores/useProfileStore";
+import DeveloperProfile from "../components/profile/DeveloperProfile";
+import GamerProfile from "../components/profile/GamerProfile";
 
 const Profile = () => {
+  const { role } = useProfileStore();
   return (
     <div className="min-h-screen flex flex-col bg-white text-foreground">
       <main className="flex-grow">
-        <UserProfile />
+         {role === "developer" ? <DeveloperProfile /> : <GamerProfile />}
       </main>
     </div>
   );

@@ -13,6 +13,7 @@ import { HistoryModal } from "./components/HistoryModal";
 import { TokenClaimModal } from "./components/TokenClaimModal";
 import { LeaderboardModal } from "./components/LeaderboardModal";
 import { SettingsModal } from "./components/SettingsModal";
+import { Slider } from "../components/ui/slider";
 
 interface GameSession {
   id: string;
@@ -213,7 +214,7 @@ useEffect(() => {
   };
 
   const renderShopSection = () => (
-    <div className="space-y-4 max-h-48 overflow-y-auto">
+    <div className="space-y-4 max-h-100 overflow-y-auto">
       <h2 className="text-xl font-bold text-amber-800">🛒 Shop</h2>
       <div className="grid gap-2">
         {shopItems.map((item) => {

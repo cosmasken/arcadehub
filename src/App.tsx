@@ -12,12 +12,9 @@ import Profile from "./pages/Profile";
 import Developers from "./pages/Developers";
 import Rewards from "./pages/Rewards";
 import GameView from "./pages/GameView";
-import Sudoku from "./games1/sudoku/Sudoku";
 import Achievements from "./pages/Achievements";
 import Navbar from "./components/Navbar";
-// import ClickerGame from "./games/clicker-game/ClickerGame";
 import GameUpload from "./pages/GameUpload";
-import HiveGame from './games1/hive-game/HiveGame';
 
 
 const queryClient = new QueryClient();
@@ -40,12 +37,6 @@ const App = () => (
               <Route path="/developers" element={<Developers />} />
               <Route path="/rewards" element={<Rewards />} />
               <Route path="collections" element={<Collections />} />
-              <Route element={<GameLayout />}>
-                <Route path="/games/:gameId" element={<GameView />} />
-                <Route path="/games/hive-game" element={<HiveGame />} />
-                <Route path="/games/sudoku" element={<Sudoku />} />
-                {/* Add more game routes here */}
-              </Route>
               <Route path="/upload" element={<GameUpload />} />
               <Route path="/achievements" element={<Achievements />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

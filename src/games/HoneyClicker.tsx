@@ -42,6 +42,27 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
   const [activeSection, setActiveSection] = useState("shop");
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
 
+  // Add this useEffect hook
+useEffect(() => {
+  const initializeGame = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Match LoadingScreen delay
+      setIsLoading(false);
+      setGameStarted(true);
+      setGameStartTime(new Date());
+    } catch (error) {
+      console.error('Failed to initialize game:', error);
+      toast({
+        title: "Error",
+        description: "Failed to initialize game. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  initializeGame();
+}, []); // Empty dependency array means this runs once on mount
+
   // Pass isPaused to useGameState to control honey development
   const {
     points,
@@ -201,7 +222,16 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
           const affordable = canAfford(item.id);
 
           return (
-            <Card key={item.id} className="p-2 bg-white/70 border-amber-200 transition-all duration-200 hover:scale-105">
+            <Card 
+              key={item.id} 
+              className={`
+                p-2 
+                transition-all 
+                duration-200 
+                hover:scale-105 
+                ${affordable ? 'bg-card border-border' : 'bg-muted border-muted'}
+              `}
+            >
               <div className="flex justify-between items-center mb-1">
                 <div>
                   <span className="text-lg">{item.emoji}</span>

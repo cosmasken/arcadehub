@@ -43,43 +43,8 @@ const mockGames: Game[] = [
     description: 'Epic space exploration and combat',
     rating: 4.3,
     plays: '3.2M'
-  },
-  {
-    id: '5',
-    title: 'Code Master',
-    thumbnail: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=300&fit=crop',
-    category: 'Educational',
-    description: 'Learn programming while having fun',
-    rating: 4.6,
-    plays: '950K'
-  },
-  {
-    id: '6',
-    title: 'Matrix Runner',
-    thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=300&fit=crop',
-    category: 'Action',
-    description: 'Navigate through the digital matrix',
-    rating: 4.4,
-    plays: '1.5M'
-  },
-  {
-    id: '7',
-    title: 'Virtual Office',
-    thumbnail: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=300&fit=crop',
-    category: 'Simulation',
-    description: 'Manage your virtual workplace',
-    rating: 4.2,
-    plays: '800K'
-  },
-  {
-    id: '8',
-    title: 'Robot Factory',
-    thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=300&fit=crop',
-    category: 'Strategy',
-    description: 'Build and manage robot production',
-    rating: 4.8,
-    plays: '2.7M'
   }
+
 ];
 
 const categories = ['All', 'Action', 'Puzzle', 'Racing', 'Strategy', 'Educational', 'Simulation', 'Clicker'];

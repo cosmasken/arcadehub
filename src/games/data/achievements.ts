@@ -296,4 +296,6 @@ export const achievements: { [key: string]: Achievement } = {
     max_progress: 1,
     image_url: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=400&q=80",
   },
+  //add rare one that people will want to mint
+  
 };

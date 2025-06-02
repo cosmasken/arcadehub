@@ -409,7 +409,7 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
         </div>
 
         {/* Right side - Panels */}
-        <div className="w-80 ml-6 space-y-4">
+        <div className="w-90 ml-6 space-y-4">
           {/* Section Tabs */}
           <div className="flex space-x-2">
             <Button

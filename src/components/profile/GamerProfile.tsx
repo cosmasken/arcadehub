@@ -1,10 +1,9 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Gamepad2, Trophy, Calendar, Play, Target, Clock, Award } from 'lucide-react';
+import { Gamepad2, Play, Target, Clock, Award } from 'lucide-react';
 import useProfileStore from '../../stores/useProfileStore';
 
 const GamerProfile = () => {
@@ -15,7 +14,6 @@ const GamerProfile = () => {
     stats,
     loading,
     achievements,
-    gamesPlayed,
     history,
   } = useProfileStore();
 

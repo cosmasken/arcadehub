@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowLeft, Star, Users, Share, Heart } from 'lucide-react';
 import HoneyClicker from '../games/HoneyClicker';
 

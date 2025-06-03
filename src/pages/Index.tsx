@@ -1,8 +1,7 @@
 
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { GameLibrary } from '../components/GameLibrary';
 import { GameView } from '../components/GameView';
-// import { Header } from '../components/Header';
 
  interface Game {
   id: string;

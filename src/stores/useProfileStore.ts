@@ -194,7 +194,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   },
 
   checkUsernameExists: async (username: string) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('profiles')
       .select('id')
       .eq('username', username)

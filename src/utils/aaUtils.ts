@@ -18,24 +18,6 @@ let cachedBuilder: any = null;
 let cachedWalletAddress: string | null = null;
 let tokenRequestCount = 0;
 
-const GAME_HUB_ABI = [
-  "function addOwner(address newOwner) external",
-  "function removeOwner(address ownerToRemove) external",
-  "function submitClaim(uint256 amount) external",
-  "function approveClaim(address player) external",
-  "function rejectClaim(address player) external",
-  "function allocateDeveloperRevenue(address developer, uint256 amount) external",
-  "function claimDeveloperPayout() external",
-  "function transferARC(address to, uint256 amount) external",
-  "function transferNFT(address to, uint256 tokenId) external",
-  "function depositTokens(uint256 amount) external"
-];
-
-const getGameHubContract = () =>
-  new ethers.Contract(TESTNET_CONFIG.contracts.gamehub, GAME_HUB_ABI, getProvider());
-
-
-
 // Cache for operation results to prevent duplicate transactions
 const pendingOperations = new Map<string, Promise<any>>();
 

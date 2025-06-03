@@ -32,7 +32,7 @@ const Navbar = () => {
     if (isConnected) {
       // Check if user profile exists in Supabase
       const checkProfile = async () => {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('id')
           .eq('wallet_address', address)

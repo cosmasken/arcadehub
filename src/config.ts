@@ -31,6 +31,7 @@ interface ContractAddresses {
   nftContract: string;
   testTokenContract: string;
   gamehub: string;
+   gameregistry:'0xB7AdF792C054976E1F40B45CB768f6D09E42358A',
 }
 
 interface ERC20Addresses {
@@ -87,6 +88,7 @@ export const TESTNET_CONFIG: {
     nftContract: '0x86731c356Bc4F8F37d764C745c7767503CDE5c5E',
     testTokenContract: '0xe4f95D88f440F138e525E658D984F08De3b5f1EC',
     gamehub:'0xB7AdF792C054976E1F40B45CB768f6D09E42358A',
+    gameregistry:'0xB7AdF792C054976E1F40B45CB768f6D09E42358A',
   },
   erc20: {
     dai: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345',
@@ -125,6 +127,7 @@ const MAINNET_CONFIG: {
     nftContract: '0x...',
     testTokenContract: '0x...',
     gamehub: '0x...',
+    gameregistry:'0xB7AdF792C054976E1F40B45CB768f6D09E42358A',
   },
   erc20: {
     dai: '0x...',

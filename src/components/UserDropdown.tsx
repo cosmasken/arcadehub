@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, User, Settings, LogOut, Copy, Check, Trophy, Gift, Layers, Code } from 'lucide-react';
+import { ChevronDown, User, Settings, LogOut, Copy, Check, Gift, Layers, Code } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import useProfileStore from '../stores/useProfileStore';
 
@@ -129,7 +129,7 @@ const UserDropdown: React.FC<UserDropdownProps> = ({
 
           {/* Dynamic Menu Items */}
           <div className="py-1">
-            {menuItems.map((item, idx) =>
+            {menuItems.map((item) =>
               item.to === '#' ? (
                 <button
                   key={item.label}

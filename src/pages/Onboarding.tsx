@@ -1,10 +1,10 @@
 import { useState } from "react";
 import useProfileStore from "../stores/useProfileStore";
 import useWalletStore from "../stores/useWalletStore";
-import {supabase} from "../hooks/use-supabase";
+import supabase from "../hooks/use-supabase";
 
 const Onboarding = () => {
-  const { setUsername, setBio, setAvatar, setDeveloperGames, setRole } = useProfileStore();
+  const { setUsername, setBio, setAvatar } = useProfileStore();
   const [role, setRoleLocal] = useState<"gamer" | "developer">("gamer");
   const [username, setUsernameLocal] = useState("");
   const [bio, setBioLocal] = useState("");
@@ -13,7 +13,7 @@ const Onboarding = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setRole(role);
+    // setRole(role);
     setUsername(username);
     setBio(bio);
     setAvatar(avatar);

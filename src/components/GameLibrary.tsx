@@ -1,7 +1,17 @@
 
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { Play, Star, Users } from 'lucide-react';
-import { Game } from '../pages/Index';
+
+
+ interface Game {
+  id: string;
+  title: string;
+  thumbnail: string;
+  category: string;
+  description: string;
+  rating: number;
+  plays: string;
+}
 
 interface GameLibraryProps {
   onGameSelect: (game: Game) => void;

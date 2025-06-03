@@ -34,7 +34,6 @@ interface HoneyClickerProps {
 
 const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
   const { toast } = useToast();
-  const { aaSigner, address } = useWalletStore();
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
@@ -142,16 +141,16 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
   });
 
   // Achievement state
-  const [mintedAchievements, setMintedAchievements] = useState<string[]>(() => {
+  const [mintedAchievements] = useState<string[]>(() => {
     const saved = localStorage.getItem('honeyClickerMintedAchievements');
     return saved ? JSON.parse(saved) : [];
   });
 
   // Function to mark achievement as minted
-  const markAchievementMinted = (achievementId: string) => {
-    setMintedAchievements(prev => [...prev, achievementId]);
-    localStorage.setItem('honeyClickerMintedAchievements', JSON.stringify([...mintedAchievements, achievementId]));
-  };
+  // const markAchievementMinted = (achievementId: string) => {
+  //   setMintedAchievements(prev => [...prev, achievementId]);
+  //   localStorage.setItem('honeyClickerMintedAchievements', JSON.stringify([...mintedAchievements, achievementId]));
+  // };
 
   // Check for token claiming eligibility
   useEffect(() => {

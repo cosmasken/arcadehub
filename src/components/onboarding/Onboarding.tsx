@@ -82,25 +82,25 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
           variant: "destructive"
         });
         return;
-      case 'idle':
-        await checkUsernameAvailability(username);
-        if (usernameStatus === 'taken') {
-          toast({
-            title: "Error",
-            description: "Username is not available",
-            variant: "destructive"
-          });
-          return;
-        }
-        if (usernameStatus !== 'available') {
-          toast({
-            title: "Error",
-            description: "Please try again after checking username availability.",
-            variant: "destructive"
-          });
-          return;
-        }
-        break;
+      // case 'idle':
+      //   await checkUsernameAvailability(username);
+      //   if (usernameStatus === 'taken') {
+      //     toast({
+      //       title: "Error",
+      //       description: "Username is not available",
+      //       variant: "destructive"
+      //     });
+      //     return;
+      //   }
+      //   if (usernameStatus !== 'available') {
+      //     toast({
+      //       title: "Error",
+      //       description: "Please try again after checking username availability.",
+      //       variant: "destructive"
+      //     });
+      //     return;
+      //   }
+      //   break;
       case 'available':
         // Good to proceed
         break;

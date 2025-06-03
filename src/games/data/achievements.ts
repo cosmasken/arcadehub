@@ -21,6 +21,7 @@ export interface Achievement {
 export const achievements: { [key: string]: Achievement } = {
   // points
   honeyBeginner: {
+    id: 1,
     title: "Honey Beginner",
     emoji: "🍯",
     description: "Produce 100 honey",
@@ -32,6 +33,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
   },
   beekeeperTrainee: {
+    id: 2,
     title: "Beekeeper Trainee",
     emoji: "🍯",
     description: "Produce 1,000 honey",
@@ -43,6 +45,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
   },
   honeyExpert: {
+    id: 3,
     title: "Honey Expert",
     emoji: "🍯",
     description: "Produce 10,000 honey",
@@ -54,6 +57,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
   },
   beekeepingMaster: {
+    id: 4,
     title: "Beekeeping Master",
     emoji: "🍯",
     description: "Produce 100,000 honey",
@@ -65,6 +69,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80",
   },
   honeyLegend: {
+    id: 5,
     title: "Honey Legend",
     emoji: "🍯",
     description: "Produce 1,000,000 honey",
@@ -76,6 +81,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=400&q=80",
   },
   honeyTycoon: {
+    id: 6,
     title: "Honey Tycoon",
     emoji: "🍯",
     description: "Produce 10,000,000 honey",
@@ -87,6 +93,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=400&q=80",
   },
   honeyMagnate: {
+    id: 7,
     title: "Honey Magnate",
     emoji: "🍯",
     description: "Produce 100,000,000 honey",
@@ -98,6 +105,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1468421870903-4df1664ac249?auto=format&fit=crop&w=400&q=80",
   },
   honeyBaron: {
+    id: 8,
     title: "Honey Baron",
     emoji: "🍯",
     description: "Produce 1,000,000,000 honey",
@@ -109,6 +117,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80",
   },
   honeyEmpire: {
+    id: 9,
     title: "Honey Empire",
     emoji: "🍯",
     description: "Produce 10,000,000,000 honey",
@@ -120,6 +129,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
   },
   honeyUniverse: {
+    id: 10,
     title: "Honey Universe",
     emoji: "🍯",
     description: "Produce 100,000,000,000 honey",
@@ -132,6 +142,7 @@ export const achievements: { [key: string]: Achievement } = {
   },
   // clicks
   clickingNovice: {
+    id: 11,
     title: "Clicker Novice",
     emoji: "🖱️",
     description: "Click the button 10 times",
@@ -143,6 +154,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
   },
   clickingPro: {
+    id: 12,
     title: "Clicker Pro",
     emoji: "🖱️",
     description: "Click the button 100 times",
@@ -154,6 +166,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=400&q=80",
   },
   clickingChampion: {
+    id: 13,
     title: "Clicking Champion",
     emoji: "🖱️",
     description: "Click the button 500 times",
@@ -165,6 +178,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1468421870903-4df1664ac249?auto=format&fit=crop&w=400&q=80",
   },
   clickingMaster: {
+    id: 14,
     title: "Clicking Master",
     emoji: "🖱️",
     description: "Click the button 1000 times",
@@ -176,6 +190,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=400&q=80",
   },
   clickingSuperstar: {
+    id: 15,
     title: "Clicking Superstar",
     emoji: "🖱️",
     description: "Click the button 5000 times",
@@ -187,6 +202,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80",
   },
   clickingLegend: {
+    id: 16,
     title: "Clicking Legend",
     emoji: "🖱️",
     description: "Click the button 10,000 times",
@@ -198,6 +214,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
   },
   clickingTitan: {
+    id: 17,
     title: "Clicking Titan",
     emoji: "🖱️",
     description: "Click the button 50,000 times",
@@ -210,6 +227,7 @@ export const achievements: { [key: string]: Achievement } = {
   },
   // buys
   buyBeginner: {
+    id: 18,
     title: "Buy Beginner",
     emoji: "🛍️",
     description: "Buy 10 items",
@@ -221,6 +239,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
   },
   buyingEnthusiast: {
+    id: 19,
     title: "Buying Enthusiast",
     emoji: "🛍️",
     description: "Buy 50 items",
@@ -232,6 +251,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80",
   },
   shoppingPro: {
+    id: 20,
     title: "Shopping Pro",
     emoji: "🛍️",
     description: "Buy 100 items",
@@ -243,6 +263,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=400&q=80",
   },
   buyTycoon: {
+    id: 21,
     title: "Buy Tycoon",
     emoji: "🛍️",
     description: "Buy 500 items",
@@ -254,6 +275,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1468421870903-4df1664ac249?auto=format&fit=crop&w=400&q=80",
   },
   buyExpert: {
+    id: 22,
     title: "Buy Expert",
     emoji: "🛍️",
     description: "Buy 1,000 items",
@@ -266,6 +288,7 @@ export const achievements: { [key: string]: Achievement } = {
   },
   // others
   ShareGameEnthusiast: {
+    id: 23,
     title: "Share Game Enthusiast",
     emoji: "🔗",
     description: "Click on share button",
@@ -277,6 +300,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
   },
   volumeController: {
+    id: 24,
     title: "Volume Controller",
     emoji: "🔊",
     description: "Adjust the volume of game sounds",
@@ -287,6 +311,7 @@ export const achievements: { [key: string]: Achievement } = {
     image_url: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80",
   },
   profilePicturePro: {
+    id: 25,
     title: "Profile Picture Pro",
     emoji: "📷",
     description: "Change your profile picture",
@@ -296,6 +321,6 @@ export const achievements: { [key: string]: Achievement } = {
     max_progress: 1,
     image_url: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=400&q=80",
   },
-  //add rare one that people will want to mint
+
   
 };

@@ -56,55 +56,104 @@ const Developers = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
+  // useEffect(() => {
+  //   const fetchGamesAndStats = async () => {
+  //     setLoading(true);
+  //     if (!aaWalletAddress) {
+  //       setGames([]);
+  //       setGameStats({});
+  //       setLoading(false);
+  //       return;
+  //     }
+  //     // 1. Fetch games
+  //     const { data: gamesData, error: gamesError } = await supabase
+  //       .from("games")
+  //       .select("game_id, title, description, category, ipfs_hash, developer")
+  //       .eq("developer", aaWalletAddress);
+
+  //     if (gamesError || !gamesData) {
+  //       setGames([]);
+  //       setGameStats({});
+  //       setLoading(false);
+  //       return;
+  //     }
+  //     const gamesList = gamesData.map((g: any) => ({
+  //       id: g.game_id,
+  //       title: g.title,
+  //       description: g.description,
+  //       category: g.category,
+  //       ipfs_hash: g.ipfs_hash,
+  //       developer: g.developer,
+  //     }));
+  //     setGames(gamesList);
+
+  //     // 2. Fetch stats for these games
+  //     const { data: statsData } = await supabase
+  //       .from("game_stats")
+  //       .select("*")
+  //       .in("game_id", gamesList.map(g => g.id));
+
+  //     // 3. Create a lookup for stats by game_id
+  //     const statsLookup: Record<string, GameStats> = {};
+  //     if (statsData) {
+  //       for (const stat of statsData) {
+  //         statsLookup[stat.game_id] = stat;
+  //       }
+  //     }
+  //     setGameStats(statsLookup);
+  //     setLoading(false);
+  //   };
+  //   fetchGamesAndStats();
+  // }, [aaWalletAddress]);
+
   useEffect(() => {
-    const fetchGamesAndStats = async () => {
-      setLoading(true);
-      if (!aaWalletAddress) {
-        setGames([]);
-        setGameStats({});
-        setLoading(false);
-        return;
-      }
-      // 1. Fetch games
-      const { data: gamesData, error: gamesError } = await supabase
-        .from("games")
-        .select("game_id, title, description, category, ipfs_hash, developer")
-        .eq("developer", aaWalletAddress);
-
-      if (gamesError || !gamesData) {
-        setGames([]);
-        setGameStats({});
-        setLoading(false);
-        return;
-      }
-      const gamesList = gamesData.map((g: any) => ({
-        id: g.game_id,
-        title: g.title,
-        description: g.description,
-        category: g.category,
-        ipfs_hash: g.ipfs_hash,
-        developer: g.developer,
-      }));
-      setGames(gamesList);
-
-      // 2. Fetch stats for these games
-      const { data: statsData } = await supabase
-        .from("game_stats")
-        .select("*")
-        .in("game_id", gamesList.map(g => g.id));
-
-      // 3. Create a lookup for stats by game_id
-      const statsLookup: Record<string, GameStats> = {};
-      if (statsData) {
-        for (const stat of statsData) {
-          statsLookup[stat.game_id] = stat;
-        }
-      }
-      setGameStats(statsLookup);
+  const fetchGamesAndStats = async () => {
+    setLoading(true);
+    if (!aaWalletAddress) {
+      setGames([]);
+      setGameStats({});
       setLoading(false);
-    };
-    fetchGamesAndStats();
-  }, [aaWalletAddress]);
+      return;
+    }
+    // Fetch only Honey Clicker by game_id
+    const { data: gamesData, error: gamesError } = await supabase
+      .from("games")
+      .select("game_id, title, description, category, ipfs_hash, developer")
+      .eq("game_id", "0x23d8446edbb2fbd07d032c8097869558cadf00a57fed4cf73c473ad287815b1e");
+
+    if (gamesError || !gamesData) {
+      setGames([]);
+      setGameStats({});
+      setLoading(false);
+      return;
+    }
+    const gamesList = gamesData.map((g: any) => ({
+      id: g.game_id,
+      title: g.title,
+      description: g.description,
+      category: g.category,
+      ipfs_hash: g.ipfs_hash,
+      developer: g.developer,
+    }));
+    setGames(gamesList);
+
+    // Fetch stats for Honey Clicker
+    const { data: statsData } = await supabase
+      .from("game_stats")
+      .select("*")
+      .eq("game_id", "0x23d8446edbb2fbd07d032c8097869558cadf00a57fed4cf73c473ad287815b1e");
+
+    const statsLookup: Record<string, GameStats> = {};
+    if (statsData) {
+      for (const stat of statsData) {
+        statsLookup[stat.game_id] = stat;
+      }
+    }
+    setGameStats(statsLookup);
+    setLoading(false);
+  };
+  fetchGamesAndStats();
+}, [aaWalletAddress]);
 
   // Update totalGames in developerStats
   const stats = { ...developerStats, totalGames: games.length };

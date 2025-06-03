@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
 } from '../ui/dialog';
 import { useToast } from '../ui/use-toast';
 import { Button } from '../ui/button';
-import { mintNFT } from '../../utils/aaUtils';
+import { mintNFT,checkAAWalletTokenAllowance } from '../../utils/aaUtils';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Loader2, ExternalLink, Copy, CheckCircle, XCircle } from 'lucide-react';
@@ -17,6 +17,8 @@ import TokenSelector from './TokenSelector';
 import TokenApproval from './TokenApproval';
 import { useWalletStore } from '../../stores/useWalletStore';
 import { usePinata } from '../../hooks/use-pinata';
+import { useTokenStore } from '../../stores/useTokenStore';
+import supabase from '../../hooks/use-supabase';
 
 interface MintModalProps {
   isOpen: boolean;
@@ -31,7 +33,9 @@ const MintModal: React.FC<MintModalProps> = ({
   achievement,
   onMintSuccess
 }) => {
-  const { aaSigner, aaWalletAddress } = useWalletStore();
+
+  const { setTokenApproval } = useTokenStore();
+  const { aaSigner, aaWalletAddress,address } = useWalletStore();
   const [paymentType, setPaymentType] = useState('sponsored');
   const [selectedToken, setSelectedToken] = useState('');
   const [gasMultiplier, setGasMultiplier] = useState(100);
@@ -43,7 +47,51 @@ const MintModal: React.FC<MintModalProps> = ({
     error?: string;
   } | null>(null);
   const { toast } = useToast();
-  // const { supportedTokens } = useTokenStore();
+    useEffect(() => {
+    const checkApproval = async () => {
+      if (
+        (paymentType === 'prepay' || paymentType === 'postpay') &&
+        selectedToken &&
+        aaSigner &&
+        aaWalletAddress
+      ) {
+        const allowance = await checkAAWalletTokenAllowance(
+          aaSigner,
+          selectedToken
+        );
+        // Consider approved if allowance is greater than zero
+        setTokenApproval(selectedToken, Number(allowance) > 0);
+        setTokenApproved(Number(allowance) > 0);
+      } else {
+        setTokenApproved(false);
+      }
+    };
+    checkApproval();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedToken, paymentType, aaSigner, aaWalletAddress, isOpen]);
+
+  const upsertMintedAchievement = async (achievementId: number | string) => {
+  // You need the user's wallet address, e.g. from a wallet store
+  const user_wallet = address; // Replace with your wallet address source
+  console.log('inserting achievement for wallet:', user_wallet, 'Achievement ID:', achievementId);
+  // Ensure achievementId is valid
+  // if (typeof achievementId !== 'number' && typeof achievementId !== 'string') {
+  //   console.error('Invalid achievementId:', achievementId);
+  //   return;
+  // }
+  if (!user_wallet || !achievementId) return;
+  await supabase.from('user_achievements').insert([
+    {
+      user_wallet,
+      achievement_id: achievementId,
+      unlocked: true,
+      unlocked_at: new Date().toISOString(),
+      // Optionally, add a "minted" field if you want to track NFT minting
+      // minted: true,
+      // minted_at: new Date().toISOString(),
+    }
+  ]);
+};
 
   const handleGasMultiplierChange = (multiplier: number) => {
     setGasMultiplier(Math.max(50, Math.min(500, multiplier)));
@@ -155,6 +203,7 @@ const MintModal: React.FC<MintModalProps> = ({
           </span>
         ),
       });
+       await upsertMintedAchievement(achievement.id); 
       onMintSuccess(achievement, result.transactionHash);
     } catch (error: any) {
       console.error('Error minting NFT:', error);
@@ -163,88 +212,6 @@ const MintModal: React.FC<MintModalProps> = ({
       setIsMinting(false);
     }
   };
-
-  // const handleMint = async () => {
-  //   if (!aaWalletAddress) {
-  //     toast({
-  //       title: "Error",
-  //       description: "AA wallet address is not available. Please connect your wallet.",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-  //   if ((paymentType === 'prepay' || paymentType === 'postpay') && !selectedToken) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Please select a token for gas payment",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-  //   if ((paymentType === 'prepay' || paymentType === 'postpay') && !tokenApproved) {
-  //     toast({
-  //       title: "Error",
-  //       description: "Please approve the token before minting",
-  //       variant: "destructive",
-  //     });
-  //     return;
-  //   }
-
-  //   setIsMinting(true);
-  //   setMintResult(null);
-
-  //   try {
-  //     if (!aaSigner) {
-  //       toast({
-  //         title: "Error",
-  //         description: "Wallet signer is not available. Please connect your wallet.",
-  //         variant: "destructive",
-  //       });
-  //       setIsMinting(false);
-  //       return;
-  //     }
-  //     // bafybeia6qd3hrkx6jyeudbtwjunfjxxff3swjrtpt25h3cgqc42glfyxla
-
-
-  //     const metadataUri = 'https://neroapi.com/nfts/metadata/sample';
-  //     const paymentTypeNum =
-  //       paymentType === 'sponsored' ? 0 :
-  //       paymentType === 'prepay' ? 1 :
-  //       paymentType === 'postpay' ? 2 : 0;
-
-  //     const result = await mintNFT(
-  //       aaSigner,
-  //       aaWalletAddress,
-  //       metadataUri,
-  //       paymentTypeNum,
-  //       selectedToken,
-  //       { gasMultiplier }
-  //     );
-
-  //     toast({
-  //       title: "Mint Successful!",
-  //       description: (
-  //         <span>
-  //           <span>Transaction:&nbsp;</span>
-  //           <a
-  //             href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
-  //             target="_blank"
-  //             rel="noopener noreferrer"
-  //             className="text-blue-500 underline"
-  //           >
-  //             View on Neroscan
-  //           </a>
-  //         </span>
-  //       ),
-  //     });
-  //     onMintSuccess(achievement, result.transactionHash);
-  //   } catch (error: any) {
-  //     console.error('Error minting NFT:', error);
-  //     setMintResult({ success: false, error: error.message || 'Mint error' });
-  //   } finally {
-  //     setIsMinting(false);
-  //   }
-  // };
 
   const handleClose = () => {
     if (!isMinting) {

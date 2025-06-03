@@ -15,6 +15,8 @@ import { LeaderboardModal } from "./components/LeaderboardModal";
 import { SettingsModal } from "./components/SettingsModal";
 import supabase from "../hooks/use-supabase";
 import MintModal from "../components/achievements/MintModal"; // Add this import
+import { useWalletStore } from '../stores/useWalletStore';
+
 
 
 interface GameSession {
@@ -32,7 +34,10 @@ interface HoneyClickerProps {
 
 const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
   const { toast } = useToast();
-
+  const { aaSigner, address } = useWalletStore();
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [rating, setRating] = useState<number | null>(null);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [isMintModalOpen, setIsMintModalOpen] = useState(false);
   const [selectedAchievement, setSelectedAchievement] = useState<any>(null);
 
@@ -84,6 +89,37 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
     buyItem,
     canAfford
   } = useGameState(isPaused);
+
+  const saveGameToDb = async () => {
+    const { address } = useWalletStore.getState();
+    if (!address) return;
+
+    // Compose your game state here
+    const saveData = {
+      points,
+      maxPoints,
+      totalClicks,
+      clickMultiplier,
+      pointsPerSecond,
+      ownedItems,
+    };
+    console.log("data to save", saveData);
+
+    const { error } = await supabase.from("game_saves").insert([
+      {
+        user_wallet: address,
+        game_id: "0x23d8446edbb2fbd07d032c8097869558cadf00a57fed4cf73c473ad287815b1e",
+        save_data: saveData,
+        updated_at: new Date().toISOString(),
+      }
+    ]);
+
+    if (error) {
+      console.error("Error saving game state:", error);
+    } else {
+      console.log("Game state saved to Supabase!");
+    }
+  };
 
   // Calculate total purchases for achievements
   const totalPurchases = Object.values(ownedItems).reduce((sum, count) => sum + count, 0);
@@ -147,8 +183,9 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
     setTokenClaimModalDismissed(true);
   };
 
-  const saveGameSession = (endReason: string) => {
-    if (!gameStartTime) return;
+  const saveGameSession = async (endReason: string) => {
+    const { address } = useWalletStore.getState();
+    if (!gameStartTime || !address) return;
     const endTime = new Date();
     const duration = Math.floor((endTime.getTime() - gameStartTime.getTime()) / 1000);
     const durationString = `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`;
@@ -163,6 +200,30 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
     const newHistory = [session, ...gameHistory].slice(0, 5);
     setGameHistory(newHistory);
     localStorage.setItem('honeyClickerHistory', JSON.stringify(newHistory));
+
+    // Assuming you have already initialized Supabase client
+    const { data, error } = await supabase
+      .from('game_plays')
+      .insert([
+        {
+          game_id: "0x23d8446edbb2fbd07d032c8097869558cadf00a57fed4cf73c473ad287815b1e",
+          player_wallet: address, // Ensure this variable is defined
+          played_at: endTime.toISOString(), // Ensure endTime is a valid Date object
+          session_duration: duration, // Ensure duration is a number
+          score: Math.floor(points), // Ensure points is a number
+          device: window.innerWidth < 768 ? "mobile" : "desktop",
+          unique_session_id: session.id, // Ensure session.id is defined
+        }
+      ])
+      .select("game_id, player_wallet, played_at, session_duration, score, device, unique_session_id"); // Specify the columns to return
+
+    if (error) {
+      console.error("Error inserting data:", error);
+    } else {
+      console.log("Data inserted successfully:", data);
+    }
+
+
   };
 
   const handlePauseGame = () => {
@@ -175,10 +236,15 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
     setGameStartTime(new Date());
   };
 
+  const handleRate = () => {
+    setShowRatingModal(true);
+  }
+
   const handleSaveGame = () => {
     setShowSaveModal(true);
     setIsPaused(false);
     saveGameSession('Manual Save');
+    saveGameToDb();
     toast({
       title: "Game Saved!",
       description: "Your progress has been saved successfully.",
@@ -302,9 +368,9 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
     totalPurchases,
     mintedAchievements,
     // onMintSuccess: markAchievementMinted,
-    onMintClick: (achievement:any) => {
-      setSelectedAchievement(achievement); 
-      console.log("gets here achievemtn is",achievement);
+    onMintClick: (achievement: any) => {
+      setSelectedAchievement(achievement);
+      console.log("gets here achievemtn is", achievement);
       setIsMintModalOpen(true);
     }
   };
@@ -429,6 +495,12 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
                   Save
                 </Button>
                 <Button
+                  onClick={handleRate}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 transition-all duration-200 hover:scale-105"
+                >
+                  Rate
+                </Button>
+                <Button
                   onClick={handleResetGame}
                   className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 transition-all duration-200 hover:scale-105"
                 >
@@ -523,19 +595,85 @@ const HoneyClicker = ({ gameName }: HoneyClickerProps) => {
       )}
 
       {isMintModalOpen && (
-          <MintModal
-        isOpen={isMintModalOpen}
-        onClose={() => setIsMintModalOpen(false)}
-        achievement={selectedAchievement}
-        onMintSuccess={(achievement, txHash) => {
-          // setIsMintModalOpen(false);
-          // setSelectedAchievement(null);
-          // markAchievementMinted(achievement.id);
-        }}
-      />
+        <MintModal
+          isOpen={isMintModalOpen}
+          onClose={() => setIsMintModalOpen(false)}
+          achievement={selectedAchievement}
+          onMintSuccess={(achievement, txHash) => {
+            setIsMintModalOpen(false);
+            toast({
+              title: `Achievement Minted! ${achievement.name} , Transaction: ${txHash}`,
+              description: "You've successfully minted an achievement!",
+              variant: "default",
+            });
+            // setSelectedAchievement(null);
+            // markAchievementMinted(achievement.id);
+          }}
+        />
       )}
 
-    
+      {showRatingModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 shadow-lg w-80 text-center">
+            <h3 className="text-xl font-bold mb-4 text-amber-800">Rate Honey Clicker</h3>
+            <div className="flex justify-center mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className={`text-3xl mx-1 ${rating && rating >= star ? "text-yellow-400" : "text-gray-300"}`}
+                  aria-label={`Rate ${star}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between mt-6">
+              <Button
+                onClick={() => setShowRatingModal(false)}
+                variant="outline"
+                className="flex-1 mr-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!rating || ratingSubmitting) return;
+                  setRatingSubmitting(true);
+                  const { address } = useWalletStore.getState();
+                  if (!address) return;
+                  const { error } = await supabase.from("game_ratings").insert([{
+                    game_id: "0x23d8446edbb2fbd07d032c8097869558cadf00a57fed4cf73c473ad287815b1e",
+                    player_wallet: address,
+                    rating,
+                    rated_at: new Date().toISOString(),
+                  }]);
+                  setRatingSubmitting(false);
+                  if (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to submit rating.",
+                      variant: "destructive",
+                    });
+                  } else {
+                    toast({
+                      title: "Thank you!",
+                      description: "Your rating has been submitted.",
+                    });
+                    setShowRatingModal(false);
+                    setRating(null);
+                  }
+                }}
+                className="flex-1 ml-2"
+                disabled={!rating || ratingSubmitting}
+              >
+                {ratingSubmitting ? "Submitting..." : "Submit"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

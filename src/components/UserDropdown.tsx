@@ -76,11 +76,6 @@ const UserDropdown: React.FC<UserDropdownProps> = ({
           icon: <Gift className="h-4 w-4 mr-3 text-gray-500" />,
         },
         {
-          to: '/achievements',
-          label: 'Achievements',
-          icon: <Trophy className="h-4 w-4 mr-3 text-gray-500" />,
-        },
-        {
           to: '/collections',
           label: 'Collections',
           icon: <Layers className="h-4 w-4 mr-3 text-gray-500" />,

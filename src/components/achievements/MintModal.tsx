@@ -16,8 +16,7 @@ import AdvancedSettings from './AdvancedSettings';
 import TokenSelector from './TokenSelector';
 import TokenApproval from './TokenApproval';
 import { useWalletStore } from '../../stores/useWalletStore';
-// import { useGasPriceStore } from '../../stores/useGasPriceStore';
-// import { useTokenStore } from '../../stores/useTokenStore';
+import { usePinata } from '../../hooks/use-pinata';
 
 interface MintModalProps {
   isOpen: boolean;
@@ -49,6 +48,7 @@ const MintModal: React.FC<MintModalProps> = ({
   const handleGasMultiplierChange = (multiplier: number) => {
     setGasMultiplier(Math.max(50, Math.min(500, multiplier)));
   };
+  const { uploadFile } = usePinata();
 
   const handleMint = async () => {
     if (!aaWalletAddress) {
@@ -90,7 +90,41 @@ const MintModal: React.FC<MintModalProps> = ({
         return;
       }
 
-      const metadataUri = 'https://neroapi.com/nfts/metadata/sample';
+      // 1. Upload static image to Pinata (if not already uploaded)
+      // For demo, use a local image file or a static URL
+      // Example: const imageFile = ...; // get File object from assets
+      // const imageHash = await uploadFile(imageFile);
+      // const imageUrl = `https://gateway.pinata.cloud/ipfs/${imageHash}`;
+      // For now, use a static image URL (replace with your uploaded image hash)
+      const imageUrl = "https://gateway.pinata.cloud/ipfs/bafybeia6qd3hrkx6jyeudbtwjunfjxxff3swjrtpt25h3cgqc42glfyxla";
+
+      // 2. Construct metadata JSON
+      const metadata = {
+        name: achievement?.title || "Achievement NFT",
+        description: achievement?.longDescription || achievement?.description || "Achievement NFT",
+        image: imageUrl,
+        attributes: [
+          { trait_type: "Rarity", value: achievement?.rarity || "Common" },
+          { trait_type: "Game", value: achievement?.game || "ArcadeHub" },
+        ],
+      };
+
+      // 3. Upload metadata JSON to Pinata
+      const metadataBlob = new Blob([JSON.stringify(metadata)], { type: "application/json" });
+      const metadataFile = new File([metadataBlob], "metadata.json");
+      const metadataHash = await uploadFile(metadataFile);
+      if (!metadataHash) {
+        toast({
+          title: "Error",
+          description: "Failed to upload NFT metadata to IPFS.",
+          variant: "destructive",
+        });
+        setIsMinting(false);
+        return;
+      }
+      const metadataUri = `https://gateway.pinata.cloud/ipfs/${metadataHash}`;
+
+      // 4. Mint NFT with improved metadata
       const paymentTypeNum =
         paymentType === 'sponsored' ? 0 :
         paymentType === 'prepay' ? 1 :
@@ -130,6 +164,88 @@ const MintModal: React.FC<MintModalProps> = ({
     }
   };
 
+  // const handleMint = async () => {
+  //   if (!aaWalletAddress) {
+  //     toast({
+  //       title: "Error",
+  //       description: "AA wallet address is not available. Please connect your wallet.",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+  //   if ((paymentType === 'prepay' || paymentType === 'postpay') && !selectedToken) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Please select a token for gas payment",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+  //   if ((paymentType === 'prepay' || paymentType === 'postpay') && !tokenApproved) {
+  //     toast({
+  //       title: "Error",
+  //       description: "Please approve the token before minting",
+  //       variant: "destructive",
+  //     });
+  //     return;
+  //   }
+
+  //   setIsMinting(true);
+  //   setMintResult(null);
+
+  //   try {
+  //     if (!aaSigner) {
+  //       toast({
+  //         title: "Error",
+  //         description: "Wallet signer is not available. Please connect your wallet.",
+  //         variant: "destructive",
+  //       });
+  //       setIsMinting(false);
+  //       return;
+  //     }
+  //     // bafybeia6qd3hrkx6jyeudbtwjunfjxxff3swjrtpt25h3cgqc42glfyxla
+
+
+  //     const metadataUri = 'https://neroapi.com/nfts/metadata/sample';
+  //     const paymentTypeNum =
+  //       paymentType === 'sponsored' ? 0 :
+  //       paymentType === 'prepay' ? 1 :
+  //       paymentType === 'postpay' ? 2 : 0;
+
+  //     const result = await mintNFT(
+  //       aaSigner,
+  //       aaWalletAddress,
+  //       metadataUri,
+  //       paymentTypeNum,
+  //       selectedToken,
+  //       { gasMultiplier }
+  //     );
+
+  //     toast({
+  //       title: "Mint Successful!",
+  //       description: (
+  //         <span>
+  //           <span>Transaction:&nbsp;</span>
+  //           <a
+  //             href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
+  //             target="_blank"
+  //             rel="noopener noreferrer"
+  //             className="text-blue-500 underline"
+  //           >
+  //             View on Neroscan
+  //           </a>
+  //         </span>
+  //       ),
+  //     });
+  //     onMintSuccess(achievement, result.transactionHash);
+  //   } catch (error: any) {
+  //     console.error('Error minting NFT:', error);
+  //     setMintResult({ success: false, error: error.message || 'Mint error' });
+  //   } finally {
+  //     setIsMinting(false);
+  //   }
+  // };
+
   const handleClose = () => {
     if (!isMinting) {
       setPaymentType('sponsored');
@@ -165,7 +281,7 @@ const MintModal: React.FC<MintModalProps> = ({
     window.open(`https://testnet.neroscan.io/tx/${txHash}`, '_blank');
   };
 
-  if (!achievement) return null;
+  // if (!achievement) return null;
 
   // const IconComponent = achievement.icon;
 

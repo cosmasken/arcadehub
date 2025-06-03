@@ -1002,6 +1002,8 @@ export const getNFTs = async (ownerAddress: string) => {
   try {
     // Call the existing getNFTsForAddress function
     const nftMetadata = await getNFTsForAddress(ownerAddress);
+
+    console.log("Fetched NFT metadata:", nftMetadata);
     
     // Transform the NFT data to the expected format
     const formattedNFTs = await Promise.all(

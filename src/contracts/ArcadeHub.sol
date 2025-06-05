@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface INFTContract is IERC721 {
-    function mint(address to) external;
+    function mint(address to, string memory uri) external returns (uint256);
 }
 
 contract ArcadeHub is ReentrancyGuard {
@@ -172,9 +172,9 @@ contract ArcadeHub is ReentrancyGuard {
 
     // Mint NFT
     uint256 public nftMintCost = 100; // Cost in ARC tokens
-    function mintNFT() external nonReentrant {
+    function mintNFT(string memory uri) external nonReentrant {
         require(arcToken.transferFrom(msg.sender, address(this), nftMintCost), "Payment failed");
-        nftContract.mint(msg.sender);
+        nftContract.mint(msg.sender, uri);
         emit NFTMinted(msg.sender);
     }
 

@@ -39,7 +39,7 @@ const HoneyClicker = () => {
     claimPoints
   } = useGameState();
 
-  const { address } = useWalletStore();
+  const { aaWalletAddress } = useWalletStore();
 
   const claimableTokens = Math.floor(honey / 10000);
   const honeyToSpend = claimableTokens * 10000;
@@ -71,7 +71,7 @@ const HoneyClicker = () => {
 
 
   const saveGameToDb = async () => {
-    if (!address) return;
+    if (!aaWalletAddress) return;
     const saveData = {
       points: honey,
       totalClicks,
@@ -81,7 +81,7 @@ const HoneyClicker = () => {
     };
     await supabase.from("game_saves").insert([
       {
-        user_wallet: address,
+        user_wallet: aaWalletAddress,
         game_id: "honey-clicker",
         save_data: saveData,
         updated_at: new Date().toISOString(),
@@ -90,18 +90,18 @@ const HoneyClicker = () => {
   };
 
   const saveGameSession = async (endReason: string) => {
-    if (!address || !gameStartTime) return;
+    if (!aaWalletAddress || !gameStartTime) return;
     const endTime = new Date();
     const duration = Math.floor((endTime.getTime() - gameStartTime.getTime()) / 1000);
     await supabase.from('game_plays').insert([
       {
         game_id: "honey-clicker",
-        player_wallet: address,
+        player_wallet: aaWalletAddress,
         played_at: endTime.toISOString(),
         session_duration: duration,
         score: Math.floor(honey),
         device: window.innerWidth < 768 ? "mobile" : "desktop",
-        unique_session_id: `${address}-${endTime.getTime()}`,
+        unique_session_id: `${aaWalletAddress}-${endTime.getTime()}`,
         end_reason: endReason,
       }
     ]);
@@ -356,10 +356,10 @@ const HoneyClicker = () => {
           setIsLoadingModalOpen={setIsLoadingModalOpen}
           onMintSuccess={async (achievement, txHash) => {
             setIsMintingModalOpen(false);
-            if (!address) return;
+            if (!aaWalletAddress) return;
             await supabase.from('user_achievements').insert([
               {
-                user_wallet: address,
+                user_wallet: aaWalletAddress,
                 achievement_id: achievement.id,
                 unlocked: true,
                 unlocked_at: new Date().toISOString(),

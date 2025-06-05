@@ -21,7 +21,6 @@ export interface WalletConnectionState {
   aaWalletAddress: string;
   signer: ethers.Signer | null;
   eoaAddress?: string;
-  address?: string;
 }
 
 /**

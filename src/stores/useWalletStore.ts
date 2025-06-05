@@ -41,7 +41,6 @@ const web3AuthOptions: Web3AuthOptions = {
 interface WalletStore {
   isConnected: boolean;
   isInitialized: boolean;
-  address: string;
   supportedTokens: any[];
   web3auth: Web3Auth | null;
   provider: IProvider | null;
@@ -65,7 +64,6 @@ adapters.forEach((adapter) => {
 });
 
 export const useWalletStore = create<WalletStore>((set, get) => ({
-  address: '',
   isConnected: false,
   isInitialized: false,
   supportedTokens: [],
@@ -114,6 +112,8 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
       const aaProvider = new ethers.BrowserProvider(web3authProvider);
       const aaSigner = await aaProvider.getSigner();
       const address = await aaSigner.getAddress();
+
+      console.log('Connected address:', address);
       
       set({ 
         provider: web3authProvider,
@@ -122,7 +122,6 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         isLoading: false,
         isConnected: true,
         isInitialized: true,
-        address:address,
       });
 
       await get().initAAWallet();
@@ -143,7 +142,6 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         await web3auth.logout();
       }
       set({ 
-        address: '',
         isConnected: false,
         isInitialized: false,
         web3auth: null,
@@ -174,6 +172,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     try {
       const aaWallet = await getAAWalletAddress(aaSigner);
       // const aaBuilder = await initAABuilder(aaSigner);
+      console.log('AA Wallet Address:', aaWallet);
       
       set({ 
         aaWalletAddress: aaWallet,

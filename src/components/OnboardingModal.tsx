@@ -28,7 +28,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { checkUsernameExists, onboardUser } = useProfileStore();
-  const { address } = useWalletStore();
+  const { aaWalletAddress } = useWalletStore();
 
   // Real username check
   const checkUsernameAvailability = async (username: string) => {
@@ -114,7 +114,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     }
 
     setIsSubmitting(true);
-    const success = await onboardUser(address, {
+    const success = await onboardUser(aaWalletAddress, {
       username: username.trim(),
       bio: bio.trim() || null,
       role: userType,

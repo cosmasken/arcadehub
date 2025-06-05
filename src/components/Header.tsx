@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { LogOut, Wallet, User, Settings, ChevronDown } from 'lucide-react';
+import { LogOut, Wallet, User, Settings, ChevronDown, Copy, Check } from 'lucide-react';
 
 import { useWalletStore } from '../stores/useWalletStore';
 // import OnboardingModal from './onboarding/Onboarding';
@@ -26,7 +26,6 @@ const Header = () => {
   const {
     isInitialized,
     isConnected,
-    address,
     aaWalletAddress,
     initializeWeb3Auth,
     connectWallet,
@@ -38,14 +37,15 @@ const Header = () => {
   const { role } = useProfileStore();
 
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
 
 
   useEffect(() => {
-    if (isConnected && address) {
-      console.log('Fetching profile for address:', address);
-      useProfileStore.getState().fetchProfile(address);
+    if (isConnected && aaWalletAddress) {
+      console.log('Fetching profile for aaWalletAddress:', aaWalletAddress);
+      useProfileStore.getState().fetchProfile(aaWalletAddress);
     }
-  }, [isConnected, address]);
+  }, [isConnected, aaWalletAddress]);
 
   useEffect(() => {
     if (isConnected) {
@@ -54,19 +54,19 @@ const Header = () => {
         const { data } = await supabase
           .from('profiles')
           .select('id')
-          .eq('wallet_address', address)
+          .eq('wallet_address', aaWalletAddress)
           .single();
         if (!data) setShowOnboarding(true);
       };
-      if (address) checkProfile();
+      if (aaWalletAddress) checkProfile();
     }
-  }, [isConnected, address]);
+  }, [isConnected, aaWalletAddress]);
 
   const handleOnboardingComplete = async (userData: any) => {
     // Save onboarding data to Supabase
     await supabase.from('profiles').insert([
       {
-        wallet_address: address,
+        wallet_address: aaWalletAddress,
         ...userData,
       },
     ]);
@@ -112,8 +112,18 @@ const Header = () => {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  const truncateAddress = (aaWalletAddress: string) => {
+    return `${aaWalletAddress.slice(0, 6)}...${aaWalletAddress.slice(-4)}`;
+  };
+
+  const copyToClipboard = async (aaWalletAddress: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(aaWalletAddress);
+      setCopiedAddress(type);
+      setTimeout(() => setCopiedAddress(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
+    }
   };
 
 
@@ -153,6 +163,23 @@ const Header = () => {
                   <div className="flex items-center space-x-2 bg-black border-2 border-green-400 px-4 py-2">
                     <Wallet className="w-4 h-4 text-green-400" />
                     <span className="text-xs font-mono tracking-wider text-green-400">CONNECTED</span>
+                    {/* Address with copy icon */}
+                    {aaWalletAddress && (
+                      <span className="flex items-center ml-2">
+                        <span className="font-mono text-xs text-cyan-400">{truncateAddress(aaWalletAddress)}</span>
+                        <button
+                          onClick={() => copyToClipboard(aaWalletAddress, 'wallet')}
+                          className="ml-1 text-cyan-400 hover:text-green-400"
+                          title={copiedAddress === 'wallet' ? "Copied!" : "Copy address"}
+                        >
+                          {copiedAddress === 'wallet' ? (
+                            <Check className="h-4 w-4 text-green-400" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+                      </span>
+                    )}
                   </div>
 
 
@@ -170,7 +197,7 @@ const Header = () => {
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-sm font-mono tracking-wider">
-                          {address ? truncateAddress(address) : null}
+                          {aaWalletAddress ? truncateAddress(aaWalletAddress) : null}
                         </span>
                         <ChevronDown className="w-4 h-4" />
                       </Button>

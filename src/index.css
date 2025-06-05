@@ -1,0 +1,235 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Press+Start+2P&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 280 100% 70%;
+    --primary-foreground: 0 0% 8%;
+
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 280 100% 70%;
+    --accent-foreground: 0 0% 8%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 95%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 280 100% 70%;
+
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-orbitron;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(120, 255, 198, 0.2) 0%, transparent 50%),
+      linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+    min-height: 100vh;
+  }
+}
+
+.game-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 0 20px rgba(200, 100, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.game-card:hover {
+  background: linear-gradient(135deg, rgba(200, 100, 255, 0.1) 0%, rgba(255, 100, 200, 0.05) 100%);
+  border-color: rgba(200, 100, 255, 0.4);
+  box-shadow: 
+    0 0 30px rgba(200, 100, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.nav-gradient {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.9) 0%, rgba(20, 20, 20, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(200, 100, 255, 0.3);
+  box-shadow: 0 0 20px rgba(200, 100, 255, 0.1);
+}
+
+.stat-card {
+  background: linear-gradient(135deg, rgba(200, 100, 255, 0.1) 0%, rgba(100, 200, 255, 0.05) 100%);
+  border: 1px solid rgba(200, 100, 255, 0.3);
+  box-shadow: 
+    0 0 15px rgba(200, 100, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 8px 25px rgba(200, 100, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.arcade-title {
+  font-family: 'Press Start 2P', monospace;
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor;
+  letter-spacing: 0.1em;
+  animation: neon-pulse 3s ease-in-out infinite;
+}
+
+.neon-text {
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor,
+    0 0 20px currentColor;
+}
+
+.scanlines {
+  position: relative;
+}
+
+.scanlines::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    transparent 50%,
+    rgba(0, 255, 0, 0.02) 50%,
+    rgba(0, 255, 0, 0.02) 52%,
+    transparent 52%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  animation: scanline-move 2s linear infinite;
+}
+
+.retro-button {
+  background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+  border: 2px solid #444;
+  box-shadow: 
+    inset 2px 2px 5px rgba(255, 255, 255, 0.1),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.7),
+    0 0 10px rgba(200, 100, 255, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.retro-button:hover {
+  box-shadow: 
+    inset 2px 2px 5px rgba(255, 255, 255, 0.2),
+    inset -2px -2px 5px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(200, 100, 255, 0.5);
+  border-color: rgba(200, 100, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.retro-button:active {
+  box-shadow: 
+    inset -2px -2px 5px rgba(255, 255, 255, 0.1),
+    inset 2px 2px 5px rgba(0, 0, 0, 0.7);
+  transform: translateY(0);
+}
+
+/* Enhanced animations */
+@keyframes scanline-move {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes glitch {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.modal-enter {
+  animation: modal-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-exit {
+  animation: modal-exit 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+}
+
+.card-hover-effect {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-8px) rotateX(5deg);
+  box-shadow: 0 20px 40px rgba(200, 100, 255, 0.3);
+}
+
+.glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(200, 100, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(200, 100, 255, 0.6);
+  }
+}

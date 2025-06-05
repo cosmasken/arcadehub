@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+      <script type="module">
+      import { Buffer } from "buffer";
+      import process from "process";
+      window.Buffer = Buffer;
+      window.process = process;
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArcadeHub</title>
+    <meta name="description" content="Verifiable gameplay on nero" />
+    <meta name="author" content="Cosmas Ken" />
+
+    <link rel="icon" type="image/png" href="/arcadehub-logo.png" />
+
+    <meta property="og:title" content="ArcadeHub" />
+    <meta property="og:description" content="Fun Games, Real Rewards, Zero Hassle!" />
+    <!-- <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@lovable_dev" />
+    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" /> -->
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

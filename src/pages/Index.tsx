@@ -54,6 +54,15 @@ const Index = () => {
             <h1 className="text-5xl md:text-8xl font-bold mb-6 text-cyan-400 neon-text">
               &gt; RETRO ARCADE &lt;
             </h1>
+            {/* Beta Warning Section */}
+            <div className="mb-6">
+              <div className="bg-yellow-900/80 border-2 border-yellow-400 rounded-lg p-4 mx-auto max-w-2xl flex flex-col items-center">
+                <span className="text-yellow-300 font-bold text-lg mb-2">⚠️ BETA WARNING</span>
+                <p className="text-yellow-200 text-sm">
+                  This platform is currently in <span className="font-bold">BETA</span>. Your achievements and progress may be <span className="font-bold">reset</span> in case of upgrades or changes to the system. Please play and test, but keep in mind that your data is not guaranteed to persist.
+                </p>
+              </div>
+            </div>
             <p className="text-xl md:text-2xl mb-8 text-green-400 tracking-wider">
               PLAY_TO_EARN // WIN_CRYPTO_PRIZES // DOMINATE_LEADERBOARDS
             </p>

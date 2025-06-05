@@ -3,7 +3,6 @@ import { Button } from './ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { useTokenStore } from '../stores/useTokenStore';
 import { useWalletStore } from '../stores/useWalletStore';
-
 interface TokenApprovalProps {
   selectedToken: string;
   onApprovalComplete: () => void;
@@ -53,6 +52,7 @@ const TokenApproval: React.FC<TokenApprovalProps> = ({
       setIsApproving(false);
     }
   };
+
   if (!selectedToken) return null;
 
   return (

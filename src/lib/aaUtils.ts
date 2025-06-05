@@ -619,7 +619,87 @@ export const mintERC20Token = async (
     options
   );
 };
+/**
+ * Approve ArcadeHub to manage all NFTs from the AA wallet using Account Abstraction (sponsored).
+ * @param accountSigner ethers.Signer - the user's signer
+ * @param nftContractAddress string - address of the NFT contract
+ * @param operatorAddress string - ArcadeHub contract address
+ * @param options optional AA/gas options
+ * @returns Promise<{ success: boolean, userOpHash?: string, transactionHash?: string, receipt?: any, error?: any }>
+ */
+export const approveNFTForArcadeHubAA = async (
+  accountSigner: ethers.Signer,
+  nftContractAddress: string,
+  operatorAddress: string,
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  // Generate a unique operation key
+  const opKey = `approveNFTForArcadeHubAA-${await accountSigner.getAddress()}-${nftContractAddress}-${operatorAddress}`;
 
+  // Use executeOperation for memoized execution
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      try {
+        // Create NFT contract instance
+        const nftContract = new ethers.Contract(
+          nftContractAddress,
+          [
+            "function setApprovalForAll(address operator, bool approved) external"
+          ],
+          getProvider()
+        );
+
+        // Prepare the setApprovalForAll function call data
+        const callData = nftContract.interface.encodeFunctionData('setApprovalForAll', [
+          operatorAddress,
+          true
+        ]);
+
+        // Override payment type to use free (sponsored) for this approval operation
+        builder.setPaymasterOptions({
+          apikey: API_KEY,
+          rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+          type: 0 // Free (sponsored)
+        });
+
+        // Set transaction data in the builder
+        const userOp = await builder.execute(nftContractAddress, 0, callData);
+
+        // Send the user operation
+        if (API_OPTIMIZATION.debugLogs) console.log(`Sending AA NFT approval operation`);
+        const res = await client.sendUserOperation(userOp);
+
+        console.log("UserOperation sent with hash:", res.userOpHash);
+
+        // Wait for the UserOperation to be included in a transaction
+        const receipt = await res.wait();
+
+        let transactionHash = '';
+        if (receipt && receipt.transactionHash) {
+          transactionHash = receipt.transactionHash;
+        }
+
+        return {
+          success: true,
+          userOpHash: res.userOpHash,
+          transactionHash,
+          receipt
+        };
+      } catch (error) {
+        console.error("Error in AA NFT approval:", error);
+        return {
+          success: false,
+          error
+        };
+      }
+    },
+    0, // Always use sponsored payment for approvals
+    '', // No token needed for sponsored
+    options
+  );
+};
 // Optimized mintNFT function with better caching and API handling
 export const mintNFT = async (
   accountSigner: ethers.Signer, 
@@ -747,6 +827,7 @@ export const mintNFT = async (
     options
   );
 };
+
 
 // Fetch NFTs owned by an address with optimized performance
 export const getNFTsForAddress = async (address: string) => {
@@ -940,6 +1021,44 @@ export const approveToken = async (provider: ethers.BrowserProvider, tokenAddres
       success: false,
       error
     };
+  }
+};
+
+/**
+ * Approve ArcadeHub to transfer all NFTs for the user (AA wallet).
+ * @param accountSigner ethers.Signer - the user's signer
+ * @param nftContractAddress string - address of the NFT contract
+ * @param operatorAddress string - ArcadeHub contract address
+ * @returns Promise<{ success: boolean, transactionHash?: string, error?: any }>
+ */
+export const approveNFTForArcadeHub = async (
+  accountSigner: ethers.Signer,
+  nftContractAddress: string,
+  operatorAddress: string
+) => {
+  try {
+    const nftContract = new ethers.Contract(
+      nftContractAddress,
+      [
+        "function setApprovalForAll(address operator, bool approved) external",
+        "function isApprovedForAll(address owner, address operator) view returns (bool)"
+      ],
+      accountSigner
+    );
+    const owner = await accountSigner.getAddress();
+    const isApproved = await nftContract.isApprovedForAll(owner, operatorAddress);
+    if (isApproved) {
+      return { success: true };
+    }
+     const tx = await nftContract.setApprovalForAll(operatorAddress, true, {
+      maxPriorityFeePerGas: ethers.parseUnits('1', 'gwei'),
+      maxFeePerGas: ethers.parseUnits('2', 'gwei'),
+    });
+    const receipt = await tx.wait();
+    return { success: true, transactionHash: receipt.transactionHash };
+  } catch (error) {
+    console.error("Error approving NFT for ArcadeHub:", error);
+    return { success: false, error };
   }
 };
 
@@ -1227,6 +1346,82 @@ export const checkAAWalletTokenAllowance = async (
   }
 };
 
+/**
+ * Approve ArcadeHub to spend ARC tokens from AA wallet.
+ * @param accountSigner ethers.Signer - the user's signer
+ * @param amount bigint - amount to approve
+ * @returns Promise<any>
+ */
+export const approveArcadeHubArc = async (
+  accountSigner: ethers.Signer,
+  amount: bigint
+) => {
+  const opKey = `approveArcadeHubArc-${await accountSigner.getAddress()}-${amount.toString()}`;
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const tokenContract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeTokenContract,
+        ['function approve(address spender, uint256 amount) returns (bool)'],
+        getProvider()
+      );
+      const callData = tokenContract.interface.encodeFunctionData('approve', [
+        TESTNET_CONFIG.contracts.arcadeHub,
+        amount
+      ]);
+      // Use sponsored gas for approval
+      builder.setPaymasterOptions({
+        apikey: API_KEY,
+        rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+        type: 0
+      });
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeTokenContract, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        success: true,
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    0,
+    ''
+  );
+};
+/**
+ * Check ARC token allowance for ArcadeHub contract from AA wallet.
+ * @param accountSigner ethers.Signer - the user's signer
+ * @returns Promise<string> - allowance as a string
+ */
+export const checkArcadeHubArcAllowance = async (
+  accountSigner: ethers.Signer
+) => {
+  try {
+    const aaWalletAddress = await getAAWalletAddress(accountSigner);
+    const tokenContract = new ethers.Contract(
+      TESTNET_CONFIG.contracts.arcadeTokenContract,
+      [
+        'function allowance(address owner, address spender) view returns (uint256)',
+        'function decimals() view returns (uint8)'
+      ],
+      getProvider()
+    );
+    const allowance = await tokenContract.allowance(
+      aaWalletAddress,
+      TESTNET_CONFIG.contracts.arcadeHub
+    );
+    let decimals = 18;
+    try {
+      decimals = await tokenContract.decimals();
+    } catch {}
+    return ethers.formatUnits(allowance, decimals);
+  } catch (error) {
+    console.error("Error checking ARC allowance for ArcadeHub:", error);
+    return '0';
+  }
+};
 // Approve token spending from AA wallet to the paymaster using UserOperation
 export const approveAAWalletToken = async (
   accountSigner: ethers.Signer,
@@ -1868,33 +2063,80 @@ export const transferARCTokenAA = async (
 };
 
 // Transfer NFT (calls transferNFT)
+/**
+ * Transfers an NFT via the ArcadeHub contract using Account Abstraction.
+ * @param accountSigner ethers.Signer - The user's signer
+ * @param to string - Recipient address
+ * @param tokenId bigint - ID of the NFT to transfer
+ * @param paymentType number - Payment type (0 for sponsored, 1 for prepay, 2 for postpay)
+ * @param selectedToken string - Token address for ERC20 payment (optional)
+ * @param options optional AA/gas options
+ * @returns Promise<{ success: boolean, userOpHash?: string, transactionHash?: string, receipt?: any, error?: any }>
+ */
 export const transferNFTAA = async (
   accountSigner: ethers.Signer,
   to: string,
   tokenId: bigint,
-  paymentType: number = 1,
-  selectedToken: string = '',
+  paymentType: number = 0, // Default to sponsored (gasless)
+  selectedToken: string = '', // No token needed for sponsored
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `transferNFTAA-${await accountSigner.getAddress()}-${to}-${tokenId.toString()}`;
+  // Generate a unique operation key
+  const opKey = `transferNFTAA-${await accountSigner.getAddress()}-${toString()}-${tokenId.toString()}`;
+
+  // Use executeOperation for memoized execution
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function transferNFT(address to, uint256 tokenId) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('transferNFT', [to, tokenId]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
+      try {
+        // Create contract instance for ArcadeHub
+        const contract = new ethers.Contract(
+          TESTNET_CONFIG.contracts.arcadeHub,
+          ["function transferNFT(address to, uint256 tokenId) external"],
+          getProvider()
+        );
+
+        // Prepare the transferNFT function call data
+        const callData = contract.interface.encodeFunctionData('transferNFT', [to, tokenId]);
+
+        // Set payment type to sponsored for gasless transfer
+        builder.setPaymasterOptions({
+          apikey: API_KEY || options?.apiKey || '',
+          rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+          type: 0 // Sponsored gas
+        });
+
+        // Set transaction data in the builder
+        const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+
+        // Send the user operation
+        if (API_OPTIMIZATION.debugLogs) console.log(`Sending NFT transfer operation for token ID ${tokenId} to ${to}`);
+        const res = await client.sendUserOperation(userOp);
+        
+        console.log("UserOperation sent with hash:", res.userOpHash);
+
+        // Wait for the transaction to complete
+        const receipt = await res.wait();
+
+        let transactionHash = '';
+        if (receipt && receipt.transactionHash) {
+          transactionHash = receipt.transactionHash;
+        }
+
+        return {
+          success: true,
+          userOpHash: res.userOpHash,
+          transactionHash,
+          receipt
+        };
+      } catch (error) {
+        console.error("Error in NFT transfer:", error);
+        return {
+          success: false,
+          error
+        };
+      }
     },
     paymentType,
     selectedToken,

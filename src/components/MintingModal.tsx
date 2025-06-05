@@ -12,7 +12,18 @@ import { Badge } from './ui/badge';
 import { Slider } from './ui/slider';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
-import { CreditCard, DollarSign, Wallet, Fuel, Zap, Loader2, CheckCircle, XCircle, Copy, ExternalLink } from 'lucide-react';
+import {
+  CreditCard,
+  DollarSign,
+  Wallet,
+  Fuel,
+  Zap,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Copy,
+  ExternalLink
+} from 'lucide-react';
 
 import TokenSelector from './TokenSelector';
 import TokenApproval from './TokenApproval';
@@ -22,6 +33,8 @@ import { useToast } from './ui/use-toast';
 import { mintNFT, checkAAWalletTokenAllowance } from '../lib/aaUtils';
 import { usePinata } from '../hooks/use-pinata';
 import supabase from '../hooks/use-supabase';
+import { add } from 'date-fns';
+import { TESTNET_CONFIG } from '../config';
 
 interface MintingModalProps {
   isOpen: boolean;
@@ -39,7 +52,7 @@ const MintingModal: React.FC<MintingModalProps> = ({
   setIsLoadingModalOpen,
 }) => {
   const { setTokenApproval } = useTokenStore();
-  const { aaSigner, aaWalletAddress, address } = useWalletStore();
+  const { aaSigner, aaWalletAddress } = useWalletStore();
   const [paymentType, setPaymentType] = useState('sponsored');
   const [selectedToken, setSelectedToken] = useState('');
   const [gasMultiplier, setGasMultiplier] = useState([1.5]);
@@ -116,7 +129,7 @@ const MintingModal: React.FC<MintingModalProps> = ({
         setIsMinting(false);
         return;
       }
-      
+
 
       // Upload metadata (simplified, see your old modal for full logic)
       const imageUrl = "https://gateway.pinata.cloud/ipfs/bafybeia6qd3hrkx6jyeudbtwjunfjxxff3swjrtpt25h3cgqc42glfyxla";
@@ -177,7 +190,7 @@ const MintingModal: React.FC<MintingModalProps> = ({
       // Upsert achievement
       await supabase.from('user_achievements').insert([
         {
-          user_wallet: address,
+          user_wallet: aaWalletAddress,
           achievement_id: achievement.id,
           unlocked: true,
           unlocked_at: new Date().toISOString(),
@@ -438,4 +451,3 @@ const MintingModal: React.FC<MintingModalProps> = ({
 };
 
 export default MintingModal;
-// ...existing code...

@@ -542,7 +542,13 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "uri",
+				"type": "string"
+			}
+		],
 		"name": "mintNFT",
 		"outputs": [],
 		"stateMutability": "nonpayable",

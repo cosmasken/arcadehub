@@ -134,7 +134,7 @@ const Header = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
               <Link to="/">
-                <h1 className="text-lg md:text-xl text-cyan-400 tracking-wider font-bold font-mono hover:text-green-400 transition-colors">
+                <h1 className="text-sm sm:text-lg md:text-xl text-cyan-400 tracking-wider font-bold font-mono hover:text-green-400 transition-colors">
                   &gt; NERO_ARCADE &lt;
                 </h1>
               </Link>

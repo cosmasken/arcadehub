@@ -51,7 +51,7 @@ const Index = () => {
         {/* Hero Section */}
         <section className="pt-24 pb-16 px-6">
           <div className="container mx-auto text-center max-w-4xl">
-            <h1 className="text-5xl md:text-8xl font-bold mb-6 text-cyan-400 neon-text">
+            <h1 className="text-sm sm:text-5xl md:text-8xl font-bold mb-6 text-cyan-400 neon-text">
               &gt; RETRO ARCADE &lt;
             </h1>
             {/* Beta Warning Section */}
@@ -70,7 +70,7 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/games/honey-clicker">
                 <Button className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-lg px-8 py-4 tracking-wider border-2 border-cyan-400 hover:border-green-400">
-                  <GamepadIcon className="w-5 h-5 mr-2" />
+                  <GamepadIcon className="w-5 h-5" />
                   &gt; PLAY_HONEY_CLICKER
                 </Button>
               </Link>
@@ -119,7 +119,7 @@ const Index = () => {
         {/* CTA Section */}
         <section className="py-16 px-6 bg-black/50">
           <div className="container mx-auto text-center max-w-4xl">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-cyan-400 neon-text">
+            <h2 className="text-sm sm:text-3xl md:text-5xl font-bold mb-6 text-cyan-400 neon-text">
               &gt; JOIN_THE_REVOLUTION &lt;
             </h2>
             <p className="text-xl mb-8 text-green-400 tracking-wider">

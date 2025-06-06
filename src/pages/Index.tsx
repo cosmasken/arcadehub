@@ -69,7 +69,7 @@ const Index = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/games/honey-clicker">
-                <Button className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-lg px-8 py-4 tracking-wider border-2 border-cyan-400 hover:border-green-400">
+                <Button className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-sm md:text-lg px-8 py-4 tracking-wider border-2 border-cyan-400 hover:border-green-400">
                   <GamepadIcon className="w-5 h-5" />
                   &gt; PLAY_HONEY_CLICKER
                 </Button>

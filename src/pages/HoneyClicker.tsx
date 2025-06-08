@@ -235,10 +235,20 @@ const HoneyClicker = () => {
                         {honeyPerClick}/CLICK | {honeyPerSecond}/SEC
                       </p>
                     </div>
+                    <div className="mb-6">
+                      <div className="flex flex-col items-center justify-center">
+                        <span className="text-lg md:text-xl font-semibold text-cyan-400 mb-1">
+                          Click to earn honey!
+                        </span>
+                        <span className="text-xs text-green-400 md:text-sm">
+                          Tap the bee to collect more 🍯
+                        </span>
+                      </div>
+                    </div>
 
                     <Button
                       onClick={handleClick}
-                      className="w-64 h-64 rounded-full bg-yellow-400 text-black hover:bg-yellow-300 text-6xl transition-transform hover:scale-105 active:scale-95"
+                      className="h-24 w-24 md:w-64 md:h-64 rounded-full bg-yellow-400 text-black hover:bg-yellow-300 text-6xl transition-transform hover:scale-105 active:scale-95"
                     >
                       🐝
                     </Button>

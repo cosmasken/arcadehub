@@ -115,11 +115,17 @@
     0 0 20px currentColor;
 }
 
+html, body {
+  overflow-y: auto;
+}
+
 .scanlines {
   position: relative;
+  z-index: 1;
 }
 
 .scanlines::before {
+  z-index: 2;
   content: '';
   position: absolute;
   top: 0;

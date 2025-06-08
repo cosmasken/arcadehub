@@ -51,7 +51,7 @@ const Index = () => {
         {/* Hero Section */}
         <section className="pt-24 pb-16 px-6">
           <div className="container mx-auto text-center max-w-4xl">
-            <h1 className="text-sm sm:text-5xl md:text-8xl font-bold mb-6 text-cyan-400 neon-text">
+            <h1 className="text-sm sm:text-5xl md:text-7xl font-bold mb-6 text-cyan-400 neon-text">
               &gt; RETRO ARCADE &lt;
             </h1>
             {/* Beta Warning Section */}

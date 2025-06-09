@@ -3,6 +3,8 @@ import React from 'react';
 import Header from '../components/Header';
 import GameCard from '../components/GameCard';
 import StatsCard from '../components/StatsCard';
+import { Badge } from '../components/ui/badge';
+import { Card } from '../components/ui/card';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { GamepadIcon, Users } from 'lucide-react';
@@ -45,7 +47,7 @@ const Index = () => {
   ];
 
   return (
-      <div className="min-h-screen bg-black text-green-400 font-mono scanlines">
+      <div className="min-h-screen bg-black text-green-400 font-mono">
         <Header />
 
         {/* Hero Section */}
@@ -132,6 +134,28 @@ const Index = () => {
             </Link>
           </div>
         </section>
+
+        <div className="mt-16 text-center">
+              <Card className="game-card p-8 ">
+                <h3 className="text-3xl font-bold text-cyan-400 mb-4 neon-text">
+                  READY TO DOMINATE?
+                </h3>
+                <p className="text-green-400 mb-6">
+                  Join thousands of players competing for glory and rewards
+                </p>
+                <div className="flex justify-center space-x-4">
+                  <Badge className="bg-green-400 text-black px-4 py-2">
+                    🏆 Daily Tournaments
+                  </Badge>
+                  <Badge className="bg-cyan-400 text-black px-4 py-2">
+                    💰 Crypto Rewards
+                  </Badge>
+                  <Badge className="bg-purple-400 text-black px-4 py-2">
+                    🎮 Retro Games
+                  </Badge>
+                </div>
+              </Card>
+            </div>
       </div>
   );
 };

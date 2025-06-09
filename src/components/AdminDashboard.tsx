@@ -167,7 +167,7 @@ const handleReject = async (player: string) => {
     ];
 
     return (
-        <div className="min-h-screen bg-black text-green-400 font-mono scanlines">
+        <div className="min-h-screen bg-black text-green-400 font-mono">
             <LoadingModal
                 isOpen={isLoadingModalOpen}
                 title="PROCESSING"

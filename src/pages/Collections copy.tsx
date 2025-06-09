@@ -176,7 +176,7 @@ const Collections: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-black text-green-400 font-mono scanlines">
+    <div className="min-h-screen bg-black text-green-400 font-mono">
       <Header />
       <LoadingModal
         isOpen={isLoadingModalOpen}

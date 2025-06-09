@@ -154,7 +154,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     };
 
     return (
-        <div className="min-h-screen bg-black text-green-400 font-mono scanlines">
+        <div className="min-h-screen bg-black text-green-400 font-mono">
             {/* Header */}
             <div className="bg-black border-b-2 border-red-400 p-6">
                 <div className="container mx-auto flex justify-between items-center">

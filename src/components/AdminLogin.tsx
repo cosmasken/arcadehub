@@ -57,7 +57,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-green-400 font-mono scanlines flex items-center justify-center px-6">
+    <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center px-6">
       <Card className="bg-black border-2 border-red-400 p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <Shield className="w-16 h-16 text-red-400 mx-auto mb-4" />

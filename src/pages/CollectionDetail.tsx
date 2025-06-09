@@ -80,7 +80,7 @@ const CollectionDetail = () => {
   };
 
   return (
-      <div className="min-h-screen bg-black text-green-400 font-mono scanlines">
+      <div className="min-h-screen bg-black text-green-400 font-mono">
         <Header />
         
         <div className="pt-24 pb-16 px-6">

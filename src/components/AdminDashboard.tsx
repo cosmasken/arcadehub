@@ -43,40 +43,40 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const gasMultiplierPercent = Math.round(gasMultiplier[0] * 100);
     const clampedGasMultiplier = Math.max(50, Math.min(500, gasMultiplierPercent));
 
+    const fetchPendingClaims = async () => {
+        const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl);
+        const contract = new ethers.Contract(TESTNET_CONFIG.contracts.arcadeHub, ArcadeHubABI, provider);
 
+        // Get all PointsClaimSubmitted events
+        const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+        // Get all PointsClaimApproved and PointsClaimRejected events
+        const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+        const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+
+        // Build sets of processed claims
+        const processed = new Set([
+            ...approved.map(e => e.args.player.toLowerCase()),
+            ...rejected.map(e => e.args.player.toLowerCase()),
+        ]);
+
+        // Filter out processed claims
+        const pending = submitted
+            .filter(e => !processed.has(e.args.player.toLowerCase()))
+            .map(e => ({
+                player: e.args.player,
+                points: Number(e.args.points),
+                blockNumber: e.blockNumber,
+            }));
+
+        setPendingClaims(pending);
+    };
     // Fetch pending claims from contract events
     // ...existing code...
     useEffect(() => {
-        const fetchPendingClaims = async () => {
-            const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl);
-            const contract = new ethers.Contract(TESTNET_CONFIG.contracts.arcadeHub, ArcadeHubABI, provider);
-
-            // Get all PointsClaimSubmitted events
-            const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
-                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-            // Get all PointsClaimApproved and PointsClaimRejected events
-            const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
-                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-            const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
-                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-
-            // Build sets of processed claims
-            const processed = new Set([
-                ...approved.map(e => e.args.player.toLowerCase()),
-                ...rejected.map(e => e.args.player.toLowerCase()),
-            ]);
-
-            // Filter out processed claims
-            const pending = submitted
-                .filter(e => !processed.has(e.args.player.toLowerCase()))
-                .map(e => ({
-                    player: e.args.player,
-                    points: Number(e.args.points),
-                    blockNumber: e.blockNumber,
-                }));
-
-            setPendingClaims(pending);
-        };
+        
 
         fetchPendingClaims();
     }, []);
@@ -94,7 +94,8 @@ const handleApprove = async (player: string) => {
     try {
         await approvePointsClaimAA(aaSigner, player, 1, selectedToken, { gasMultiplier: clampedGasMultiplier });          
         toast({ title: "Claim Approved", description: `Claim for ${player} approved.`, className: "bg-green-400 text-black border-green-400" });
-        setPendingClaims(prev => prev.filter(claim => claim.player !== player));
+          // Re-fetch claims after successful approval
+          await fetchPendingClaims();
     } catch (err: any) {
         toast({ title: "Approval Failed", description: err.message || "Error approving claim.", variant: "destructive" });
     }

@@ -73,15 +73,11 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
 
         setPendingClaims(pending);
     };
-    // Fetch pending claims from contract events
-    // ...existing code...
     useEffect(() => {
         
 
         fetchPendingClaims();
     }, []);
-    // ...existing code...
-// ...existing code...
 
 const handleApprove = async (player: string) => {
     if (!aaSigner) {

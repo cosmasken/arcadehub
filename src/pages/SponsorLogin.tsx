@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWeb3 } from '../contexts/Web3Context';
+// import { useWeb3 } from '../contexts/Web3Context';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
 import LoadingModal from '../components/LoadingModal';
@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 const SponsorLogin = () => {
-  const { user, login } = useWeb3();
+  // const { user, login } = useWeb3();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -57,50 +57,50 @@ const SponsorLogin = () => {
     }
   ];
 
-  const handleLogin = async (methodId: string) => {
-    if (methodId !== 'web3') {
-      toast({
-        title: "Coming Soon",
-        description: "This login method will be available soon!",
-        className: "bg-yellow-400 text-black border-yellow-400",
-      });
-      return;
-    }
+  // const handleLogin = async (methodId: string) => {
+  //   if (methodId !== 'web3') {
+  //     toast({
+  //       title: "Coming Soon",
+  //       description: "This login method will be available soon!",
+  //       className: "bg-yellow-400 text-black border-yellow-400",
+  //     });
+  //     return;
+  //   }
 
-    setSelectedMethod(methodId);
-    setIsLoading(true);
+  //   setSelectedMethod(methodId);
+  //   setIsLoading(true);
 
-    try {
-      await login();
+  //   try {
+  //     await login();
       
-      toast({
-        title: "Welcome, Sponsor!",
-        description: "Successfully connected. Redirecting to sponsor dashboard...",
-        className: "bg-green-400 text-black border-green-400",
-      });
+  //     toast({
+  //       title: "Welcome, Sponsor!",
+  //       description: "Successfully connected. Redirecting to sponsor dashboard...",
+  //       className: "bg-green-400 text-black border-green-400",
+  //     });
 
-      setTimeout(() => {
-        navigate('/sponsor/dashboard');
-      }, 1500);
+  //     setTimeout(() => {
+  //       navigate('/sponsor/dashboard');
+  //     }, 1500);
 
-    } catch (error) {
-      toast({
-        title: "Login Failed",
-        description: "Failed to connect wallet. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setSelectedMethod(null);
-    }
-  };
+  //   } catch (error) {
+  //     toast({
+  //       title: "Login Failed",
+  //       description: "Failed to connect wallet. Please try again.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //     setSelectedMethod(null);
+  //   }
+  // };
 
   // Redirect if already logged in
-  React.useEffect(() => {
-    if (user) {
-      navigate('/sponsor/dashboard');
-    }
-  }, [user, navigate]);
+  // React.useEffect(() => {
+  //   if (user) {
+  //     navigate('/sponsor/dashboard');
+  //   }
+  // }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-black text-green-400">
@@ -155,7 +155,7 @@ const SponsorLogin = () => {
                   <Button 
                     className="w-full bg-yellow-400 text-black hover:bg-green-400 font-mono"
                     disabled={!method.available || isLoading}
-                    onClick={() => handleLogin(method.id)}
+                    // onClick={() => handleLogin(method.id)}
                   >
                     {isLoading && selectedMethod === method.id ? (
                       <div className="flex items-center space-x-2">

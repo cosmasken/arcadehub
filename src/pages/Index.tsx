@@ -8,8 +8,10 @@ import { Card } from '../components/ui/card';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { GamepadIcon, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
+  const navigate = useNavigate();
   const featuredGames = [
     {
       id: "honey-clicker",
@@ -144,14 +146,18 @@ const Index = () => {
                   Join thousands of players competing for glory and rewards
                 </p>
                 <div className="flex justify-center space-x-4">
-                  <Badge className="bg-green-400 text-black px-4 py-2">
-                    🏆 Daily Tournaments
+                  <Badge 
+                  onClick={() => navigate('/tournaments')}
+                  className="bg-green-400 text-black px-4 py-2 cursor-pointer">
+                    🏆 Tournaments
                   </Badge>
-                  <Badge className="bg-cyan-400 text-black px-4 py-2">
-                    💰 Crypto Rewards
+                  <Badge className="bg-cyan-400 text-black px-4 py-2 cursor-pointer">
+                    💰 Rewards
                   </Badge>
-                  <Badge className="bg-purple-400 text-black px-4 py-2">
-                    🎮 Retro Games
+                  <Badge
+                  onClick={() => navigate('/leaderboard')}
+                   className="bg-yellow-400 text-black px-4 py-2 cursor-pointer">
+                    📈 Leaderboards
                   </Badge>
                 </div>
               </Card>

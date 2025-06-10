@@ -231,4 +231,108 @@ contract ArcadeHub is ReentrancyGuard {
     function getArcTokenBalance() external view returns (uint256) {
         return arcToken.balanceOf(address(this));
     }
+
+    // ...existing code...
+
+// Tournament system
+struct Tournament {
+    uint256 id;
+    address creator;
+    string name;
+    uint256 prizePool;
+    uint256 startTime;
+    uint256 endTime;
+    address[] participants;
+    mapping(address => bool) isParticipant; // NEW: fast lookup
+    bool isActive;
+    bool prizesDistributed;
+    mapping(address => uint256) scores; // player => score
+}
+
+uint256 public nextTournamentId;
+mapping(uint256 => Tournament) public tournaments;
+
+// Events
+event TournamentCreated(uint256 indexed id, address indexed creator, uint256 prizePool, uint256 startTime, uint256 endTime);
+event TournamentJoined(uint256 indexed id, address indexed player);
+event TournamentScoreSubmitted(uint256 indexed id, address indexed player, uint256 score);
+event TournamentPrizesDistributed(uint256 indexed id);
+
+// Create a tournament (creator deposits prize pool)
+function createTournament(
+    string calldata name,
+    uint256 prizePool,
+    uint256 startTime,
+    uint256 endTime
+) external nonReentrant {
+    require(prizePool > 0, "Prize pool required");
+    require(startTime < endTime, "Invalid time");
+    require(arcToken.transferFrom(msg.sender, address(this), prizePool), "Prize transfer failed");
+
+    Tournament storage t = tournaments[nextTournamentId];
+    t.id = nextTournamentId;
+    t.creator = msg.sender;
+    t.name = name;
+    t.prizePool = prizePool;
+    t.startTime = startTime;
+    t.endTime = endTime;
+    t.isActive = true;
+
+    emit TournamentCreated(nextTournamentId, msg.sender, prizePool, startTime, endTime);
+    nextTournamentId++;
+}
+
+// Join a tournament
+function joinTournament(uint256 tournamentId) external {
+    Tournament storage t = tournaments[tournamentId];
+    require(t.isActive, "Inactive");
+    require(block.timestamp < t.endTime, "Ended");
+    t.participants.push(msg.sender);
+    emit TournamentJoined(tournamentId, msg.sender);
+}
+
+address public trustedSigner; // Set in constructor or via setter
+
+function setTrustedSigner(address _signer) external onlyOwner {
+    trustedSigner = _signer;
+}
+// Submit score (should be called by the game or validated source)
+function submitTournamentScore(uint256 tournamentId, uint256 score) external {
+    Tournament storage t = tournaments[tournamentId];
+    require(t.isActive, "Inactive");
+    require(block.timestamp >= t.startTime && block.timestamp <= t.endTime, "Not active");
+    bool isParticipant = false;
+    for (uint i = 0; i < t.participants.length; i++) {
+        if (t.participants[i] == msg.sender) {
+            isParticipant = true;
+            break;
+        }
+    }
+    require(isParticipant, "Not registered");
+    require(score > t.scores[msg.sender], "Score not higher"); // Only allow best score
+    t.scores[msg.sender] = score;
+    emit TournamentScoreSubmitted(tournamentId, msg.sender, score);
+}
+
+// Distribute prizes (can be called by owner after tournament ends)
+function distributeTournamentPrizes(uint256 tournamentId, address[] calldata winners, uint256[] calldata amounts) external onlyOwner nonReentrant {
+    Tournament storage t = tournaments[tournamentId];
+    require(block.timestamp > t.endTime, "Not ended");
+    require(!t.prizesDistributed, "Already distributed");
+    require(winners.length == amounts.length, "Length mismatch");
+    uint256 total;
+    for (uint i = 0; i < amounts.length; i++) {
+        total += amounts[i];
+    }
+    require(total <= t.prizePool, "Exceeds pool");
+
+    for (uint i = 0; i < winners.length; i++) {
+        require(arcToken.transfer(winners[i], amounts[i]), "Prize transfer failed");
+    }
+    t.prizesDistributed = true;
+    t.isActive = false;
+    emit TournamentPrizesDistributed(tournamentId);
+}
+
+// ...existing code...
 }

@@ -18,6 +18,11 @@ import { useWalletStore } from "./stores/useWalletStore";
 import LoadingModal from "./components/LoadingModal";
 import SpaceInvaders from "./pages/SpaceInvaders";
 import Admin from "./pages/Admin";
+import Sponsors from "./pages/Sponsors";
+import SponsorLogin from "./pages/SponsorLogin";
+import SponsorDashboard from "./pages/SponsorDashboard";
+import CreateTournament from "./pages/CreateTournament";
+import SponsorAnalytics from "./components/SponsorAnalytics";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +45,11 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/sponsors" element={<Sponsors />} />
+             <Route path="/sponsor/login" element={<SponsorLogin />} />
+            <Route path="/sponsor/dashboard" element={<SponsorDashboard />} />
+            <Route path="/sponsor/create-tournament" element={<CreateTournament />} />
+            <Route path="/sponsor/analytics" element={<SponsorAnalytics />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/tournaments" element={<Tournaments />} />
             <Route path="/profile" element={<Profile />} />

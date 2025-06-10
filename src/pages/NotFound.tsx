@@ -3,13 +3,14 @@ import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
+   //  redirect to home after 5 seconds
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     window.location.href = "/";
+  //   }, 5000);
+  //   return () => clearTimeout(timer);
+  // }
+  // , []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">

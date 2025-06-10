@@ -152,6 +152,13 @@ const Header = () => {
                 >
                   &gt; ADMIN
                 </Link>
+
+                 <Link
+                  to="/sponsors"
+                  className="text-green-400 hover:text-cyan-400 transition-colors font-mono tracking-wider text-xs uppercase border-b-2 border-transparent hover:border-cyan-400 pb-1"
+                >
+                  &gt; SPONSORS
+                </Link>
               </nav>
             </div>
 

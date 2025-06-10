@@ -9,7 +9,6 @@ import {
   approveAAWalletToken,
 } from '../lib/aaUtils';
 import { API_OPTIMIZATION } from '../config';
-// import { API_OPTIMIZATION } from '@/config';
 import type { SupportedToken, TokenBalances, TokenApprovals } from '../types/tokens';
 
 

@@ -24,7 +24,7 @@ import {
 import ArcadeHubABI from '../abi/ArcadeHub.json'
 import TokenSelector from './TokenSelector';
 import { ethers } from 'ethers';
-import { approvePointsClaimAA, rejectPointsClaimAA } from '../lib/aaUtils';
+import { approvePointsClaimAA, rejectPointsClaimAA, getProvider } from '../lib/aaUtils';
 import { useWalletStore } from '../stores/useWalletStore';
 
 const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
@@ -44,7 +44,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const clampedGasMultiplier = Math.max(50, Math.min(500, gasMultiplierPercent));
 
     const fetchPendingClaims = async () => {
-        const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl);
+        const provider = getProvider();
         const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, ArcadeHubABI, provider);
 
         // Get all PointsClaimSubmitted events
@@ -74,36 +74,36 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         setPendingClaims(pending);
     };
     useEffect(() => {
-const fetchPendingClaims = async () => {
-        const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl);
-        const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, ArcadeHubABI, provider);
+        const fetchPendingClaims = async () => {
+            const provider = getProvider();
+            const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, ArcadeHubABI, provider);
 
-        // Get all PointsClaimSubmitted events
-        const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
-            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-        // Get all PointsClaimApproved and PointsClaimRejected events
-        const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
-            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-        const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
-            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+            // Get all PointsClaimSubmitted events
+            const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
+                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+            // Get all PointsClaimApproved and PointsClaimRejected events
+            const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
+                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+            const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
+                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
 
-        // Build sets of processed claims
-        const processed = new Set([
-            ...approved.map(e => e.args.player.toLowerCase()),
-            ...rejected.map(e => e.args.player.toLowerCase()),
-        ]);
+            // Build sets of processed claims
+            const processed = new Set([
+                ...approved.map(e => e.args.player.toLowerCase()),
+                ...rejected.map(e => e.args.player.toLowerCase()),
+            ]);
 
-        // Filter out processed claims
-        const pending = submitted
-            .filter(e => !processed.has(e.args.player.toLowerCase()))
-            .map(e => ({
-                player: e.args.player,
-                points: Number(e.args.points),
-                blockNumber: e.blockNumber,
-            }));
+            // Filter out processed claims
+            const pending = submitted
+                .filter(e => !processed.has(e.args.player.toLowerCase()))
+                .map(e => ({
+                    player: e.args.player,
+                    points: Number(e.args.points),
+                    blockNumber: e.blockNumber,
+                }));
 
-        setPendingClaims(pending);
-    };
+            setPendingClaims(pending);
+        };
         console.log("Fetching pending claims...");
         fetchPendingClaims();
     }, []);

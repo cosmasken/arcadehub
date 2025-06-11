@@ -5,22 +5,22 @@ import Header from '../components/Header';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { 
-  Plus, 
-  Trophy, 
-  Coins, 
-  Users, 
+import {
+  Plus,
+  Trophy,
+  Coins,
+  Users,
   Eye,
   Calendar,
   Target,
   BarChart3,
   Settings
 } from 'lucide-react';
-import {ethers } from 'ethers';
+import { ethers } from 'ethers';
 import ViewTournamentModal from '../components/ViewTournamentModal';
 import ManageTournamentModal from '../components/ManageTournamentModal';
 import { useWalletStore } from '../stores/useWalletStore';
-import {getProvider} from '../lib/aaUtils';
+import { getProvider } from '../lib/aaUtils';
 import { TESTNET_CONFIG } from '../config';
 import TournamentHubABI from '../abi/TournamentHub.json';
 
@@ -82,14 +82,14 @@ const SponsorDashboard = () => {
         ids.map(async (id) => {
           const info = await contract.getTournamentInfo(id, aaWalletAddress);
           return {
-            id: info.id.toNumber(),
+            id: Number(info.id),
             title: info.name,
-            game: info.game || '', // adjust if needed
+            game: info.game || '',
             prizePool: ethers.formatEther(info.prizePool),
             participants: info.participants.length,
             status: info.isActive ? 'live' : (info.prizesDistributed ? 'completed' : 'upcoming'),
             startDate: new Date(Number(info.startTime) * 1000).toISOString().slice(0, 10),
-            yourContribution: ethers.formatEther(info.prizePool), // adjust if needed
+            yourContribution: ethers.formatEther(info.prizePool),
           };
         })
       );
@@ -99,7 +99,7 @@ const SponsorDashboard = () => {
   }, [aaWalletAddress]);
 
   // Redirect if not logged in
- 
+
 
   const handleViewTournament = (tournament: any) => {
     setSelectedTournament(tournament);
@@ -119,7 +119,7 @@ const SponsorDashboard = () => {
   return (
     <div className="min-h-screen bg-black text-green-400">
       <Header />
-      
+
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
@@ -133,7 +133,7 @@ const SponsorDashboard = () => {
               </p>
             </div>
             <div className="flex space-x-3">
-              <Button 
+              <Button
                 onClick={() => navigate('/sponsor/analytics')}
                 variant="outline"
                 className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black font-mono"
@@ -141,7 +141,7 @@ const SponsorDashboard = () => {
                 <BarChart3 className="w-4 h-4 mr-2" />
                 ANALYTICS
               </Button>
-              <Button 
+              <Button
                 onClick={() => navigate('/sponsor/create-tournament')}
                 className="bg-yellow-400 text-black hover:bg-green-400 font-mono"
               >
@@ -209,11 +209,13 @@ const SponsorDashboard = () => {
                           <h3 className="text-cyan-400 font-mono font-bold text-lg">
                             {tournament.title}
                           </h3>
-                          <Badge className={`font-mono ${
-                            tournament.status === 'live' 
-                              ? 'bg-green-400 text-black animate-pulse' 
+                          <h3 className="text-cyan-400 font-mono font-bold text-lg">
+                            {tournament.id}
+                          </h3>
+                          <Badge className={`font-mono ${tournament.status === 'live'
+                              ? 'bg-green-400 text-black animate-pulse'
                               : 'bg-yellow-400 text-black'
-                          }`}>
+                            }`}>
                             {tournament.status.toUpperCase()}
                           </Badge>
                         </div>
@@ -238,7 +240,7 @@ const SponsorDashboard = () => {
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="flex space-x-2">
                         <Button
                           variant="outline"
@@ -279,7 +281,7 @@ const SponsorDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
+                <Button
                   onClick={() => navigate('/sponsor/create-tournament')}
                   className="w-full bg-yellow-400 text-black hover:bg-green-400 font-mono"
                 >
@@ -300,7 +302,7 @@ const SponsorDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
+                <Button
                   variant="outline"
                   className="w-full border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"
                 >

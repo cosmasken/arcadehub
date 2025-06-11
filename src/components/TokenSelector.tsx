@@ -14,11 +14,7 @@ interface TokenSelectorProps {
 
 const TokenSelector: React.FC<TokenSelectorProps> = ({ selectedToken, onTokenSelect }) => {
    const { supportedTokens, tokenBalances,loadTokenBalances} = useTokenStore();
-   const { aaWalletAddress } = useWalletStore();
-
-
-  //  const { supportedTokens, tokenBalances, loadSupportedTokens, loadTokenBalances } = useTokenStore();
-
+   const { aaWalletAddress } = useWalletStore();;
 
    useEffect(() => {
      if (aaWalletAddress && supportedTokens.length > 0) {

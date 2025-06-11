@@ -1663,7 +1663,7 @@ export const submitPointsClaimAA = async (
     await accountSigner.getAddress(),
     points,
     paymentType,
-    selectedToken,
+    // selectedToken,
     options?.gasMultiplier || 100
   ]);
 
@@ -2304,4 +2304,374 @@ export const aaApplyForAdmin = async (
     selectedToken,
     options
   );
+};
+
+//TODO: review the below
+// Create a tournament using Account Abstraction
+export const createTournamentAA = async (
+  accountSigner: ethers.Signer,
+  name: string,
+  prizePool: bigint,
+  startTime: number,
+  endTime: number,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('createTournamentAA', [
+    await accountSigner.getAddress(),
+    name,
+    prizePool.toString(),
+    startTime,
+    endTime,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function createTournament(string name, uint256 prizePool, uint256 startTime, uint256 endTime) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('createTournament', [
+        name,
+        prizePool,
+        startTime,
+        endTime
+      ]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Join a tournament using Account Abstraction
+export const joinTournamentAA = async (
+  accountSigner: ethers.Signer,
+  tournamentId: number,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('joinTournamentAA', [
+    await accountSigner.getAddress(),
+    tournamentId,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function joinTournament(uint256 tournamentId) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('joinTournament', [tournamentId]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Submit tournament score using Account Abstraction (requires signature from trusted signer)
+export const submitTournamentScoreAA = async (
+  accountSigner: ethers.Signer,
+  tournamentId: number,
+  score: number,
+  signature: string, // Hex-encoded signature from trusted signer
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('submitTournamentScoreAA', [
+    await accountSigner.getAddress(),
+    tournamentId,
+    score,
+    signature,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function submitTournamentScore(uint256 tournamentId, uint256 score, bytes signature) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('submitTournamentScore', [
+        tournamentId,
+        score,
+        signature
+      ]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Distribute tournament prizes using Account Abstraction (admin only)
+export const distributeTournamentPrizesAA = async (
+  accountSigner: ethers.Signer,
+  tournamentId: number,
+  winners: string[],
+  amounts: bigint[],
+  paymentType: number = 1,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('distributeTournamentPrizesAA', [
+    await accountSigner.getAddress(),
+    tournamentId,
+    winners,
+    amounts.map(a => a.toString()),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function distributeTournamentPrizes(uint256 tournamentId, address[] winners, uint256[] amounts) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('distributeTournamentPrizes', [
+        tournamentId,
+        winners,
+        amounts
+      ]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Claim developer payout using Account Abstraction
+export const claimDeveloperPayoutAA = async (
+  accountSigner: ethers.Signer,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('claimDeveloperPayoutAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function claimDeveloperPayout() external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('claimDeveloperPayout', []);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Add owner using Account Abstraction (admin only)
+export const addOwnerAA = async (
+  accountSigner: ethers.Signer,
+  newOwner: string,
+  paymentType: number = 1,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('addOwnerAA', [
+    await accountSigner.getAddress(),
+    newOwner,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function addOwner(address newOwner) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('addOwner', [newOwner]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Remove owner using Account Abstraction (admin only)
+export const removeOwnerAA = async (
+  accountSigner: ethers.Signer,
+  ownerToRemove: string,
+  paymentType: number = 1,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('removeOwnerAA', [
+    await accountSigner.getAddress(),
+    ownerToRemove,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function removeOwner(address ownerToRemove) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('removeOwner', [ownerToRemove]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Deposit tokens to fund the contract using Account Abstraction (admin only)
+export const depositTokensAA = async (
+  accountSigner: ethers.Signer,
+  amount: bigint,
+  paymentType: number = 1,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('depositTokensAA', [
+    await accountSigner.getAddress(),
+    amount.toString(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.contracts.arcadeHub,
+        ["function depositTokens(uint256 amount) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('depositTokens', [amount]);
+      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+// Get ARC token balance of the ArcadeHub contract (view function, no AA needed)
+export const getArcTokenBalance = async () => {
+  try {
+    const contract = new ethers.Contract(
+      TESTNET_CONFIG.contracts.arcadeHub,
+      ["function getArcTokenBalance() external view returns (uint256)"],
+      getProvider()
+    );
+    const balance = await contract.getArcTokenBalance();
+    return ethers.formatUnits(balance, 18); // Assuming ARC token has 18 decimals
+  } catch (error) {
+    console.error("Error fetching ARC token balance:", error);
+    return '0';
+  }
 };

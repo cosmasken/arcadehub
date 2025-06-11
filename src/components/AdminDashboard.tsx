@@ -37,7 +37,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const [loadingModalText, setLoadingModalText] = useState<string | undefined>(undefined);
 
     const [selectedToken, setSelectedToken] = useState<string>('');
-    const [gasMultiplier, setGasMultiplier] = useState([1.5]); 
+    const [gasMultiplier, setGasMultiplier] = useState([1.5]);
 
     // Clamp and convert to percent for AA utils
     const gasMultiplierPercent = Math.round(gasMultiplier[0] * 100);
@@ -74,54 +74,83 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         setPendingClaims(pending);
     };
     useEffect(() => {
-        
+const fetchPendingClaims = async () => {
+        const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl);
+        const contract = new ethers.Contract(TESTNET_CONFIG.contracts.arcadeHub, ArcadeHubABI, provider);
 
+        // Get all PointsClaimSubmitted events
+        const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+        // Get all PointsClaimApproved and PointsClaimRejected events
+        const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+        const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+
+        // Build sets of processed claims
+        const processed = new Set([
+            ...approved.map(e => e.args.player.toLowerCase()),
+            ...rejected.map(e => e.args.player.toLowerCase()),
+        ]);
+
+        // Filter out processed claims
+        const pending = submitted
+            .filter(e => !processed.has(e.args.player.toLowerCase()))
+            .map(e => ({
+                player: e.args.player,
+                points: Number(e.args.points),
+                blockNumber: e.blockNumber,
+            }));
+
+        setPendingClaims(pending);
+    };
+        console.log("Fetching pending claims...");
         fetchPendingClaims();
     }, []);
 
-const handleApprove = async (player: string) => {
-    if (!aaSigner) {
-        toast({ title: "No admin wallet", description: "Connect your admin AA wallet.", variant: "destructive" });
-        return;
-    }
-    setLoadingClaim(player);
-    setLoadingModalText("Approving claim...");
-    setIsLoadingModalOpen(true);
-    try {
-        await approvePointsClaimAA(aaSigner, player, 1, selectedToken, { gasMultiplier: clampedGasMultiplier });          
-        toast({ title: "Claim Approved", description: `Claim for ${player} approved.`, className: "bg-green-400 text-black border-green-400" });
-          // Re-fetch claims after successful approval
-          await fetchPendingClaims();
-    } catch (err: any) {
-        toast({ title: "Approval Failed", description: err.message || "Error approving claim.", variant: "destructive" });
-    }
-    setLoadingClaim(null);
-    setIsLoadingModalOpen(false);
-};
+    const handleApprove = async (player: string) => {
+        if (!aaSigner) {
+            toast({ title: "No admin wallet", description: "Connect your admin AA wallet.", variant: "destructive" });
+            return;
+        }
+        setLoadingClaim(player);
+        setLoadingModalText("Approving claim...");
+        setIsLoadingModalOpen(true);
+        try {
+            await approvePointsClaimAA(aaSigner, player, 1, selectedToken, { gasMultiplier: clampedGasMultiplier });
+            toast({ title: "Claim Approved", description: `Claim for ${player} approved.`, className: "bg-green-400 text-black border-green-400" });
+            // Re-fetch claims after successful approval
+            await fetchPendingClaims();
+        } catch (err: any) {
+            toast({ title: "Approval Failed", description: err.message || "Error approving claim.", variant: "destructive" });
+        }
+        setLoadingClaim(null);
+        setIsLoadingModalOpen(false);
+    };
 
-const handleReject = async (player: string) => {
-    if (!aaSigner) {
-        toast({ title: "No admin wallet", description: "Connect your admin AA wallet.", variant: "destructive" });
-        return;
-    }
-    setLoadingClaim(player);
-    setLoadingModalText("Rejecting claim...");
-    setIsLoadingModalOpen(true);
-    try {
-        await rejectPointsClaimAA(aaSigner, player, 1, selectedToken, { gasMultiplier: clampedGasMultiplier }); // <-- add gasMultiplier
-        toast({ title: "Claim Rejected", description: `Claim for ${player} rejected.`, className: "bg-red-400 text-black border-red-400" });
-        setPendingClaims(prev => prev.filter(claim => claim.player !== player));
-    } catch (err: any) {
-        toast({ title: "Rejection Failed", description: err.message || "Error rejecting claim.", variant: "destructive" });
-    }
-    setLoadingClaim(null);
-    setIsLoadingModalOpen(false);
-};
+    const handleReject = async (player: string) => {
+        if (!aaSigner) {
+            toast({ title: "No admin wallet", description: "Connect your admin AA wallet.", variant: "destructive" });
+            return;
+        }
+        setLoadingClaim(player);
+        setLoadingModalText("Rejecting claim...");
+        setIsLoadingModalOpen(true);
+        try {
+            await rejectPointsClaimAA(aaSigner, player, 1, selectedToken, { gasMultiplier: clampedGasMultiplier }); // <-- add gasMultiplier
+            toast({ title: "Claim Rejected", description: `Claim for ${player} rejected.`, className: "bg-red-400 text-black border-red-400" });
+            setPendingClaims(prev => prev.filter(claim => claim.player !== player));
+        } catch (err: any) {
+            toast({ title: "Rejection Failed", description: err.message || "Error rejecting claim.", variant: "destructive" });
+        }
+        setLoadingClaim(null);
+        setIsLoadingModalOpen(false);
+    };
 
 
 
     // Approve all pending claims
-   const handleApproveAll = async () => {
+    const handleApproveAll = async () => {
         setLoadingModalText("Approving all claims...");
         setIsLoadingModalOpen(true);
         for (const claim of pendingClaims) {
@@ -131,7 +160,7 @@ const handleReject = async (player: string) => {
     };
 
     // Reject all pending claims
-      const handleRejectAll = async () => {
+    const handleRejectAll = async () => {
         setLoadingModalText("Rejecting all claims...");
         setIsLoadingModalOpen(true);
         for (const claim of pendingClaims) {
@@ -220,25 +249,25 @@ const handleReject = async (player: string) => {
                 {activeTab === 'claims' && (
                     <div>
                         {/* Gas Multiplier Slider */}
-                    <div className="mb-6">
-                        <label className="text-cyan-400 text-sm font-bold mb-2 block">
-                            GAS_MULTIPLIER: {gasMultiplier[0]}x
-                        </label>
-                        <Slider
-                            value={gasMultiplier}
-                            onValueChange={setGasMultiplier}
-                            min={0.5}
-                            max={5}
-                            step={0.1}
-                            className="w-full"
-                        />
-                        <div className="flex justify-between text-xs text-green-400">
-                            <span>0.5x (MIN)</span>
-                            <span>1.0x (NORMAL)</span>
-                            <span>5.0x (MAX)</span>
+                        <div className="mb-6">
+                            <label className="text-cyan-400 text-sm font-bold mb-2 block">
+                                GAS_MULTIPLIER: {gasMultiplier[0]}x
+                            </label>
+                            <Slider
+                                value={gasMultiplier}
+                                onValueChange={setGasMultiplier}
+                                min={0.5}
+                                max={5}
+                                step={0.1}
+                                className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-green-400">
+                                <span>0.5x (MIN)</span>
+                                <span>1.0x (NORMAL)</span>
+                                <span>5.0x (MAX)</span>
+                            </div>
                         </div>
-                    </div>
-                    {/* Token Selector */}
+                        {/* Token Selector */}
                         <div className="mb-6">
                             <label className="text-cyan-400 text-sm font-bold mb-2 block">
                                 SELECT GAS TOKEN

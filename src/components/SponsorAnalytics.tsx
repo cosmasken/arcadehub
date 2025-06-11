@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWeb3 } from '../contexts/Web3Context';
 import Header from './Header';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -15,7 +14,6 @@ import {
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const SponsorAnalytics = () => {
-  const { user } = useWeb3();
   const navigate = useNavigate();
 
   // Mock analytics data
@@ -49,16 +47,6 @@ const SponsorAnalytics = () => {
     { name: 'Strategy Games', value: 20, color: '#ffff00' },
     { name: 'Puzzle Games', value: 10, color: '#ff00ff' }
   ];
-
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/sponsor/login');
-    }
-  }, [user, navigate]);
-
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-black text-green-400">

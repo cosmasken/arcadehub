@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useWeb3 } from '../contexts/Web3Context';
+import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -18,10 +17,11 @@ import {
 } from 'lucide-react';
 import ViewTournamentModal from '../components/ViewTournamentModal';
 import ManageTournamentModal from '../components/ManageTournamentModal';
+import { useWalletStore } from '../stores/useWalletStore';
 
 const SponsorDashboard = () => {
-  const { user } = useWeb3();
   const navigate = useNavigate();
+  const { aaWalletAddress } = useWalletStore();
 
   // Add modal state
   const [selectedTournament, setSelectedTournament] = useState(null);
@@ -60,15 +60,7 @@ const SponsorDashboard = () => {
   ];
 
   // Redirect if not logged in
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/sponsor/login');
-    }
-  }, [user, navigate]);
-
-  if (!user) {
-    return null;
-  }
+ 
 
   const handleViewTournament = (tournament: any) => {
     setSelectedTournament(tournament);
@@ -98,7 +90,7 @@ const SponsorDashboard = () => {
                 &gt; SPONSOR_DASHBOARD &lt;
               </h1>
               <p className="text-green-400 mt-2">
-                Welcome back, {user.name || 'SPONSOR_001'}
+                Welcome back, {aaWalletAddress || 'SPONSOR_001'}
               </p>
             </div>
             <div className="flex space-x-3">

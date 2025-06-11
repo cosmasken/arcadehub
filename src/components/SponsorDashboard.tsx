@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useWeb3 } from '../contexts/Web3Context';
 import Header from './Header';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
@@ -20,7 +19,6 @@ import ViewTournamentModal from './ViewTournamentModal';
 import ManageTournamentModal from './ManageTournamentModal';
 
 const SponsorDashboard = () => {
-  const { user } = useWeb3();
   const navigate = useNavigate();
 
   // Add modal state
@@ -60,15 +58,15 @@ const SponsorDashboard = () => {
   ];
 
   // Redirect if not logged in
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/sponsor/login');
-    }
-  }, [user, navigate]);
+  // React.useEffect(() => {
+  //   if (!user) {
+  //     navigate('/sponsor/login');
+  //   }
+  // }, [user, navigate]);
 
-  if (!user) {
-    return null;
-  }
+  // if (!user) {
+  //   return null;
+  // }
 
   const handleViewTournament = (tournament: any) => {
     setSelectedTournament(tournament);

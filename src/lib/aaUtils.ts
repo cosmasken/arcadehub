@@ -1864,7 +1864,14 @@ export const approvePointsClaimAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `approvePointsClaimAA-${await accountSigner.getAddress()}-${player}`;
+  // const opKey = `approvePointsClaimAA-${await accountSigner.getAddress()}-${player}`;
+   const opKey = generateOperationKey('approvePointsClaimAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
+
   return executeOperation(
     opKey,
     accountSigner,
@@ -1898,7 +1905,13 @@ export const rejectPointsClaimAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `rejectPointsClaimAA-${await accountSigner.getAddress()}-${player}`;
+  // const opKey = `rejectPointsClaimAA-${await accountSigner.getAddress()}-${player}`;
+    const opKey = generateOperationKey('rejectPointsClaimAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
@@ -1932,7 +1945,13 @@ export const acceptAdminApplicationAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `acceptAdminApplicationAA-${await accountSigner.getAddress()}-${applicant}`;
+  // const opKey = `acceptAdminApplicationAA-${await accountSigner.getAddress()}-${applicant}`;
+    const opKey = generateOperationKey('acceptAdminApplicationAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
@@ -1966,7 +1985,13 @@ export const rejectAdminApplicationAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `rejectAdminApplicationAA-${await accountSigner.getAddress()}-${applicant}`;
+  // const opKey = `rejectAdminApplicationAA-${await accountSigner.getAddress()}-${applicant}`;
+    const opKey = generateOperationKey('rejectAdminApplicationAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
@@ -2001,7 +2026,13 @@ export const allocateDeveloperRevenueAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `allocateDeveloperRevenueAA-${await accountSigner.getAddress()}-${developer}-${amount.toString()}`;
+  // const opKey = `allocateDeveloperRevenueAA-${await accountSigner.getAddress()}-${developer}-${amount.toString()}`;
+   const opKey = generateOperationKey('allocateDeveloperRevenueAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
@@ -2036,7 +2067,13 @@ export const transferARCTokenAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `transferARCTokenAA-${await accountSigner.getAddress()}-${to}-${amount.toString()}`;
+  // const opKey = `transferARCTokenAA-${await accountSigner.getAddress()}-${to}-${amount.toString()}`;
+   const opKey = generateOperationKey('transferARCTokenAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
@@ -2082,7 +2119,13 @@ export const transferNFTAA = async (
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
   // Generate a unique operation key
-  const opKey = `transferNFTAA-${await accountSigner.getAddress()}-${toString()}-${tokenId.toString()}`;
+  // const opKey = `transferNFTAA-${await accountSigner.getAddress()}-${toString()}-${tokenId.toString()}`;
+  const opKey = generateOperationKey('transferNFTAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
 
   // Use executeOperation for memoized execution
   return executeOperation(
@@ -2152,7 +2195,13 @@ export const aaStakeTokens = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `aaStakeTokens-${await accountSigner.getAddress()}-${amount.toString()}`;
+  // const opKey = `aaStakeTokens-${await accountSigner.getAddress()}-${amount.toString()}`;
+  const opKey = generateOperationKey('aaStakeTokens', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
@@ -2186,7 +2235,13 @@ export const aaUnstakeTokens = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `aaUnstakeTokens-${await accountSigner.getAddress()}-${amount.toString()}`;
+  // const opKey = `aaUnstakeTokens-${await accountSigner.getAddress()}-${amount.toString()}`;
+  const opKey = generateOperationKey('aaUnstakeTokens', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
@@ -2219,7 +2274,13 @@ export const aaApplyForAdmin = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  const opKey = `aaApplyForAdmin-${await accountSigner.getAddress()}`;
+  // const opKey = `aaApplyForAdmin-${await accountSigner.getAddress()}`;
+     const opKey = generateOperationKey('aaApplyForAdmin', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100
+  ]);
   return executeOperation(
     opKey,
     accountSigner,

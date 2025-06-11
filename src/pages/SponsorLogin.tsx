@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import { useWeb3 } from '../contexts/Web3Context';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
 import LoadingModal from '../components/LoadingModal';
@@ -18,7 +17,6 @@ import {
 } from 'lucide-react';
 
 const SponsorLogin = () => {
-  // const { user, login } = useWeb3();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -156,6 +154,7 @@ const SponsorLogin = () => {
                     className="w-full bg-yellow-400 text-black hover:bg-green-400 font-mono"
                     disabled={!method.available || isLoading}
                     // onClick={() => handleLogin(method.id)}
+                    onClick={() => navigate('/sponsor/dashboard')}// Temporary navigation for demo
                   >
                     {isLoading && selectedMethod === method.id ? (
                       <div className="flex items-center space-x-2">

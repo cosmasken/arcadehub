@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useWeb3 } from '../contexts/Web3Context';
 import { useToast } from '../hooks/use-toast';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -22,7 +21,6 @@ import OnboardingModal from './OnboardingModal';
 
 
 const Header = () => {
-  // const { user, isLoading, login, logout } = useWeb3();
   const {
     isInitialized,
     isConnected,

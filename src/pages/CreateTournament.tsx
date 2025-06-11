@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useWeb3 } from '../contexts/Web3Context';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
 import PrizePoolDepositModal from '../components/PrizePoolDepositModal';
@@ -22,7 +21,6 @@ import {
 } from 'lucide-react';
 
 const CreateTournament = () => {
-  const { user } = useWeb3();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -49,11 +47,11 @@ const CreateTournament = () => {
   ];
 
   // Redirect if not logged in
-  React.useEffect(() => {
-    if (!user) {
-      navigate('/sponsor/login');
-    }
-  }, [user, navigate]);
+  // React.useEffect(() => {
+  //   if (!user) {
+  //     navigate('/sponsor/login');
+  //   }
+  // }, [user, navigate]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -104,9 +102,9 @@ const CreateTournament = () => {
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  // if (!user) {
+  //   return null;
+  // }
 
   return (
     <div className="min-h-screen bg-black text-green-400">
@@ -262,8 +260,8 @@ const CreateTournament = () => {
             <div className="space-y-6">
               <Card className="bg-black border-2 border-yellow-400 sticky top-24">
                 <CardHeader>
-                  <CardTitle className="text-yellow-400 font-mono flex items-center">
-                    <Coins className="w-5 h-5 mr-2" />
+                  <CardTitle className="text-yellow-400 font-mono flex items-center text-sm sm:text-lg">
+                    <Coins className="w-5 h-5" />
                     TOURNAMENT_SUMMARY
                   </CardTitle>
                 </CardHeader>

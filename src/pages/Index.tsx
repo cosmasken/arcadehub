@@ -9,8 +9,26 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { GamepadIcon, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getArcTokenBalance } from '../lib/aaUtils';
 
 const Index = () => {
+  const [arcBalance, setArcBalance] = React.useState<string>('0');
+
+  // Fetch Arc token balance
+  React.useEffect(() => {
+    const fetchArcBalance = async () => {
+      try {
+        const balance = await getArcTokenBalance();
+        setArcBalance(balance);
+        console.log("Arc Token Balance:", balance);
+      } catch (error) {
+        console.error("Error fetching Arc token balance:", error);
+      }
+    };
+
+    fetchArcBalance();
+  }
+  , []);
   const navigate = useNavigate();
   const featuredGames = [
     {
@@ -94,6 +112,17 @@ const Index = () => {
               {stats.map((stat, index) => (
                 <StatsCard key={index} {...stat} />
               ))}
+            </div>
+          </div>
+        </section>
+
+         {/* Total Available Tokens Section */}
+        <section className="py-8 px-6 bg-cyan-950/70">
+          <div className="container mx-auto max-w-2xl text-center">
+            <div className="border-2 border-cyan-400 rounded-lg p-6 flex flex-col items-center">
+              <span className="text-cyan-400 font-bold text-lg mb-2">TOTAL AVAILABLE TOKENS</span>
+              <span className="text-3xl font-mono text-green-400 mb-1">{arcBalance} ARC</span>
+              <span className="text-xs text-cyan-200">Distributed across all games</span>
             </div>
           </div>
         </section>

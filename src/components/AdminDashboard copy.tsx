@@ -49,7 +49,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     useEffect(() => {
         const fetchPendingClaims = async () => {
             const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl); 
-            const contract = new ethers.Contract(TESTNET_CONFIG.contracts.arcadeHub, ArcadeHubABI, provider);
+            const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, ArcadeHubABI, provider);
 
             // Get all PointsClaimSubmitted events
             const submitted = await contract.queryFilter(contract.filters.PointsClaimSubmitted());

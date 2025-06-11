@@ -10,25 +10,21 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import {
-  ArrowLeft,
-  Trophy,
-  Coins,
+import { 
+  ArrowLeft, 
+  Trophy, 
+  Coins, 
   Calendar,
   Users,
   Target,
   Gamepad2
 } from 'lucide-react';
-import { createTournamentAA, approveTokenForContractAA } from '../lib/aaUtils';
-import { ethers } from 'ethers';
-import { TESTNET_CONFIG } from '../config'; // Assuming you have a config file with contract addresses
-import { useWalletStore } from '../stores/useWalletStore'; // Adjust the import based on your store structure
+import { createTournamentAA, distributeTournamentPrizesAA } from '../lib/aaUtils';
 
 const CreateTournament = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { aaSigner } = useWalletStore();
-
+  
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,12 +40,19 @@ const CreateTournament = () => {
 
   const gameOptions = [
     'Crypto Battles',
-    'NFT Racing',
+    'NFT Racing', 
     'DeFi Quest',
     'Pixel Warriors',
     'Space Invaders',
     'Honey Clicker'
   ];
+
+  // Redirect if not logged in
+  // React.useEffect(() => {
+  //   if (!user) {
+  //     navigate('/sponsor/login');
+  //   }
+  // }, [user, navigate]);
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -69,93 +72,20 @@ const CreateTournament = () => {
     setIsDepositModalOpen(true);
   };
 
-  const handlePrizePoolDeposit = async (amount: string
-    // , token: string
-  ) => {
-    // setIsDepositModalOpen(false);
+  const handlePrizePoolDeposit = async (amount: string, token: string) => {
+    setIsDepositModalOpen(false);
     setIsLoadingModalOpen(true);
 
     try {
-      // Get the user's signer (e.g., from MetaMask)
-
-      if (!aaSigner) {
-        throw new Error("Wallet not connected. Please connect your wallet.");
-      }
-
-      // Validate token (assuming ARC token for now)
-      // if (token.toLowerCase() !== 'arc') {
-      //   throw new Error("Only ARC tokens are supported for prize pools.");
-      // }
-
-      // Convert amount to wei (assuming 18 decimals for ARC token)
-      const prizePool = ethers.parseUnits(amount, 18);
-
-      // 1. Approve only the required ARC amount for ArcadeHub
-      // Approve token for a specific contract using AA
-      // export const approveTokenForContractAA = async (
-      //   accountSigner: ethers.Signer,
-      //   tokenAddress: string,
-      //   amount: bigint,
-      //   contractAddress: string,
-      //   options?: { apiKey?: string; gasMultiplier?: number }
-      // ) => {
-
-      const approvalResult = await approveTokenForContractAA(
-        aaSigner, TESTNET_CONFIG.smartContracts.arcadeToken,
-        prizePool,
-        TESTNET_CONFIG.smartContracts.tournamentHub)
-      // const approvalResult = await approveArcadeHubArc(aaSigner, prizePool);
-      if (!approvalResult || approvalResult.error) {
-        throw new Error("Token approval failed. Please try again.");
-      }
-
-      // Convert startDate to Unix timestamp (in seconds)
-      const startTime = Math.floor(new Date(formData.startDate).getTime() / 1000);
-
-      // Calculate endTime (startTime + duration in hours converted to seconds)
-      const endTime = startTime + formData.duration * 3600;
-      setIsLoadingModalOpen(true);
-
-      // Create tournament on-chain using Account Abstraction
-      const result = await createTournamentAA(
-        aaSigner,
-        formData.title, // name
-        prizePool,      // prizePool
-        startTime,      // startTime
-        endTime,        // endTime
-        0,              // paymentType: sponsored gas
-        '',             // selectedToken: none for sponsored gas
-      );
-
-      // Check if transaction was successful
-      if (!result.userOpHash) {
-        throw new Error("Transaction failed. No UserOperation hash returned.");
-      }
-
+      // Simulate tournament creation and prize pool deposit
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
       setIsLoadingModalOpen(false);
-
-      // toast({
-      //   title: "Tournament Created Successfully!",
-      //   description: `${formData.title} has been created with ${amount} ARC prize pool. UserOpHash: ${result.userOpHash}`,
-      //   className: "bg-green-400 text-black border-green-400",
-      // });
-
+      
       toast({
         title: "Tournament Created Successfully!",
-        description: (
-          <span>
-            <span>Transaction:&nbsp;</span>
-            <span>${formData.title} has been created with ${amount} ARC prize pool. UserOpHash: ${result.userOpHash}</span>
-            <a
-              href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 underline"
-            >
-              View on Neroscan
-            </a>
-          </span>
-        ),
+        description: `${formData.title} has been created with ${amount} ${token} prize pool`,
+        className: "bg-green-400 text-black border-green-400",
       });
 
       // Redirect to dashboard
@@ -164,26 +94,28 @@ const CreateTournament = () => {
       }, 1500);
 
     } catch (error) {
-      setIsDepositModalOpen(false);
       setIsLoadingModalOpen(false);
       toast({
         title: "Creation Failed",
-        description: error.message || "Failed to create tournament. Please try again.",
+        description: "Failed to create tournament. Please try again.",
         variant: "destructive",
       });
-      console.error("Error creating tournament:", error);
     }
   };
+
+  // if (!user) {
+  //   return null;
+  // }
 
   return (
     <div className="min-h-screen bg-black text-green-400">
       <Header />
-
+      
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-4xl">
           {/* Header */}
           <div className="flex items-center space-x-4 mb-8">
-            <Button
+            <Button 
               onClick={() => navigate('/sponsor/dashboard')}
               variant="outline"
               className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"

@@ -28,9 +28,18 @@ interface ContractAddresses {
   entryPoint: string;
   accountFactory: string;
   multiCall: string;
-  arcadeNFTContract: string;
-  arcadeTokenContract: string;
-  arcadeHub: string;
+}
+
+interface SmartContracts {
+  gameRegistry: string;
+  arcadeNFT: string;
+  arcadeToken: string;
+  pointsSystem: string;
+  stakingSystem: string;
+  developerPayouts: string;
+  nftManager: string;
+  tournamentHub: string;
+  adminApplications: string;
 }
 
 interface ERC20Addresses {
@@ -63,6 +72,7 @@ export const TESTNET_CONFIG: {
   chain: ChainConfig;
   aaPlatform: AAPlatformConfig;
   contracts: ContractAddresses;
+  smartContracts: SmartContracts; // Optional for testnet
   erc20: ERC20Addresses;
 } = {
   chain: {
@@ -84,9 +94,17 @@ export const TESTNET_CONFIG: {
     entryPoint: '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789',
     accountFactory: '0x9406Cc6185a346906296840746125a0E44976454',
     multiCall: '0x343A0DdD8e58bEaf29d69936c82F1516C6677B0E',
-    arcadeNFTContract: '0xaBC719F2C7e50fa19beE24f782b02A87Bbb41E20',
-    arcadeTokenContract: '0x06D9c2675557B5B1c1213012C365B0f452894b90',
-    arcadeHub:'0xa8a9268a15171FCF3B4B8d0f2083fD820Da904D5',
+  },
+  smartContracts: {
+    gameRegistry: '0xF7D8fb9eA82A14cBb190bBB80Cd65C3EcE67C3E2',
+    arcadeNFT: '0xc079c8e4779f5B01A2678236849577FB22Ec5079',
+    arcadeToken: '0x150E812D3443699e8b829EF6978057Ed7CB47AE6',
+    pointsSystem: '0x67aB51eE70E8135615D976f1c434e152449Feef5',
+    stakingSystem: '0x48c3d13633b00C95CFa763bA2293F31f0b8448Eb',
+    developerPayouts: '0xF27a858EC52Cc789F87e93A87D6E854ec103B2AF',
+    nftManager: '0x92CD16b242D30451e6e53B93cB8C641A678dbc74',
+    tournamentHub: '0xD63A8b174639cdFa134aB284943049570225F881',
+    adminApplications: '0x0797FE7109Ec3E711b7445036051409e2bB7d558',
   },
   erc20: {
     dai: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345',
@@ -122,9 +140,6 @@ const MAINNET_CONFIG: {
     entryPoint: '0x...',
     accountFactory: '0x...',
     multiCall: '0x...',
-    arcadeNFTContract: '0x...',
-    arcadeTokenContract: '0x...',
-    arcadeHub: '0x...',
   },
   erc20: {
     dai: '0x...',

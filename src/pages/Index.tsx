@@ -9,26 +9,35 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { GamepadIcon, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getArcTokenBalance } from '../lib/aaUtils';
+import { getProvider } from '../lib/aaUtils';
+import { ethers } from 'ethers';
+import { TESTNET_CONFIG } from '@/config';
+
+const TOKEN_ABI = "../abi/ArcadeToken.json";
 
 const Index = () => {
-  const [arcBalance, setArcBalance] = React.useState<string>('0');
+//   const [arcBalance, setArcBalance] = React.useState<string>('0');
+// async function getArcTokenBalance() {
+//   const provider = getProvider();
+//   const tokenContract = new ethers.Contract(TESTNET_CONFIG.smartContracts.arcadeToken, TOKEN_ABI, provider);
+//   const balance = await tokenContract.balanceOf(USER_ADDRESS);
+//   return ethers.formatUnits(balance, 18); // Assuming 18 decimals, adjust as needed
+// }
+//   // Fetch Arc token balance
+//   React.useEffect(() => {
+//     const fetchArcBalance = async () => {
+//       try {
+//         const balance = await getArcTokenBalance();
+//         setArcBalance(balance);
+//         console.log("Arc Token Balance:", balance);
+//       } catch (error) {
+//         console.error("Error fetching Arc token balance:", error);
+//       }
+//     };
 
-  // Fetch Arc token balance
-  React.useEffect(() => {
-    const fetchArcBalance = async () => {
-      try {
-        const balance = await getArcTokenBalance();
-        setArcBalance(balance);
-        console.log("Arc Token Balance:", balance);
-      } catch (error) {
-        console.error("Error fetching Arc token balance:", error);
-      }
-    };
-
-    fetchArcBalance();
-  }
-  , []);
+//     fetchArcBalance();
+//   }
+//   , []);
   const navigate = useNavigate();
   const featuredGames = [
     {
@@ -117,12 +126,16 @@ const Index = () => {
         </section>
 
          {/* Total Available Tokens Section */}
-        <section className="py-8 px-6 bg-cyan-950/70">
+        <section className="py-8 px-6 ">
           <div className="container mx-auto max-w-2xl text-center">
-            <div className="border-2 border-cyan-400 rounded-lg p-6 flex flex-col items-center">
-              <span className="text-cyan-400 font-bold text-lg mb-2">TOTAL AVAILABLE TOKENS</span>
-              <span className="text-3xl font-mono text-green-400 mb-1">{arcBalance} ARC</span>
-              <span className="text-xs text-cyan-200">Distributed across all games</span>
+            <div className="p-6 flex flex-col items-center">
+              <h2 className="text-sm sm:text-3xl md:text-5xl font-bold mb-6 text-cyan-400 neon-text">
+              &gt; TOTAL AVAILABLE TOKENS &lt;
+            </h2>
+              {/* <span className="text-cyan-400 font-bold text-lg mb-2 neon-text"></span> */}
+              <span className="text-3xl md:text-5xl font-mono text-green-400 mb-1 neon-text"> 
+                1,000,000 ARCARC</span>
+              <span className="text-xs text-cyan-200 neon-text">Distributed across all games</span>
             </div>
           </div>
         </section>

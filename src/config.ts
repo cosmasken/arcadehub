@@ -33,6 +33,18 @@ interface ContractAddresses {
   arcadeHub: string;
 }
 
+interface SmartContracts {
+  gameRegistry: string;
+  arcadeNFT: string;
+  arcadeToken: string;
+  pointsSystem: string;
+  stakingSystem: string;
+  developerPayouts: string;
+  nftManager: string;
+  tournamentHub: string;
+  adminApplications: string;
+}
+
 interface ERC20Addresses {
   dai: string;
   usdt: string;
@@ -63,6 +75,7 @@ export const TESTNET_CONFIG: {
   chain: ChainConfig;
   aaPlatform: AAPlatformConfig;
   contracts: ContractAddresses;
+  smartContracts: SmartContracts; // Optional for testnet
   erc20: ERC20Addresses;
 } = {
   chain: {
@@ -87,6 +100,17 @@ export const TESTNET_CONFIG: {
     arcadeNFTContract: '0xaBC719F2C7e50fa19beE24f782b02A87Bbb41E20',
     arcadeTokenContract: '0x06D9c2675557B5B1c1213012C365B0f452894b90',
     arcadeHub:'0xa8a9268a15171FCF3B4B8d0f2083fD820Da904D5',
+  },
+  smartContracts: {
+    gameRegistry: '0x1234567890abcdef1234567890abcdef12345678',
+    arcadeNFT: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    arcadeToken: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    pointsSystem: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    stakingSystem: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    developerPayouts: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    nftManager: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    tournamentHub: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+    adminApplications: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd',
   },
   erc20: {
     dai: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345',

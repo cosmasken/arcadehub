@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ethers } from 'ethers';
 import { Client, Presets } from 'userop';
 import { 
@@ -7,11 +8,7 @@ import {
 } from '../config';
 
 const API_KEY = import.meta.env.VITE_NEROCHAIN_API_KEY;
-// get api from
-// Cache to avoid excessive API calls
-// let tokenCache: any[] = [];
-// let lastFetchTime: number = 0;
-// const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 // Cache variables to prevent redundant initialization
 let cachedClient: any = null;
 let cachedBuilder: any = null;
@@ -22,13 +19,13 @@ let tokenRequestCount = 0;
 const pendingOperations = new Map<string, Promise<any>>();
 
 // Cache for API responses
-const responseCache = new Map<string, {data: any, timestamp: number}>();
+const responseCache = new Map<string, { data: any, timestamp: number }>();
 
-// Simple request throttling/debouncing utility
-const throttledRequests = new Map<string, {timestamp: number, promise: Promise<any>}>();
+// Simple request throttling utility
+const throttledRequests = new Map<string, { timestamp: number, promise: Promise<any> }>();
 
 // Cache for NFT data to avoid repeated fetching
-const nftCache = new Map<string, {timestamp: number, data: any[]}>();
+const nftCache = new Map<string, { timestamp: number, data: any[] }>();
 const NFT_CACHE_DURATION = 60000; // 1 minute cache
 
 export const throttledRequest = async (key: string, requestFn: () => Promise<any>, timeWindow: number = 5000) => {
@@ -37,21 +34,16 @@ export const throttledRequest = async (key: string, requestFn: () => Promise<any
   
   if (existing && now - existing.timestamp < timeWindow) {
     console.log(`Using cached request for ${key}`);
-    // Return the cached promise if request was recent
     return existing.promise;
   }
   
-  // Otherwise, make a new request
   console.log(`Making new request for ${key}`);
   const promise = requestFn();
   throttledRequests.set(key, { timestamp: now, promise });
   
-  // Clean up after promise resolves
   promise.finally(() => {
-    // Only clean if it's the same promise (not replaced by a newer one)
     if (throttledRequests.get(key)?.promise === promise) {
       setTimeout(() => {
-        // Only delete if it's still the same promise
         if (throttledRequests.get(key)?.promise === promise) {
           throttledRequests.delete(key);
         }
@@ -62,8 +54,6 @@ export const throttledRequest = async (key: string, requestFn: () => Promise<any
   return promise;
 };
 
-
-
 // Initialize Ethereum provider
 export const getProvider = () => {
   return new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl);
@@ -71,11 +61,9 @@ export const getProvider = () => {
 
 // Get a signer from user's wallet
 export const getSigner = async () => {
-  // Connect to the user's Ethereum provider (e.g., MetaMask)
   if (!window.ethereum) {
     throw new Error("No Ethereum provider found. Please install MetaMask or a compatible wallet.");
   }
-
   const provider = new ethers.BrowserProvider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   return provider.getSigner();
@@ -83,46 +71,36 @@ export const getSigner = async () => {
 
 // Initialize Account Abstraction Client with caching
 export const initAAClient = async (accountSigner: ethers.Signer) => {
-   if (!accountSigner.provider) {
+  if (!accountSigner.provider) {
     throw new Error("Signer must be connected to a provider");
   }
-  
-  // Return cached client if available
   if (cachedClient && API_OPTIMIZATION.enableCaching) {
     console.log("Using cached AA client");
     return cachedClient;
   }
-  
   console.log("Initializing new AA client");
   cachedClient = await Client.init(TESTNET_CONFIG.chain.rpcUrl, {
     overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
     entryPoint: TESTNET_CONFIG.contracts.entryPoint,
   });
-
-  
-  
   return cachedClient;
 };
 
 // Initialize SimpleAccount Builder with caching
 export const initAABuilder = async (accountSigner: ethers.Signer) => {
-  // Only rebuild if signer changes and caching is enabled
   if (API_OPTIMIZATION.enableCaching) {
     const signerAddress = await accountSigner.getAddress();
     if (cachedBuilder && cachedWalletAddress === signerAddress) {
-      // Update API key if needed but don't reinitialize
       console.log("Using cached AA builder with updated API key");
       const currentApiKey = API_KEY;
       cachedBuilder.setPaymasterOptions({
         apikey: currentApiKey,
         rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
-        type: 0 // Default to free (sponsored gas)
+        type: 0
       });
       return cachedBuilder;
     }
   }
-  
-  // Otherwise, create a new builder
   console.log("Initializing new AA builder");
   const builder = await Presets.Builder.SimpleAccount.init(
     accountSigner,
@@ -133,40 +111,27 @@ export const initAABuilder = async (accountSigner: ethers.Signer) => {
       factory: TESTNET_CONFIG.contracts.accountFactory,
     }
   );
-  
-  // Apply gas parameters from configuration
   const gasParams = getGasParameters();
-  
-  // Set API key for paymaster - use provided key, global API_KEY, or none
-  const currentApiKey =  API_KEY;
-  
-  // Set paymaster options with API key and gas parameters
+  const currentApiKey = API_KEY;
   builder.setPaymasterOptions({
     apikey: currentApiKey,
     rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
-    type: 0 // Default to free (sponsored gas)
+    type: 0
   });
-  
-  // Set gas parameters for the UserOperation
   builder.setCallGasLimit(gasParams.callGasLimit);
   builder.setVerificationGasLimit(gasParams.verificationGasLimit);
   builder.setPreVerificationGas(gasParams.preVerificationGas);
   builder.setMaxFeePerGas(gasParams.maxFeePerGas);
   builder.setMaxPriorityFeePerGas(gasParams.maxPriorityFeePerGas);
-  
-  // Update cache variables
   if (API_OPTIMIZATION.enableCaching) {
     cachedBuilder = builder;
     cachedWalletAddress = await accountSigner.getAddress();
   }
-  
   return builder;
 };
 
-
 // Get the AA wallet address with caching
 export const getAAWalletAddress = async (accountSigner: ethers.Signer) => {
-  // Check if we have a cached address for this signer
   if (API_OPTIMIZATION.enableCaching) {
     const signerAddress = await accountSigner.getAddress();
     if (cachedWalletAddress === signerAddress && cachedBuilder) {
@@ -174,37 +139,30 @@ export const getAAWalletAddress = async (accountSigner: ethers.Signer) => {
       return cachedBuilder.getSender();
     }
   }
-  
-  // Otherwise, get a fresh builder and address
   console.log("Getting fresh AA wallet address");
   const builder = await initAABuilder(accountSigner);
   return builder.getSender();
 };
 
-// Set the payment type for the paymaster (0: free, 1: prepay, 2: postpay)
+// Set the payment type for the paymaster
 export const setPaymentType = (builder: any, paymentType: number, tokenAddress: string = '') => {
   const paymasterOptions: any = { 
     type: paymentType,
     apikey: API_KEY,
     rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc
   };
-  
-  // Add token address if ERC20 payment is selected
   if (paymentType > 0 && tokenAddress) {
     paymasterOptions.token = tokenAddress;
   }
-  
   builder.setPaymasterOptions(paymasterOptions);
   return builder;
 };
 
 // Create a minimal UserOp for pm_supported_tokens
 const createMinimalUserOp = (sender: string) => {
-  // Create a minimal valid UserOp structure
-  // Using simpler values that don't cause nonce validation errors
   return {
-    sender: sender,
-    nonce: "0x0", // Use 0x0 to avoid nonce issues
+    sender,
+    nonce: "0x0",
     initCode: "0x",
     callData: "0x",
     callGasLimit: "0x0",
@@ -217,7 +175,6 @@ const createMinimalUserOp = (sender: string) => {
   };
 };
 
-
 // Use the SDK's built-in method to get tokens
 export const getSupportedTokensFromSDK = async (client: any, builder: any) => {
   try {
@@ -229,15 +186,10 @@ export const getSupportedTokensFromSDK = async (client: any, builder: any) => {
   }
 };
 
-
-
 // Transform the token response to a standardized format
 const transformTokensResponse = (response: any) => {
   if (!response) return [];
-  
-  // Check for tokens array in the response
   let tokens = [];
-  
   if (response.tokens && Array.isArray(response.tokens)) {
     tokens = response.tokens.map((token: any) => ({
       address: token.token,
@@ -263,31 +215,26 @@ const transformTokensResponse = (response: any) => {
       price: token.price
     }));
   } else if (typeof response === 'object') {
-  // Try to find tokens in the response object
-  const possibleTokensArray = Object.values(response).find(val => Array.isArray(val));
-  if (possibleTokensArray && Array.isArray(possibleTokensArray)) {
-    tokens = possibleTokensArray.map((token: any) => ({
-      address: token.address || token.token,
-      symbol: token.symbol,
-      decimal: token.decimal || token.decimals,
-      type: token.type || 1,
-      price: token.price
-    }));
+    const possibleTokensArray = Object.values(response).find(val => Array.isArray(val));
+    if (possibleTokensArray && Array.isArray(possibleTokensArray)) {
+      tokens = possibleTokensArray.map((token: any) => ({
+        address: token.address || token.token,
+        symbol: token.symbol,
+        decimal: token.decimal || token.decimals,
+        type: token.type || 1,
+        price: token.price
+      }));
+    }
   }
-}
-  
   if (API_OPTIMIZATION.debugLogs) {
     console.log("Transformed tokens response:", tokens);
   }
-  
   return tokens;
 };
-
 
 // Get token balance
 export const getTokenBalance = async (address: string, tokenAddress: string) => {
   try {
-    // Expanded ERC20 ABI to cover more potential implementations
     const tokenContract = new ethers.Contract(
       tokenAddress,
       [
@@ -297,23 +244,18 @@ export const getTokenBalance = async (address: string, tokenAddress: string) => 
       ],
       getProvider()
     );
-    
-    // First check if the contract is deployed and responds
     const code = await getProvider().getCode(tokenAddress);
     if (code === '0x') {
       console.warn(`Token contract at ${tokenAddress} is not deployed`);
       return '0';
     }
-    
     const balance = await tokenContract.balanceOf(address);
-    let decimals = 18; // Default to 18 decimals
-    
+    let decimals = 18;
     try {
       decimals = await tokenContract.decimals();
     } catch (err) {
-      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`,err);
+      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`, err);
     }
-    
     return ethers.formatUnits(balance, decimals);
   } catch (err) {
     console.error(`Error getting token balance for ${tokenAddress}:`, err);
@@ -321,110 +263,73 @@ export const getTokenBalance = async (address: string, tokenAddress: string) => 
   }
 };
 
-// Direct RPC call to pm_supported_tokens without building a full UserOperation
+// Direct RPC call to pm_supported_tokens
 export const directGetSupportedTokens = async (sender: string, apiKey: string) => {
   try {
-    // Create a provider connected to the paymaster RPC
     const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.aaPlatform.paymasterRpc);
-    
-    // Create minimal UserOp - avoid full UserOp creation that causes extra API calls
     const minimalUserOp = createMinimalUserOp(sender);
-    
-    // Make direct RPC call
     if (API_OPTIMIZATION.debugLogs) console.log("Making direct RPC call to pm_supported_tokens");
-    
     const result = await provider.send("pm_supported_tokens", [
       minimalUserOp, 
       apiKey,
       TESTNET_CONFIG.contracts.entryPoint
     ]);
-
-   
-    
     if (API_OPTIMIZATION.debugLogs) {
       console.log("Direct pm_supported_tokens response:", result);
     }
-    
     return result;
   } catch (error) {
     console.error("Error in direct RPC call to pm_supported_tokens:", error);
-    // Fall back to SDK method
     console.log("Falling back to SDK method for getting supported tokens");
     return null;
   }
 };
+
 // Get all token balances for a list of tokens
 export const getAllTokenBalances = async (userAddress: string, tokens: any[]) => {
   const balances: { [key: string]: string } = {};
-  
-  // Process in parallel for efficiency
   await Promise.all(
     tokens.map(async (token) => {
       balances[token.address] = await getTokenBalance(userAddress, token.address);
     })
   );
-  
   return balances;
 };
 
 // Get supported tokens from Paymaster API
 export const getSupportedTokens = async (client: any, builder: any) => {
-  // Check for token request limits
   if (tokenRequestCount >= API_OPTIMIZATION.maxTokenRefreshes) {
     console.log("Reached maximum token refresh limit, using cached data");
-    // Try to use cached data
     const cacheKey = "supportedTokens";
     const cached = responseCache.get(cacheKey);
     if (cached) {
       return cached.data;
     }
-    // If no cache, return empty array to avoid further calls
     return [];
   }
-  
   tokenRequestCount++;
-  
-  // Get sender address
   const sender = await builder.getSender();
-  
-  // Use throttled request with a direct RPC call first, then fallback to SDK
   const key = `getSupportedTokens-${sender}`;
   return throttledRequest(key, async () => {
-    // Check cache first
     const cacheKey = "supportedTokens";
     const cached = responseCache.get(cacheKey);
     const now = Date.now();
-    
     if (cached && (now - cached.timestamp < API_OPTIMIZATION.tokenCacheTime)) {
       console.log("Using cached supported tokens");
       return cached.data;
     }
-    
     try {
       console.log("Fetching supported tokens from API");
-      
-      // Get API key
       const apiKeyToUse = API_KEY;
-
-      console.log('getSupportedTokens params:', { client, builder, sender, apiKeyToUse });
-      
-      // Try direct method first
       let response = await directGetSupportedTokens(sender, apiKeyToUse);
-      
-      // If direct method fails, fall back to SDK method
       if (!response) {
         response = await getSupportedTokensFromSDK(client, builder);
       }
-      
-      // Transform response to standardized format
       const supportedTokens = transformTokensResponse(response);
-      
-      // Cache the result
       responseCache.set(cacheKey, {
         data: supportedTokens,
         timestamp: now
       });
-      
       return supportedTokens;
     } catch (error) {
       console.error("Error getting supported tokens:", error);
@@ -433,79 +338,61 @@ export const getSupportedTokens = async (client: any, builder: any) => {
   }, API_OPTIMIZATION.tokenCacheTime);
 };
 
-// Reset token request count (can be called when explicitly refreshing)
+// Reset token request count
 export const resetTokenRequestCount = () => {
   tokenRequestCount = 0;
 };
 
 // Apply gas price settings and other options to a builder
 const applyBuilderSettings = (builder: any, paymentType: number = 0, selectedToken: string = '', options?: any) => {
-  // Apply gas parameters
   const gasParams = options?.gasMultiplier ? 
     getGasParameters({ feeMultiplier: options.gasMultiplier }) : 
     getGasParameters();
-  
-  // Set payment type and token
   setPaymentType(builder, paymentType, selectedToken);
-  
-  // Apply gas parameters
   builder.setCallGasLimit(gasParams.callGasLimit);
   builder.setVerificationGasLimit(gasParams.verificationGasLimit);
   builder.setPreVerificationGas(gasParams.preVerificationGas);
   builder.setMaxFeePerGas(gasParams.maxFeePerGas);
   builder.setMaxPriorityFeePerGas(gasParams.maxPriorityFeePerGas);
-  
   return builder;
 };
 
-// Generic operation executor to avoid duplicate code and API calls
+// Generic operation executor
 const executeOperation = async (
   operationKey: string,
   accountSigner: ethers.Signer,
   executeFn: (client: any, builder: any) => Promise<any>,
   paymentType: number,
-  selectedToken: string ,
+  selectedToken: string,
   options?: any
 ) => {
-  // Check for pending/cached operations
   if (API_OPTIMIZATION.enableCaching && pendingOperations.has(operationKey)) {
     console.log(`Using pending operation result for ${operationKey}`);
     return pendingOperations.get(operationKey);
   }
-  
   const executePromise = (async () => {
     try {
-      // Initialize client and builder with caching
       const client = await initAAClient(accountSigner);
       const builder = await initAABuilder(accountSigner);
-      
-      // Apply settings
       applyBuilderSettings(builder, paymentType, selectedToken, options);
-      
-      // Execute the operation
       return await executeFn(client, builder);
     } catch (error) {
       console.error(`Error executing operation ${operationKey}:`, error);
-      // Remove from pending operations on error
       pendingOperations.delete(operationKey);
       throw error;
     } finally {
-      // Clean up pending operation after a delay
       setTimeout(() => {
         pendingOperations.delete(operationKey);
-      }, 5000); // Remove after 5 seconds to prevent caching errors for too long
+      }, 5000);
     }
   })();
-  
-  // Cache the promise
   if (API_OPTIMIZATION.enableCaching) {
     pendingOperations.set(operationKey, executePromise);
   }
-  
   return executePromise;
 };
 
-// Generate a unique operation key based on parameters
+// Generate a unique operation key
 const generateOperationKey = (functionName: string, params: any[]) => {
   return `${functionName}-${JSON.stringify(params)}`;
 };
@@ -515,14 +402,10 @@ export const mintERC20Token = async (
   accountSigner: ethers.Signer, 
   recipientAddress: string,
   amount: bigint,
-  paymentType: number = 0, // 0: free, 1: prepay, 2: postpay
-  selectedToken: string = '', // Token address for ERC20 payment
-  options?: {
-    apiKey?: string;
-    gasMultiplier?: number;
-  }
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // Generate a unique operation key
   const opKey = generateOperationKey('mintERC20', [
     await accountSigner.getAddress(),
     recipientAddress,
@@ -531,188 +414,162 @@ export const mintERC20Token = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-  
-  // Use memoized operation execution
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
+      const erc20Contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.arcadeToken,
+        [
+          'function mint(address, uint256) returns (bool)',
+          'function balanceOf(address) view returns (uint256)',
+          'function decimals() view returns (uint8)'
+        ],
+        getProvider()
+      );
+      const callData = erc20Contract.interface.encodeFunctionData('mint', [
+        recipientAddress,
+        amount
+      ]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.arcadeToken, 0, callData);
+      if (API_OPTIMIZATION.debugLogs) console.log(`Sending mint ERC20 operation to paymaster`);
+      const res = await client.sendUserOperation(userOp);
+      console.log("UserOperation sent with hash:", res.userOpHash);
+      const receipt = await res.wait();
+      let transactionHash = '';
       try {
-        // Create ERC20 contract instance
-        const erc20Contract = new ethers.Contract(
-          TESTNET_CONFIG.contracts.arcadeTokenContract,
-          [
-            // Simple ERC20 functions we need
-            'function mint(address, uint256) returns (bool)',
-            'function balanceOf(address) view returns (uint256)',
-            'function decimals() view returns (uint8)'
-          ],
-          getProvider()
-        );
-        
-        // Prepare the mint function call data
-        const callData = erc20Contract.interface.encodeFunctionData('mint', [
-          recipientAddress,
-          amount
-        ]);
-        
-        // Set transaction data in the builder
-        const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeTokenContract, 0, callData);
-        
-        // Send the user operation
-        if (API_OPTIMIZATION.debugLogs) console.log(`Sending mint ERC20 operation to paymaster`);
-        const res = await client.sendUserOperation(userOp);
-        
-        console.log("UserOperation sent with hash:", res.userOpHash);
-        
-        // Wait for the UserOperation to be included in a transaction
-        const receipt = await res.wait();
-        
-        let transactionHash = '';
-        try {
-          // Directly get the transaction hash from the receipt if available
-          if (receipt && receipt.transactionHash) {
-            transactionHash = receipt.transactionHash;
-          } 
-          // Otherwise try to get it using SimpleAccount (if available)
-          else if (Presets && Presets.SimpleAccount) {
-            // Get the account address
-            // const accountAddress = await getAAWalletAddress(accountSigner);
-            const simpleAccountInstance = await Presets.SimpleAccount.init(
-              accountSigner,
-              TESTNET_CONFIG.chain.rpcUrl,
-              {
-                overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
-                entryPoint: TESTNET_CONFIG.contracts.entryPoint,
-                factory: TESTNET_CONFIG.contracts.accountFactory,
-              }
-            );
-            
-            // Get transaction details from the UserOp hash
-            const userOpResult = await simpleAccountInstance.checkUserOp(res.userOpHash);
-            transactionHash = userOpResult.receipt?.transactionHash || '';
-            
-            return {
-              userOpHash: res.userOpHash,
-              transactionHash,
-              receipt: userOpResult
-            };
-          }
-        } catch (error) {
-          console.warn("Error getting transaction details:", error);
-          // Continue with UserOp hash only
+        if (receipt && receipt.transactionHash) {
+          transactionHash = receipt.transactionHash;
+        } else if (Presets && Presets.SimpleAccount) {
+          const simpleAccountInstance = await Presets.SimpleAccount.init(
+            accountSigner,
+            TESTNET_CONFIG.chain.rpcUrl,
+            {
+              overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
+              entryPoint: TESTNET_CONFIG.contracts.entryPoint,
+              factory: TESTNET_CONFIG.contracts.accountFactory,
+            }
+          );
+          const userOpResult = await simpleAccountInstance.checkUserOp(res.userOpHash);
+          transactionHash = userOpResult.receipt?.transactionHash || '';
+          return {
+            userOpHash: res.userOpHash,
+            transactionHash,
+            receipt: userOpResult
+          };
         }
-        
-        // Fall back to just returning the UserOp hash if we couldn't get the transaction hash
-        return {
-          userOpHash: res.userOpHash,
-          transactionHash,
-          receipt: null
-        };
       } catch (error) {
-        console.error("Error in mintERC20 operation:", error);
-        throw error;
+        console.warn("Error getting transaction details:", error);
       }
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash,
+        receipt: null
+      };
     },
     paymentType,
     selectedToken,
     options
   );
 };
-/**
- * Approve ArcadeHub to manage all NFTs from the AA wallet using Account Abstraction (sponsored).
- * @param accountSigner ethers.Signer - the user's signer
- * @param nftContractAddress string - address of the NFT contract
- * @param operatorAddress string - ArcadeHub contract address
- * @param options optional AA/gas options
- * @returns Promise<{ success: boolean, userOpHash?: string, transactionHash?: string, receipt?: any, error?: any }>
- */
-export const approveNFTForArcadeHubAA = async (
+
+// Approve token for a specific contract using AA
+export const approveTokenForContractAA = async (
+  accountSigner: ethers.Signer,
+  tokenAddress: string,
+  amount: bigint,
+  contractAddress: string,
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const opKey = generateOperationKey('approveTokenForContractAA', [
+    await accountSigner.getAddress(),
+    tokenAddress,
+    amount.toString(),
+    contractAddress
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        ['function approve(address spender, uint256 amount) returns (bool)'],
+        getProvider()
+      );
+      const callData = tokenContract.interface.encodeFunctionData('approve', [contractAddress, amount]);
+      builder.setPaymasterOptions({
+        apikey: API_KEY,
+        rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+        type: 0 // Sponsored
+      });
+      const userOp = await builder.execute(tokenAddress, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        success: true,
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    0,
+    '',
+    options
+  );
+};
+
+// Approve NFT for a specific contract using AA
+export const approveNFTForContractAA = async (
   accountSigner: ethers.Signer,
   nftContractAddress: string,
   operatorAddress: string,
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // Generate a unique operation key
-  const opKey = `approveNFTForArcadeHubAA-${await accountSigner.getAddress()}-${nftContractAddress}-${operatorAddress}`;
-
-  // Use executeOperation for memoized execution
+  const opKey = generateOperationKey('approveNFTForContractAA', [
+    await accountSigner.getAddress(),
+    nftContractAddress,
+    operatorAddress
+  ]);
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
-      try {
-        // Create NFT contract instance
-        const nftContract = new ethers.Contract(
-          nftContractAddress,
-          [
-            "function setApprovalForAll(address operator, bool approved) external"
-          ],
-          getProvider()
-        );
-
-        // Prepare the setApprovalForAll function call data
-        const callData = nftContract.interface.encodeFunctionData('setApprovalForAll', [
-          operatorAddress,
-          true
-        ]);
-
-        // Override payment type to use free (sponsored) for this approval operation
-        builder.setPaymasterOptions({
-          apikey: API_KEY,
-          rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
-          type: 0 // Free (sponsored)
-        });
-
-        // Set transaction data in the builder
-        const userOp = await builder.execute(nftContractAddress, 0, callData);
-
-        // Send the user operation
-        if (API_OPTIMIZATION.debugLogs) console.log(`Sending AA NFT approval operation`);
-        const res = await client.sendUserOperation(userOp);
-
-        console.log("UserOperation sent with hash:", res.userOpHash);
-
-        // Wait for the UserOperation to be included in a transaction
-        const receipt = await res.wait();
-
-        let transactionHash = '';
-        if (receipt && receipt.transactionHash) {
-          transactionHash = receipt.transactionHash;
-        }
-
-        return {
-          success: true,
-          userOpHash: res.userOpHash,
-          transactionHash,
-          receipt
-        };
-      } catch (error) {
-        console.error("Error in AA NFT approval:", error);
-        return {
-          success: false,
-          error
-        };
-      }
+      const nftContract = new ethers.Contract(
+        nftContractAddress,
+        ["function setApprovalForAll(address operator, bool approved) external"],
+        getProvider()
+      );
+      const callData = nftContract.interface.encodeFunctionData('setApprovalForAll', [operatorAddress, true]);
+      builder.setPaymasterOptions({
+        apikey: API_KEY,
+        rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+        type: 0 // Sponsored
+      });
+      const userOp = await builder.execute(nftContractAddress, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        success: true,
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
     },
-    0, // Always use sponsored payment for approvals
-    '', // No token needed for sponsored
+    0,
+    '',
     options
   );
 };
-// Optimized mintNFT function with better caching and API handling
+
+// Mint NFT using Account Abstraction
 export const mintNFT = async (
   accountSigner: ethers.Signer, 
   recipientAddress: string,
   metadataUri: string,
-  paymentType: number, // 0: free, 1: prepay, 2: postpay
-  selectedToken: string = '', // Token address for ERC20 payment
-  options?: {
-    apiKey?: string;
-    gasMultiplier?: number;
-  }
+  paymentType: number,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // Generate a unique operation key
   const opKey = generateOperationKey('mintNFT', [
     await accountSigner.getAddress(),
     recipientAddress,
@@ -721,106 +578,73 @@ export const mintNFT = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-  
-  // Use memoized operation execution to reduce redundant API calls
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
-      try {
-        // Create NFT contract instance
-        const nftContract = new ethers.Contract(
-          TESTNET_CONFIG.contracts.arcadeNFTContract,
-          [
-            // Simple ERC721 functions we need
-            'function mint(address, string) returns (uint256)',
-            'function balanceOf(address) view returns (uint256)',
-            'function tokenURI(uint256) view returns (string)'
-          ],
-          getProvider()
-        );
-        
-        // Prepare the mint function call data
-        const callData = nftContract.interface.encodeFunctionData('mint', [
-          recipientAddress,
-          metadataUri
-        ]);
-        
-        // Set transaction data in the builder
-        // This internally calls the paymaster API
-        const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeNFTContract, 0, callData);
-        
-        // Send the user operation with retry capability
-        if (API_OPTIMIZATION.debugLogs) console.log(`Sending mint NFT operation to paymaster`);
-        
-        let res;
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        while (retryCount < maxRetries) {
-          try {
-            res = await client.sendUserOperation(userOp);
-            break;
-          } catch (error: any) {
-            if (retryCount === maxRetries - 1) {
-              throw error;
-            }
-            retryCount++;
-            console.warn(`Attempt ${retryCount} failed. Retrying in 1 second...`);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-        
-        console.log("UserOperation sent with hash:", res.userOpHash);
-        
-        // Wait for the UserOperation to be included in a transaction
-        const receipt = await res.wait();
-        
-        let transactionHash = '';
+      const nftContract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.arcadeNFT,
+        [
+          'function mint(address, string) returns (uint256)',
+          'function balanceOf(address) view returns (uint256)',
+          'function tokenURI(uint256) view returns (string)'
+        ],
+        getProvider()
+      );
+      const callData = nftContract.interface.encodeFunctionData('mint', [
+        recipientAddress,
+        metadataUri
+      ]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.arcadeNFT, 0, callData);
+      if (API_OPTIMIZATION.debugLogs) console.log(`Sending mint NFT operation to paymaster`);
+      let res;
+      let retryCount = 0;
+      const maxRetries = 3;
+      while (retryCount < maxRetries) {
         try {
-          // Directly get the transaction hash from the receipt if available
-          if (receipt && receipt.transactionHash) {
-            transactionHash = receipt.transactionHash;
-          } 
-          // Otherwise try to get it using SimpleAccount (if available)
-          else if (Presets && Presets.SimpleAccount) {
-            // Get the account address
-            // const accountAddress = await getAAWalletAddress(accountSigner);
-            const simpleAccountInstance = await Presets.SimpleAccount.init(
-              accountSigner,
-              TESTNET_CONFIG.chain.rpcUrl,
-              {
-                overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
-                entryPoint: TESTNET_CONFIG.contracts.entryPoint,
-                factory: TESTNET_CONFIG.contracts.accountFactory,
-              }
-            );
-            
-            // Get transaction details from the UserOp hash
-            const userOpResult = await simpleAccountInstance.checkUserOp(res.userOpHash);
-            transactionHash = userOpResult.receipt?.transactionHash || '';
-            
-            return {
-              userOpHash: res.userOpHash,
-              transactionHash,
-              receipt: userOpResult
-            };
-          }
+          res = await client.sendUserOperation(userOp);
+          break;
         } catch (error) {
-          console.warn("Error getting transaction details:", error);
-          // Continue with UserOp hash only
+          if (retryCount === maxRetries - 1) {
+            throw error;
+          }
+          retryCount++;
+          console.warn(`Attempt ${retryCount} failed. Retrying in 1s...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        
-        // Fall back to just returning the UserOp hash if we couldn't get the transaction hash
-        return {
-          userOpHash: res.userOpHash,
-          transactionHash,
-          receipt: null
-        };
-      } catch (error) {
-        console.error("Error in mintNFT operation:", error);
-        throw error;
       }
+      console.log("UserOperation sent with hash:", res.userOpHash);
+      const receipt = await res.wait();
+      let transactionHash = '';
+      try {
+        if (receipt && receipt.transactionHash) {
+          transactionHash = receipt.transactionHash;
+        } else if (Presets && Presets.SimpleAccount) {
+          const simpleAccountInstance = await Presets.SimpleAccount.init(
+            accountSigner,
+            TESTNET_CONFIG.chain.rpcUrl,
+            {
+              overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
+              entryPoint: TESTNET_CONFIG.contracts.entryPoint,
+              factory: TESTNET_CONFIG.contracts.accountFactory,
+            }
+          );
+          const userOpResult = await simpleAccountInstance.checkUserOp(res.userOpHash);
+          transactionHash = userOpResult.receipt?.transactionHash || '';
+          return {
+            userOpHash: res.userOpHash,
+            transactionHash,
+            receipt: userOpResult
+          };
+        }
+      } catch (error) {
+        console.warn("Error getting transaction details:", error);
+      }
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash,
+        receipt: null
+      };
     },
     paymentType,
     selectedToken,
@@ -828,24 +652,19 @@ export const mintNFT = async (
   );
 };
 
-
-// Fetch NFTs owned by an address with optimized performance
+// Fetch NFTs owned by an address
 export const getNFTsForAddress = async (address: string) => {
   if (!address) return [];
-  
-  // Check cache first
   const cacheKey = `nfts-${address.toLowerCase()}`;
   const cachedData = nftCache.get(cacheKey);
   const now = Date.now();
-  
   if (cachedData && (now - cachedData.timestamp < NFT_CACHE_DURATION)) {
     console.log("Using cached NFT data");
     return cachedData.data;
   }
-  
   try {
     const nftContract = new ethers.Contract(
-      TESTNET_CONFIG.contracts.arcadeNFTContract,
+      TESTNET_CONFIG.smartContracts.arcadeNFT,
       [
         'function balanceOf(address owner) view returns (uint256)',
         'function tokenURI(uint256 tokenId) view returns (string)',
@@ -854,65 +673,43 @@ export const getNFTsForAddress = async (address: string) => {
       ],
       getProvider()
     );
-    
-    // Try to get the total supply first (if the contract supports it)
-    let totalSupply = 100; // Default fallback
+    let totalSupply = 100;
     try {
       totalSupply = (await nftContract.totalSupply()).toNumber();
-      // Cap at a reasonable number to avoid excessive requests
       totalSupply = Math.min(totalSupply, 500);
     } catch (err) {
-      console.log("Contract doesn't support totalSupply, using default range",err);
+      console.log("Contract doesn't support totalSupply, using default range", err);
     }
-
-    // Prepare batched requests
-    const batchSize = 10; // Process 10 tokens at a time
+    const batchSize = 10;
     const nfts = [];
-    
-    // Process in batches to improve performance
     for (let batchStart = 1; batchStart <= totalSupply; batchStart += batchSize) {
       const batchEnd = Math.min(batchStart + batchSize - 1, totalSupply);
       console.log(`Processing NFT batch ${batchStart}-${batchEnd}`);
-      
-      // Create batch of promises for ownerOf calls
       const ownerPromises = [];
       for (let tokenId = batchStart; tokenId <= batchEnd; tokenId++) {
-        // Wrap in a promise that resolves even if the token doesn't exist
         const ownerPromise = nftContract.ownerOf(tokenId)
-          .then((owner: string) => ({ tokenId, owner, exists: true }))
+          .then(owner => ({ tokenId, owner, exists: true }))
           .catch(() => ({ tokenId, owner: null, exists: false }));
-        
         ownerPromises.push(ownerPromise);
       }
-      
-      // Wait for all owner checks to complete
       const ownerResults = await Promise.all(ownerPromises);
-      
-      // Filter for tokens owned by the address
       const ownedTokens = ownerResults
-      //TODO
         .filter(result => result.exists && result.owner?.toLowerCase() === address.toLowerCase())
         .map(result => result.tokenId);
-      
-      // Get token URIs for owned tokens (in parallel)
       if (ownedTokens.length > 0) {
         const uriPromises = ownedTokens.map(tokenId => 
           nftContract.tokenURI(tokenId)
-            .then((uri: string) => ({ tokenId: tokenId.toString(), tokenURI: uri }))
-            .catch((err: Error) => {
+            .then(uri => ({ tokenId: tokenId.toString(), tokenURI: uri }))
+            .catch(err => {
               console.warn(`Error fetching URI for token #${tokenId}:`, err);
               return { tokenId: tokenId.toString(), tokenURI: '' };
             })
         );
-        
         const uriResults = await Promise.all(uriPromises);
         nfts.push(...uriResults.filter(token => token.tokenURI));
       }
     }
-    
-    // Cache the results
     nftCache.set(cacheKey, { timestamp: now, data: nfts });
-    
     return nfts;
   } catch (err) {
     console.error("Error fetching NFTs:", err);
@@ -920,41 +717,30 @@ export const getNFTsForAddress = async (address: string) => {
   }
 };
 
-// Get test token balance with mock data for development
+// Get test token balance
 export const getTestTokenBalance = async (address: string) => {
   try {
-    // Try to get the real balance first
-    const balance = await getTokenBalance(address, TESTNET_CONFIG.contracts.arcadeTokenContract);
-    
-    // If we get a valid balance, return it
+    const balance = await getTokenBalance(address, TESTNET_CONFIG.smartContracts.arcadeToken);
     if (balance !== '0') {
       return balance;
     }
-    
-    // For development/testing, return a mock balance if real balance fails
     if (import.meta.env.DEV || API_OPTIMIZATION.debugLogs) {
       console.log("Using mock test token balance for development");
-      return '1000.0'; // Mock balance for testing
+      return '1000.0';
     }
-    
     return '0';
   } catch (err) {
     console.error("Error fetching test token balance:", err);
-    
-    // For development/testing, return a mock balance
     if (import.meta.env.DEV || API_OPTIMIZATION.debugLogs) {
-      return '1000.0'; // Mock balance for testing
+      return '1000.0';
     }
-
-    
     return '0';
   }
 };
 
-// Check token allowance for a spender address
+// Check token allowance for a spender
 export const checkTokenAllowance = async (provider: ethers.BrowserProvider, tokenAddress: string, ownerAddress: string, spenderAddress: string = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789') => {
   try {
-    // Create token contract instance
     const tokenContract = new ethers.Contract(
       tokenAddress,
       [
@@ -963,18 +749,13 @@ export const checkTokenAllowance = async (provider: ethers.BrowserProvider, toke
       ],
       provider
     );
-    
-    // Get current allowance
     const allowance = await tokenContract.allowance(ownerAddress, spenderAddress);
-    
-    // Get token decimals
     let decimals = 18;
     try {
       decimals = await tokenContract.decimals();
     } catch (err) {
-      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`,err);
+      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`, err);
     }
-    
     return ethers.formatUnits(allowance, decimals);
   } catch (error) {
     console.error("Error checking token allowance:", error);
@@ -982,22 +763,15 @@ export const checkTokenAllowance = async (provider: ethers.BrowserProvider, toke
   }
 };
 
-// Approve token spending for paymaster
+// Approve token spending
 export const approveToken = async (provider: ethers.BrowserProvider, tokenAddress: string, amount: bigint, spenderAddress: string = '0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789') => {
   try {
-    // Get signer from provider
     const signer = await provider.getSigner();
-    
-    // Create token contract instance
     const tokenContract = new ethers.Contract(
       tokenAddress,
-      [
-        'function approve(address spender, uint256 amount) returns (bool)'
-      ],
+      ['function approve(address spender, uint256 amount) returns (bool)'],
       signer
     );
-    
-    // Send approval transaction
     const tx = await tokenContract.approve(
       spenderAddress,
       amount,
@@ -1006,11 +780,7 @@ export const approveToken = async (provider: ethers.BrowserProvider, tokenAddres
         maxFeePerGas: ethers.parseUnits('2', 'gwei'),
       }
     );
-    // const tx = await tokenContract.approve(spenderAddress, amount);
-    
-    // Wait for transaction confirmation
     const receipt = await tx.wait();
-    
     return {
       success: true,
       transactionHash: receipt.transactionHash
@@ -1024,14 +794,8 @@ export const approveToken = async (provider: ethers.BrowserProvider, tokenAddres
   }
 };
 
-/**
- * Approve ArcadeHub to transfer all NFTs for the user (AA wallet).
- * @param accountSigner ethers.Signer - the user's signer
- * @param nftContractAddress string - address of the NFT contract
- * @param operatorAddress string - ArcadeHub contract address
- * @returns Promise<{ success: boolean, transactionHash?: string, error?: any }>
- */
-export const approveNFTForArcadeHub = async (
+// Approve NFT for a contract (non-AA)
+export const approveNFTForContract = async (
   accountSigner: ethers.Signer,
   nftContractAddress: string,
   operatorAddress: string
@@ -1050,14 +814,18 @@ export const approveNFTForArcadeHub = async (
     if (isApproved) {
       return { success: true };
     }
-     const tx = await nftContract.setApprovalForAll(operatorAddress, true, {
-      maxPriorityFeePerGas: ethers.parseUnits('1', 'gwei'),
-      maxFeePerGas: ethers.parseUnits('2', 'gwei'),
-    });
+    const tx = await nftContract.setApprovalForAll(
+      operatorAddress,
+      true,
+      {
+        maxPriorityFeePerGas: ethers.parseUnits('1', 'gwei'),
+        maxFeePerGas: ethers.parseUnits('2', 'gwei'),
+      }
+    );
     const receipt = await tx.wait();
     return { success: true, transactionHash: receipt.transactionHash };
   } catch (error) {
-    console.error("Error approving NFT for ArcadeHub:", error);
+    console.error("Error approving NFT for contract:", error);
     return { success: false, error };
   }
 };
@@ -1065,24 +833,14 @@ export const approveNFTForArcadeHub = async (
 // Transfer tokens to an AA wallet
 export const transferTokenToAAWallet = async (provider: ethers.JsonRpcProvider, tokenAddress: string, amount: bigint, recipientAddress: string) => {
   try {
-    // Get signer from provider
     const signer = await provider.getSigner();
-    
-    // Create token contract instance
     const tokenContract = new ethers.Contract(
       tokenAddress,
-      [
-        'function transfer(address to, uint256 amount) returns (bool)'
-      ],
+      ['function transfer(address to, uint256 amount) returns (bool)'],
       signer
     );
-    
-    // Send transfer transaction
     const tx = await tokenContract.transfer(recipientAddress, amount);
-    
-    // Wait for transaction confirmation
     const receipt = await tx.wait();
-    
     return {
       success: true,
       transactionHash: receipt.transactionHash
@@ -1096,81 +854,58 @@ export const transferTokenToAAWallet = async (provider: ethers.JsonRpcProvider, 
   }
 };
 
-// Get NFTs for the given address
+// Get NFTs
 export const getNFTs = async (ownerAddress: string) => {
   if (!ownerAddress) return [];
-  
   try {
-    // Call the existing getNFTsForAddress function
     const nftMetadata = await getNFTsForAddress(ownerAddress);
-
     console.log("Fetched NFT metadata:", nftMetadata);
-    
-    // Transform the NFT data to the expected format
     const formattedNFTs = await Promise.all(
       nftMetadata.map(async (nft: any) => {
         try {
-          // If the tokenURI is a JSON string, parse it
           let metadata = nft.tokenURI;
           let imageUrl = '';
           let name = `NFT #${nft.tokenId}`;
           let description = '';
-          
           if (typeof metadata === 'string') {
-            // If it's an IPFS URI, use a gateway
             if (metadata.startsWith('ipfs://')) {
               metadata = metadata.replace('ipfs://', 'https://ipfs.io/ipfs/');
             }
-            
-            // Check if it's a direct image URL by file extension
             const isDirectImage = /\.(png|jpg|jpeg|gif|webp|svg)$/i.test(metadata);
-            
             if (isDirectImage) {
-              // If it's a direct image URL, use it directly
               imageUrl = metadata;
             } else if (metadata.startsWith('http')) {
-              // Try to fetch metadata if it's a URL
               try {
                 const response = await fetch(metadata);
-                // Check content type to determine if it's JSON or an image
                 const contentType = response.headers.get('content-type');
-                
                 if (contentType && contentType.includes('application/json')) {
-                  // It's JSON, parse it
                   const jsonData = await response.json();
                   metadata = jsonData;
                 } else if (contentType && contentType.includes('image/')) {
-                  // It's an image, use the URL directly
                   imageUrl = metadata;
                 } else {
-                  // Try to parse as JSON anyway, but catch errors
                   try {
                     const jsonData = await response.json();
                     metadata = jsonData;
                   } catch (parseError) {
                     console.warn(`Could not parse response as JSON from ${metadata}`, parseError);
-                    imageUrl = metadata; // Assume it's an image or other resource
+                    imageUrl = metadata;
                   }
                 }
               } catch (e) {
                 console.warn(`Failed to fetch metadata from ${metadata}`, e);
-                // If we can't fetch, assume it might be a direct image URL
                 imageUrl = metadata;
               }
             }
           }
-          
-          // Extract metadata properties or use defaults
           if (typeof metadata === 'object' && metadata !== null) {
             imageUrl = metadata.image || imageUrl;
-            // If image is an IPFS URI, use a gateway
             if (imageUrl.startsWith('ipfs://')) {
               imageUrl = imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
             }
             name = metadata.name || name;
             description = metadata.description || '';
           }
-          
           return {
             id: nft.tokenId,
             tokenId: parseInt(nft.tokenId),
@@ -1190,7 +925,6 @@ export const getNFTs = async (ownerAddress: string) => {
         }
       })
     );
-    
     return formattedNFTs;
   } catch (error) {
     console.error("Error fetching and processing NFTs:", error);
@@ -1198,19 +932,15 @@ export const getNFTs = async (ownerAddress: string) => {
   }
 };
 
-// Transfer ERC20 tokens through Account Abstraction (gasless transfers)
+// Transfer ERC20 tokens using Account Abstraction
 export const transferERC20Token = async (
   accountSigner: ethers.Signer, 
   recipientAddress: string,
   amount: bigint,
-  paymentType: number = 0, // 0: free (gasless), 1: prepay, 2: postpay
-  selectedToken: string = '', // Token address for ERC20 payment
-  options?: {
-    apiKey?: string;
-    gasMultiplier?: number;
-  }
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // Generate a unique operation key
   const opKey = generateOperationKey('transferERC20', [
     await accountSigner.getAddress(),
     recipientAddress,
@@ -1219,88 +949,58 @@ export const transferERC20Token = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-  
-  // Use memoized operation execution
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
+      const erc20Contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.arcadeToken,
+        [
+          'function transfer(address, uint256) returns (bool)',
+          'function balanceOf(address) view returns (uint256)',
+          'function decimals() view returns (uint8)'
+        ],
+        getProvider()
+      );
+      const callData = erc20Contract.interface.encodeFunctionData('transfer', [
+        recipientAddress,
+        amount
+      ]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.arcadeToken, 0, callData);
+      if (API_OPTIMIZATION.debugLogs) console.log(`Sending transfer ERC20 operation to paymaster`);
+      const res = await client.sendUserOperation(userOp);
+      console.log("UserOperation sent with hash:", res.userOpHash);
+      const receipt = await res.wait();
+      let transactionHash = '';
       try {
-        // Create ERC20 contract instance
-        const erc20Contract = new ethers.Contract(
-          TESTNET_CONFIG.contracts.arcadeTokenContract,
-          [
-            // Simple ERC20 functions we need
-            'function transfer(address, uint256) returns (bool)',
-            'function balanceOf(address) view returns (uint256)',
-            'function decimals() view returns (uint8)'
-          ],
-          getProvider()
-        );
-        
-        // Prepare the transfer function call data
-        const callData = erc20Contract.interface.encodeFunctionData('transfer', [
-          recipientAddress,
-          amount
-        ]);
-        
-        // Set transaction data in the builder
-        const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeTokenContract, 0, callData);
-        
-        // Send the user operation
-        if (API_OPTIMIZATION.debugLogs) console.log(`Sending transfer ERC20 operation to paymaster`);
-        const res = await client.sendUserOperation(userOp);
-        
-        console.log("UserOperation sent with hash:", res.userOpHash);
-        
-        // Wait for the UserOperation to be included in a transaction
-        const receipt = await res.wait();
-        
-        let transactionHash = '';
-        try {
-          // Directly get the transaction hash from the receipt if available
-          if (receipt && receipt.transactionHash) {
-            transactionHash = receipt.transactionHash;
-          } 
-          // Otherwise try to get it using SimpleAccount (if available)
-          else if (Presets && Presets.SimpleAccount) {
-            // Get the account address
-            // const accountAddress = await getAAWalletAddress(accountSigner);
-            const simpleAccountInstance = await Presets.SimpleAccount.init(
-              accountSigner,
-              TESTNET_CONFIG.chain.rpcUrl,
-              {
-                overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
-                entryPoint: TESTNET_CONFIG.contracts.entryPoint,
-                factory: TESTNET_CONFIG.contracts.accountFactory,
-              }
-            );
-            
-            // Get transaction details from the UserOp hash
-            const userOpResult = await simpleAccountInstance.checkUserOp(res.userOpHash);
-            transactionHash = userOpResult.receipt?.transactionHash || '';
-            
-            return {
-              userOpHash: res.userOpHash,
-              transactionHash,
-              receipt: userOpResult
-            };
-          }
-        } catch (error) {
-          console.warn("Error getting transaction details:", error);
-          // Continue with UserOp hash only
+        if (receipt && receipt.transactionHash) {
+          transactionHash = receipt.transactionHash;
+        } else if (Presets && Presets.SimpleAccount) {
+          const simpleAccountInstance = await Presets.SimpleAccount.init(
+            accountSigner,
+            TESTNET_CONFIG.chain.rpcUrl,
+            {
+              overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
+              entryPoint: TESTNET_CONFIG.contracts.entryPoint,
+              factory: TESTNET_CONFIG.contracts.accountFactory,
+            }
+          );
+          const userOpResult = await simpleAccountInstance.checkUserOp(res.userOpHash);
+          transactionHash = userOpResult.receipt?.transactionHash || '';
+          return {
+            userOpHash: res.userOpHash,
+            transactionHash,
+            receipt: userOpResult
+          };
         }
-        
-        // Fall back to just returning the UserOp hash if we couldn't get the transaction hash
-        return {
-          userOpHash: res.userOpHash,
-          transactionHash,
-          receipt: null
-        };
       } catch (error) {
-        console.error("Error in transferERC20 operation:", error);
-        throw error;
+        console.warn("Error getting transaction details:", error);
       }
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash,
+        receipt: null
+      };
     },
     paymentType,
     selectedToken,
@@ -1308,17 +1008,14 @@ export const transferERC20Token = async (
   );
 };
 
-// Check token allowance from AA wallet to the paymaster
+// Check token allowance from AA wallet
 export const checkAAWalletTokenAllowance = async (
   accountSigner: ethers.Signer,
   tokenAddress: string,
   spenderAddress: string = TESTNET_CONFIG.contracts.paymaster
 ) => {
   try {
-    // Get AA wallet address
     const aaWalletAddress = await getAAWalletAddress(accountSigner);
-    
-    // Create token contract instance
     const tokenContract = new ethers.Contract(
       tokenAddress,
       [
@@ -1327,18 +1024,13 @@ export const checkAAWalletTokenAllowance = async (
       ],
       getProvider()
     );
-    
-    // Get current allowance
     const allowance = await tokenContract.allowance(aaWalletAddress, spenderAddress);
-    
-    // Get token decimals
     let decimals = 18;
     try {
       decimals = await tokenContract.decimals();
     } catch (err) {
-      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`,err);
+      console.warn(`Could not get decimals for token ${tokenAddress}, using default 18`, err);
     }
-    
     return ethers.formatUnits(allowance, decimals);
   } catch (error) {
     console.error("Error checking AA wallet token allowance:", error);
@@ -1346,164 +1038,58 @@ export const checkAAWalletTokenAllowance = async (
   }
 };
 
-/**
- * Approve ArcadeHub to spend ARC tokens from AA wallet.
- * @param accountSigner ethers.Signer - the user's signer
- * @param amount bigint - amount to approve
- * @returns Promise<any>
- */
-export const approveArcadeHubArc = async (
-  accountSigner: ethers.Signer,
-  amount: bigint
-) => {
-  const opKey = `approveArcadeHubArc-${await accountSigner.getAddress()}-${amount.toString()}`;
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const tokenContract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeTokenContract,
-        ['function approve(address spender, uint256 amount) returns (bool)'],
-        getProvider()
-      );
-      const callData = tokenContract.interface.encodeFunctionData('approve', [
-        TESTNET_CONFIG.contracts.arcadeHub,
-        amount
-      ]);
-      // Use sponsored gas for approval
-      builder.setPaymasterOptions({
-        apikey: API_KEY,
-        rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
-        type: 0
-      });
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeTokenContract, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        success: true,
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    0,
-    ''
-  );
-};
-/**
- * Check ARC token allowance for ArcadeHub contract from AA wallet.
- * @param accountSigner ethers.Signer - the user's signer
- * @returns Promise<string> - allowance as a string
- */
-export const checkArcadeHubArcAllowance = async (
-  accountSigner: ethers.Signer
-) => {
-  try {
-    const aaWalletAddress = await getAAWalletAddress(accountSigner);
-    const tokenContract = new ethers.Contract(
-      TESTNET_CONFIG.contracts.arcadeTokenContract,
-      [
-        'function allowance(address owner, address spender) view returns (uint256)',
-        'function decimals() view returns (uint8)'
-      ],
-      getProvider()
-    );
-    const allowance = await tokenContract.allowance(
-      aaWalletAddress,
-      TESTNET_CONFIG.contracts.arcadeHub
-    );
-    let decimals = 18;
-    try {
-      decimals = await tokenContract.decimals();
-    } catch {}
-    return ethers.formatUnits(allowance, decimals);
-  } catch (error) {
-    console.error("Error checking ARC allowance for ArcadeHub:", error);
-    return '0';
-  }
-};
-// Approve token spending from AA wallet to the paymaster using UserOperation
+// Approve token for paymaster from AA wallet
 export const approveAAWalletToken = async (
   accountSigner: ethers.Signer,
   tokenAddress: string,
   amount: bigint,
   spenderAddress: string = TESTNET_CONFIG.contracts.paymaster,
-  options?: {
-    apiKey?: string;
-    gasMultiplier?: number;
-  }
+  options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // Generate a unique operation key
   const opKey = generateOperationKey('approveAAWalletToken', [
     await accountSigner.getAddress(),
     tokenAddress,
     amount.toString(),
     spenderAddress
   ]);
-  
-  // Use memoized operation execution to reduce redundant API calls
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
-      try {
-        // Create token contract instance
-        const tokenContract = new ethers.Contract(
-          tokenAddress,
-          [
-            'function approve(address spender, uint256 amount) returns (bool)'
-          ],
-          getProvider()
-        );
-        
-        // Prepare the approve function call data
-        const callData = tokenContract.interface.encodeFunctionData('approve', [
-          spenderAddress,
-          amount
-        ]);
-        
-        // Override payment type to use free (sponsored) for this approval operation
-        // to avoid circular dependency (approving tokens to be able to pay for the approval transaction)
-        builder.setPaymasterOptions({
-          apikey: API_KEY,
-          rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
-          type: 0 // Free (sponsored)
-        });
-        
-        // Set transaction data in the builder
-        const userOp = await builder.execute(tokenAddress, 0, callData);
-        
-        // Send the user operation
-        console.log(`Sending AA wallet token approval operation`);
-        const res = await client.sendUserOperation(userOp);
-        
-        console.log("UserOperation sent with hash:", res.userOpHash);
-        
-        // Wait for the UserOperation to be included in a transaction
-        const receipt = await res.wait();
-        
-        let transactionHash = '';
-        if (receipt && receipt.transactionHash) {
-          transactionHash = receipt.transactionHash;
-        }
-        
-        return {
-          success: true,
-          userOpHash: res.userOpHash,
-          transactionHash,
-          receipt
-        };
-      } catch (error) {
-        console.error("Error in AA wallet token approval:", error);
-        throw error;
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        ['function approve(address spender, uint256 amount) returns (bool)'],
+        getProvider()
+      );
+      const callData = tokenContract.interface.encodeFunctionData('approve', [spenderAddress, amount]);
+      builder.setPaymasterOptions({
+        apikey: API_KEY,
+        rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+        type: 0 // Sponsored
+      });
+      const userOp = await builder.execute(tokenAddress, 0, callData);
+      console.log(`Sending AA wallet token approval operation`);
+      const res = await client.sendUserOperation(userOp);
+      console.log("UserOperation sent with hash:", res.userOpHash);
+      const receipt = await res.wait();
+      let transactionHash = '';
+      if (receipt && receipt.transactionHash) {
+        transactionHash = receipt.transactionHash;
       }
+      return {
+        success: true,
+        userOpHash: res.userOpHash,
+        transactionHash,
+        receipt
+      };
     },
-    0, // Always use free (sponsored) for token approvals
+    0,
     '',
     options
   );
-}; 
+};
 
+// Submit game to GameRegistry
 export const submitGameAA = async (
   accountSigner: ethers.Signer,
   gameId: string,
@@ -1511,10 +1097,7 @@ export const submitGameAA = async (
   ipfsHash: string,
   paymentType: number = 0,
   selectedToken: string = '',
-  options?: {
-    apiKey?: string;
-    gasMultiplier?: number;
-  }
+  options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
   const opKey = generateOperationKey('submitGameAA', [
     await accountSigner.getAddress(),
@@ -1525,12 +1108,10 @@ export const submitGameAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
-      // Convert gameId to bigint for ethers v6
       let gameIdBigInt: bigint;
       try {
         if (typeof gameId === "string" && gameId.startsWith('0x')) {
@@ -1539,14 +1120,12 @@ export const submitGameAA = async (
           gameIdBigInt = BigInt(gameId);
         }
       } catch {
-        // fallback: hash the string to get a unique bigint
         gameIdBigInt = ethers.toBigInt(
           ethers.keccak256(ethers.toUtf8Bytes(gameId))
         );
       }
-
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.gameRegistry,
         [
           "event GameSubmitted(uint256 indexed gameId, address indexed developer, string name, string ipfsHash)",
           "function submitGame(uint256 gameId, string name, string ipfsHash) external"
@@ -1558,28 +1137,11 @@ export const submitGameAA = async (
         name,
         ipfsHash
       ]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.gameRegistry, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
-
-      // Parse gameId from the GameSubmitted event
-      // let returnedGameId = null;
-      // if (receipt && receipt.logs) {
-      //   for (const log of receipt.logs) {
-      //     try {
-      //       const parsed = contract.interface.parseLog(log);
-      //       if (parsed && parsed.name === "GameSubmitted") {
-      //         returnedGameId = parsed.args.gameId.toString();
-      //         break;
-      //       }
-      //     } catch {
-      //       continue;
-      //     }
-      //   }
-      // }
-       const abi = [
-        "event GameSubmitted(uint256 indexed gameId, address indexed developer, string name, string ipfsHash)",
-        "function submitGame(uint256 gameId, string name, string ipfsHash) external"
+      const abi = [
+        "event GameSubmitted(uint256 indexed gameId, address indexed developer, string name, string ipfsHash)"
       ];
       const iface = new ethers.Interface(abi);
       let returnedGameId = null;
@@ -1596,7 +1158,6 @@ export const submitGameAA = async (
           }
         }
       }
-
       return {
         userOpHash: res.userOpHash,
         transactionHash: receipt?.transactionHash,
@@ -1610,9 +1171,7 @@ export const submitGameAA = async (
   );
 };
 
-//TODO: Test this 
-
-// Claim tokens from points (calls claimTokens)
+// Claim tokens from PointsSystem
 export const claimTokensAA = async (
   accountSigner: ethers.Signer,
   paymentType: number = 0,
@@ -1625,18 +1184,17 @@ export const claimTokensAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.pointsSystem,
         ["function claimTokens() external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('claimTokens', []);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1651,7 +1209,7 @@ export const claimTokensAA = async (
   );
 };
 
-// Submit points claim (calls submitPointsClaim)
+// Submit points claim to PointsSystem
 export const submitPointsClaimAA = async (
   accountSigner: ethers.Signer,
   points: number,
@@ -1663,21 +1221,20 @@ export const submitPointsClaimAA = async (
     await accountSigner.getAddress(),
     points,
     paymentType,
-    // selectedToken,
+    selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.pointsSystem,
         ["function submitPointsClaim(uint256 points) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('submitPointsClaim', [points]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1692,7 +1249,7 @@ export const submitPointsClaimAA = async (
   );
 };
 
-// Apply for admin (calls applyForAdmin)
+// Apply for admin to AdminApplications
 export const applyForAdminAA = async (
   accountSigner: ethers.Signer,
   paymentType: number = 0,
@@ -1705,18 +1262,17 @@ export const applyForAdminAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.adminApplications,
         ["function applyForAdmin() external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('applyForAdmin', []);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.adminApplications, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1731,7 +1287,7 @@ export const applyForAdminAA = async (
   );
 };
 
-// Stake tokens (calls stakeTokens)
+// Stake tokens to StakingSystem
 export const stakeTokensAA = async (
   accountSigner: ethers.Signer,
   amount: bigint,
@@ -1746,18 +1302,17 @@ export const stakeTokensAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.stakingSystem,
         ["function stakeTokens(uint256 amount) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('stakeTokens', [amount]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.stakingSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1772,7 +1327,7 @@ export const stakeTokensAA = async (
   );
 };
 
-// Unstake tokens (calls unstakeTokens)
+// Unstake tokens from StakingSystem
 export const unstakeTokensAA = async (
   accountSigner: ethers.Signer,
   amount: bigint,
@@ -1787,18 +1342,17 @@ export const unstakeTokensAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.stakingSystem,
         ["function unstakeTokens(uint256 amount) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('unstakeTokens', [amount]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.stakingSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1813,35 +1367,26 @@ export const unstakeTokensAA = async (
   );
 };
 
-/**
- * Submits a points claim onchain using Account Abstraction (always sponsored).
- * @param accountSigner ethers.Signer - the user's signer
- * @param points number - the number of points to claim
- * @param options optional AA/gas options
- * @returns {Promise<{userOpHash: string, transactionHash?: string, receipt: any}>}
- */
+// Submit points claim (sponsored) to PointsSystem
 export const submitPointsClaimSponsored = async (
   accountSigner: ethers.Signer,
   points: number,
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // Always use paymentType 0 (sponsored)
   const paymentType = 0;
   const selectedToken = '';
-
   const opKey = `submitPointsClaimSponsored-${await accountSigner.getAddress()}-${points}`;
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.pointsSystem,
         ["function submitPointsClaim(uint256 points) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('submitPointsClaim', [points]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1856,7 +1401,7 @@ export const submitPointsClaimSponsored = async (
   );
 };
 
-// Approve points claim (admin only)
+// Approve points claim (admin only) in PointsSystem
 export const approvePointsClaimAA = async (
   accountSigner: ethers.Signer,
   player: string,
@@ -1864,25 +1409,23 @@ export const approvePointsClaimAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // const opKey = `approvePointsClaimAA-${await accountSigner.getAddress()}-${player}`;
-   const opKey = generateOperationKey('approvePointsClaimAA', [
+  const opKey = generateOperationKey('approvePointsClaimAA', [
     await accountSigner.getAddress(),
     paymentType,
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.pointsSystem,
         ["function approvePointsClaim(address player) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('approvePointsClaim', [player]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1897,7 +1440,7 @@ export const approvePointsClaimAA = async (
   );
 };
 
-// Reject points claim (admin only)
+// Reject points claim (admin only) in PointsSystem
 export const rejectPointsClaimAA = async (
   accountSigner: ethers.Signer,
   player: string,
@@ -1905,8 +1448,7 @@ export const rejectPointsClaimAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // const opKey = `rejectPointsClaimAA-${await accountSigner.getAddress()}-${player}`;
-    const opKey = generateOperationKey('rejectPointsClaimAA', [
+  const opKey = generateOperationKey('rejectPointsClaimAA', [
     await accountSigner.getAddress(),
     paymentType,
     selectedToken,
@@ -1917,12 +1459,12 @@ export const rejectPointsClaimAA = async (
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.pointsSystem,
         ["function rejectPointsClaim(address player) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('rejectPointsClaim', [player]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1937,7 +1479,7 @@ export const rejectPointsClaimAA = async (
   );
 };
 
-// Accept admin application (admin only)
+// Accept admin application (admin only) in AdminApplications
 export const acceptAdminApplicationAA = async (
   accountSigner: ethers.Signer,
   applicant: string,
@@ -1945,8 +1487,7 @@ export const acceptAdminApplicationAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // const opKey = `acceptAdminApplicationAA-${await accountSigner.getAddress()}-${applicant}`;
-    const opKey = generateOperationKey('acceptAdminApplicationAA', [
+  const opKey = generateOperationKey('acceptAdminApplicationAA', [
     await accountSigner.getAddress(),
     paymentType,
     selectedToken,
@@ -1957,12 +1498,12 @@ export const acceptAdminApplicationAA = async (
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.adminApplications,
         ["function acceptAdminApplication(address applicant) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('acceptAdminApplication', [applicant]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.adminApplications, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1977,7 +1518,7 @@ export const acceptAdminApplicationAA = async (
   );
 };
 
-// Reject admin application (admin only)
+// Reject admin application (admin only) in AdminApplications
 export const rejectAdminApplicationAA = async (
   accountSigner: ethers.Signer,
   applicant: string,
@@ -1985,8 +1526,7 @@ export const rejectAdminApplicationAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // const opKey = `rejectAdminApplicationAA-${await accountSigner.getAddress()}-${applicant}`;
-    const opKey = generateOperationKey('rejectAdminApplicationAA', [
+  const opKey = generateOperationKey('rejectAdminApplicationAA', [
     await accountSigner.getAddress(),
     paymentType,
     selectedToken,
@@ -1997,12 +1537,12 @@ export const rejectAdminApplicationAA = async (
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.adminApplications,
         ["function rejectAdminApplication(address applicant) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('rejectAdminApplication', [applicant]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.adminApplications, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -2017,7 +1557,7 @@ export const rejectAdminApplicationAA = async (
   );
 };
 
-// Allocate developer revenue (admin only)
+// Allocate developer revenue (admin only) in DeveloperPayouts
 export const allocateDeveloperRevenueAA = async (
   accountSigner: ethers.Signer,
   developer: string,
@@ -2026,8 +1566,7 @@ export const allocateDeveloperRevenueAA = async (
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // const opKey = `allocateDeveloperRevenueAA-${await accountSigner.getAddress()}-${developer}-${amount.toString()}`;
-   const opKey = generateOperationKey('allocateDeveloperRevenueAA', [
+  const opKey = generateOperationKey('allocateDeveloperRevenueAA', [
     await accountSigner.getAddress(),
     paymentType,
     selectedToken,
@@ -2038,12 +1577,12 @@ export const allocateDeveloperRevenueAA = async (
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.developerPayouts,
         ["function allocateDeveloperRevenue(address developer, uint256 amount) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('allocateDeveloperRevenue', [developer, amount]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.developerPayouts, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -2058,166 +1597,49 @@ export const allocateDeveloperRevenueAA = async (
   );
 };
 
-// Transfer ARC tokens (calls transferARC)
-export const transferARCTokenAA = async (
-  accountSigner: ethers.Signer,
-  to: string,
-  amount: bigint,
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  // const opKey = `transferARCTokenAA-${await accountSigner.getAddress()}-${to}-${amount.toString()}`;
-   const opKey = generateOperationKey('transferARCTokenAA', [
-    await accountSigner.getAddress(),
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function transferARC(address to, uint256 amount) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('transferARC', [to, amount]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-// Transfer NFT (calls transferNFT)
-/**
- * Transfers an NFT via the ArcadeHub contract using Account Abstraction.
- * @param accountSigner ethers.Signer - The user's signer
- * @param to string - Recipient address
- * @param tokenId bigint - ID of the NFT to transfer
- * @param paymentType number - Payment type (0 for sponsored, 1 for prepay, 2 for postpay)
- * @param selectedToken string - Token address for ERC20 payment (optional)
- * @param options optional AA/gas options
- * @returns Promise<{ success: boolean, userOpHash?: string, transactionHash?: string, receipt?: any, error?: any }>
- */
+// Transfer NFT via NFTManager
 export const transferNFTAA = async (
   accountSigner: ethers.Signer,
   to: string,
   tokenId: bigint,
-  paymentType: number = 0, // Default to sponsored (gasless)
-  selectedToken: string = '', // No token needed for sponsored
+  paymentType: number = 0,
+  selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
-  // Generate a unique operation key
-  // const opKey = `transferNFTAA-${await accountSigner.getAddress()}-${toString()}-${tokenId.toString()}`;
   const opKey = generateOperationKey('transferNFTAA', [
     await accountSigner.getAddress(),
     paymentType,
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
-  // Use executeOperation for memoized execution
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
-      try {
-        // Create contract instance for ArcadeHub
-        const contract = new ethers.Contract(
-          TESTNET_CONFIG.contracts.arcadeHub,
-          ["function transferNFT(address to, uint256 tokenId) external"],
-          getProvider()
-        );
-
-        // Prepare the transferNFT function call data
-        const callData = contract.interface.encodeFunctionData('transferNFT', [to, tokenId]);
-
-        // Set payment type to sponsored for gasless transfer
-        builder.setPaymasterOptions({
-          apikey: API_KEY || options?.apiKey || '',
-          rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
-          type: 0 // Sponsored gas
-        });
-
-        // Set transaction data in the builder
-        const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-
-        // Send the user operation
-        if (API_OPTIMIZATION.debugLogs) console.log(`Sending NFT transfer operation for token ID ${tokenId} to ${to}`);
-        const res = await client.sendUserOperation(userOp);
-        
-        console.log("UserOperation sent with hash:", res.userOpHash);
-
-        // Wait for the transaction to complete
-        const receipt = await res.wait();
-
-        let transactionHash = '';
-        if (receipt && receipt.transactionHash) {
-          transactionHash = receipt.transactionHash;
-        }
-
-        return {
-          success: true,
-          userOpHash: res.userOpHash,
-          transactionHash,
-          receipt
-        };
-      } catch (error) {
-        console.error("Error in NFT transfer:", error);
-        return {
-          success: false,
-          error
-        };
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.nftManager,
+        ["function transferNFT(address to, uint256 tokenId) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('transferNFT', [to, tokenId]);
+      builder.setPaymasterOptions({
+        apikey: API_KEY || options?.apiKey || '',
+        rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+        type: 0
+      });
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.nftManager, 0, callData);
+      if (API_OPTIMIZATION.debugLogs) console.log(`Sending NFT transfer operation for token ID ${tokenId} to ${to}`);
+      const res = await client.sendUserOperation(userOp);
+      console.log("UserOperation sent with hash:", res.userOpHash);
+      const receipt = await res.wait();
+      let transactionHash = '';
+      if (receipt && receipt.transactionHash) {
+        transactionHash = receipt.transactionHash;
       }
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-// Stake tokens (calls stakeTokens)
-export const aaStakeTokens = async (
-  accountSigner: ethers.Signer,
-  amount: bigint,
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  // const opKey = `aaStakeTokens-${await accountSigner.getAddress()}-${amount.toString()}`;
-  const opKey = generateOperationKey('aaStakeTokens', [
-    await accountSigner.getAddress(),
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function stakeTokens(uint256 amount) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('stakeTokens', [amount]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
       return {
+        success: true,
         userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
+        transactionHash,
         receipt
       };
     },
@@ -2227,87 +1649,7 @@ export const aaStakeTokens = async (
   );
 };
 
-// Unstake tokens (calls unstakeTokens)
-export const aaUnstakeTokens = async (
-  accountSigner: ethers.Signer,
-  amount: bigint,
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  // const opKey = `aaUnstakeTokens-${await accountSigner.getAddress()}-${amount.toString()}`;
-  const opKey = generateOperationKey('aaUnstakeTokens', [
-    await accountSigner.getAddress(),
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function unstakeTokens(uint256 amount) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('unstakeTokens', [amount]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-// Apply for admin (calls applyForAdmin)
-export const aaApplyForAdmin = async (
-  accountSigner: ethers.Signer,
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  // const opKey = `aaApplyForAdmin-${await accountSigner.getAddress()}`;
-     const opKey = generateOperationKey('aaApplyForAdmin', [
-    await accountSigner.getAddress(),
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function applyForAdmin() external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('applyForAdmin', []);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-//TODO: review the below
-// Create a tournament using Account Abstraction
+// Create tournament in TournamentHub
 export const createTournamentAA = async (
   accountSigner: ethers.Signer,
   name: string,
@@ -2328,13 +1670,12 @@ export const createTournamentAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.tournamentHub,
         ["function createTournament(string name, uint256 prizePool, uint256 startTime, uint256 endTime) external"],
         getProvider()
       );
@@ -2344,7 +1685,7 @@ export const createTournamentAA = async (
         startTime,
         endTime
       ]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -2359,7 +1700,7 @@ export const createTournamentAA = async (
   );
 };
 
-// Join a tournament using Account Abstraction
+// Join a tournament in TournamentHub
 export const joinTournamentAA = async (
   accountSigner: ethers.Signer,
   tournamentId: number,
@@ -2374,18 +1715,17 @@ export const joinTournamentAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.tournamentHub,
         ["function joinTournament(uint256 tournamentId) external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('joinTournament', [tournamentId]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -2400,12 +1740,12 @@ export const joinTournamentAA = async (
   );
 };
 
-// Submit tournament score using Account Abstraction (requires signature from trusted signer)
+// Submit tournament score to TournamentHub
 export const submitTournamentScoreAA = async (
   accountSigner: ethers.Signer,
   tournamentId: number,
   score: number,
-  signature: string, // Hex-encoded signature from trusted signer
+  signature: string,
   paymentType: number = 0,
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
@@ -2419,13 +1759,12 @@ export const submitTournamentScoreAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.tournamentHub,
         ["function submitTournamentScore(uint256 tournamentId, uint256 score, bytes signature) external"],
         getProvider()
       );
@@ -2434,7 +1773,7 @@ export const submitTournamentScoreAA = async (
         score,
         signature
       ]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -2449,7 +1788,7 @@ export const submitTournamentScoreAA = async (
   );
 };
 
-// Distribute tournament prizes using Account Abstraction (admin only)
+// Distribute tournament prizes in TournamentHub (admin only)
 export const distributeTournamentPrizesAA = async (
   accountSigner: ethers.Signer,
   tournamentId: number,
@@ -2468,13 +1807,12 @@ export const distributeTournamentPrizesAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.tournamentHub,
         ["function distributeTournamentPrizes(uint256 tournamentId, address[] winners, uint256[] amounts) external"],
         getProvider()
       );
@@ -2483,7 +1821,7 @@ export const distributeTournamentPrizesAA = async (
         winners,
         amounts
       ]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -2498,7 +1836,7 @@ export const distributeTournamentPrizesAA = async (
   );
 };
 
-// Claim developer payout using Account Abstraction
+// Claim developer payout from DeveloperPayouts
 export const claimDeveloperPayoutAA = async (
   accountSigner: ethers.Signer,
   paymentType: number = 0,
@@ -2511,18 +1849,17 @@ export const claimDeveloperPayoutAA = async (
     selectedToken,
     options?.gasMultiplier || 100
   ]);
-
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
+        TESTNET_CONFIG.smartContracts.developerPayouts,
         ["function claimDeveloperPayout() external"],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('claimDeveloperPayout', []);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.developerPayouts, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -2535,143 +1872,4 @@ export const claimDeveloperPayoutAA = async (
     selectedToken,
     options
   );
-};
-
-// Add owner using Account Abstraction (admin only)
-export const addOwnerAA = async (
-  accountSigner: ethers.Signer,
-  newOwner: string,
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  const opKey = generateOperationKey('addOwnerAA', [
-    await accountSigner.getAddress(),
-    newOwner,
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function addOwner(address newOwner) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('addOwner', [newOwner]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-// Remove owner using Account Abstraction (admin only)
-export const removeOwnerAA = async (
-  accountSigner: ethers.Signer,
-  ownerToRemove: string,
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  const opKey = generateOperationKey('removeOwnerAA', [
-    await accountSigner.getAddress(),
-    ownerToRemove,
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function removeOwner(address ownerToRemove) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('removeOwner', [ownerToRemove]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-// Deposit tokens to fund the contract using Account Abstraction (admin only)
-export const depositTokensAA = async (
-  accountSigner: ethers.Signer,
-  amount: bigint,
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  const opKey = generateOperationKey('depositTokensAA', [
-    await accountSigner.getAddress(),
-    amount.toString(),
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.contracts.arcadeHub,
-        ["function depositTokens(uint256 amount) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('depositTokens', [amount]);
-      const userOp = await builder.execute(TESTNET_CONFIG.contracts.arcadeHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-// Get ARC token balance of the ArcadeHub contract (view function, no AA needed)
-export const getArcTokenBalance = async () => {
-  try {
-    const contract = new ethers.Contract(
-      TESTNET_CONFIG.contracts.arcadeHub,
-      ["function getArcTokenBalance() external view returns (uint256)"],
-      getProvider()
-    );
-    const balance = await contract.getArcTokenBalance();
-    return ethers.formatUnits(balance, 18); // Assuming ARC token has 18 decimals
-  } catch (error) {
-    console.error("Error fetching ARC token balance:", error);
-    return '0';
-  }
 };

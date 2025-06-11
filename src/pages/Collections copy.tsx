@@ -131,8 +131,8 @@ const Collections: React.FC = () => {
       setIsApproved(false);
       if (selectedNFT && aaSigner && aaWalletAddress) {
         try {
-          const nftContractAddress = TESTNET_CONFIG.contracts.arcadeNFTContract;
-          const operatorAddress = TESTNET_CONFIG.contracts.arcadeHub;
+          const nftContractAddress = TESTNET_CONFIG.smartContracts.arcadeNFT;
+      const operatorAddress = TESTNET_CONFIG.smartContracts.nftManager;
           const nftContract = new (window as any).ethers.Contract(
             nftContractAddress,
             ["function isApprovedForAll(address owner, address operator) view returns (bool)"],
@@ -158,8 +158,8 @@ const Collections: React.FC = () => {
     setApprovalError(null);
      setIsLoadingModalOpen(true);
     try {
-      const nftContractAddress = TESTNET_CONFIG.contracts.arcadeNFTContract;
-      const operatorAddress = TESTNET_CONFIG.contracts.arcadeHub;
+      const nftContractAddress = TESTNET_CONFIG.smartContracts.arcadeNFT;
+      const operatorAddress = TESTNET_CONFIG.smartContracts.nftManager;
       const result = await approveNFTForArcadeHub(aaSigner, nftContractAddress, operatorAddress);
       if (result.success) {
         setIsApproved(true);

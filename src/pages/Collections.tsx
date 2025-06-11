@@ -17,7 +17,7 @@ import { ethers } from 'ethers';
 import {
   getNFTs,
   getProvider,
-  approveNFTForArcadeHubAA,
+  approveNFTForContractAA,
   transferNFTAA
 } from '../lib/aaUtils';
 
@@ -101,8 +101,8 @@ const Collections: React.FC = () => {
     setIsApproved(false);
     if (selectedNFT && aaSigner && aaWalletAddress) {
       try {
-        const nftContractAddress = TESTNET_CONFIG.contracts.arcadeNFTContract;
-        const operatorAddress = TESTNET_CONFIG.contracts.arcadeHub;
+        const nftContractAddress = TESTNET_CONFIG.smartContracts.arcadeNFT;
+        const operatorAddress = TESTNET_CONFIG.smartContracts.nftManager;
         const nftContract = new ethers.Contract(
           nftContractAddress,
           ["function isApprovedForAll(address owner, address operator) view returns (bool)"],
@@ -136,12 +136,12 @@ const Collections: React.FC = () => {
     setApprovalError(null);
     setIsLoadingModalOpen(true);
     try {
-      const nftContractAddress = TESTNET_CONFIG.contracts.arcadeNFTContract;
-      const operatorAddress = TESTNET_CONFIG.contracts.arcadeHub;
+      const nftContractAddress = TESTNET_CONFIG.smartContracts.arcadeNFT;
+      const operatorAddress = TESTNET_CONFIG.smartContracts.nftManager;
 
         let multiplier = Math.round(gasMultiplier[0] * 100);
         multiplier = Math.max(50, Math.min(500, multiplier));
-      const result = await approveNFTForArcadeHubAA(aaSigner, nftContractAddress, operatorAddress, {
+      const result = await approveNFTForContractAA(aaSigner, nftContractAddress, operatorAddress, {
         gasMultiplier: multiplier,
       });
       if (result.success) {

@@ -1,10 +1,21 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract StakingManager {
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract StakingSystem is Ownable, ReentrancyGuard {
+    IERC20 public immutable arcToken;
     mapping(address => uint256) public stakedBalances;
 
     event TokensStaked(address indexed user, uint256 amount);
     event TokensUnstaked(address indexed user, uint256 amount);
+
+    constructor(address _arcToken, address _initialOwner) Ownable(_initialOwner) {
+        require(_arcToken != address(0), "Invalid token address");
+        arcToken = IERC20(_arcToken);
+    }
 
     function stakeTokens(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount must be greater than zero");
@@ -13,7 +24,6 @@ contract StakingManager {
         emit TokensStaked(msg.sender, amount);
     }
 
-    // Unstake tokens
     function unstakeTokens(uint256 amount) external nonReentrant {
         require(amount > 0, "Amount must be greater than zero");
         require(stakedBalances[msg.sender] >= amount, "Insufficient staked balance");

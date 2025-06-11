@@ -10,10 +10,10 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { 
-  ArrowLeft, 
-  Trophy, 
-  Coins, 
+import {
+  ArrowLeft,
+  Trophy,
+  Coins,
   Calendar,
   Users,
   Target,
@@ -28,7 +28,7 @@ const CreateTournament = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { aaSigner } = useWalletStore();
-  
+
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,7 +44,7 @@ const CreateTournament = () => {
 
   const gameOptions = [
     'Crypto Battles',
-    'NFT Racing', 
+    'NFT Racing',
     'DeFi Quest',
     'Pixel Warriors',
     'Space Invaders',
@@ -77,7 +77,7 @@ const CreateTournament = () => {
 
     try {
       // Get the user's signer (e.g., from MetaMask)
-      
+
       if (!aaSigner) {
         throw new Error("Wallet not connected. Please connect your wallet.");
       }
@@ -90,21 +90,24 @@ const CreateTournament = () => {
       // Convert amount to wei (assuming 18 decimals for ARC token)
       const prizePool = ethers.parseUnits(amount, 18);
 
-       // 1. Approve only the required ARC amount for ArcadeHub
-       // Approve token for a specific contract using AA
-// export const approveTokenForContractAA = async (
-//   accountSigner: ethers.Signer,
-//   tokenAddress: string,
-//   amount: bigint,
-//   contractAddress: string,
-//   options?: { apiKey?: string; gasMultiplier?: number }
-// ) => {
+      // 1. Approve only the required ARC amount for ArcadeHub
+      // Approve token for a specific contract using AA
+      // export const approveTokenForContractAA = async (
+      //   accountSigner: ethers.Signer,
+      //   tokenAddress: string,
+      //   amount: bigint,
+      //   contractAddress: string,
+      //   options?: { apiKey?: string; gasMultiplier?: number }
+      // ) => {
 
-const approvalResult = await approveTokenForContractAA(aaSigner,TESTNET_CONFIG.smartContracts.arcadeToken, prizePool, TESTNET_CONFIG.smartContracts.tournamentHub,)
-    // const approvalResult = await approveArcadeHubArc(aaSigner, prizePool);
-    if (!approvalResult || approvalResult.error) {
-      throw new Error("Token approval failed. Please try again.");
-    }
+      const approvalResult = await approveTokenForContractAA(
+        aaSigner, TESTNET_CONFIG.smartContracts.arcadeToken,
+        prizePool,
+        TESTNET_CONFIG.smartContracts.tournamentHub)
+      // const approvalResult = await approveArcadeHubArc(aaSigner, prizePool);
+      if (!approvalResult || approvalResult.error) {
+        throw new Error("Token approval failed. Please try again.");
+      }
 
       // Convert startDate to Unix timestamp (in seconds)
       const startTime = Math.floor(new Date(formData.startDate).getTime() / 1000);
@@ -130,11 +133,29 @@ const approvalResult = await approveTokenForContractAA(aaSigner,TESTNET_CONFIG.s
       }
 
       setIsLoadingModalOpen(false);
-      
+
+      // toast({
+      //   title: "Tournament Created Successfully!",
+      //   description: `${formData.title} has been created with ${amount} ARC prize pool. UserOpHash: ${result.userOpHash}`,
+      //   className: "bg-green-400 text-black border-green-400",
+      // });
+
       toast({
         title: "Tournament Created Successfully!",
-        description: `${formData.title} has been created with ${amount} ARC prize pool. UserOpHash: ${result.userOpHash}`,
-        className: "bg-green-400 text-black border-green-400",
+        description: (
+          <span>
+            <span>Transaction:&nbsp;</span>
+            <span>${formData.title} has been created with ${amount} ARC prize pool. UserOpHash: ${result.userOpHash}</span>
+            <a
+              href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline"
+            >
+              View on Neroscan
+            </a>
+          </span>
+        ),
       });
 
       // Redirect to dashboard
@@ -157,12 +178,12 @@ const approvalResult = await approveTokenForContractAA(aaSigner,TESTNET_CONFIG.s
   return (
     <div className="min-h-screen bg-black text-green-400">
       <Header />
-      
+
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-4xl">
           {/* Header */}
           <div className="flex items-center space-x-4 mb-8">
-            <Button 
+            <Button
               onClick={() => navigate('/sponsor/dashboard')}
               variant="outline"
               className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"
@@ -172,7 +193,7 @@ const approvalResult = await approveTokenForContractAA(aaSigner,TESTNET_CONFIG.s
             </Button>
             <div>
               <h1 className="text-3xl font-mono font-bold text-cyan-400 neon-text">
-               &gt; CREATE_TOURNAMENT &lt;
+                &gt; CREATE_TOURNAMENT &lt;
               </h1>
               <p className="text-green-400 mt-2">
                 Set up a new sponsored tournament with custom prize pool

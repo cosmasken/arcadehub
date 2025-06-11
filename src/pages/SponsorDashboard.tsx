@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
@@ -15,13 +16,19 @@ import {
   BarChart3,
   Settings
 } from 'lucide-react';
+import {ethers } from 'ethers';
 import ViewTournamentModal from '../components/ViewTournamentModal';
 import ManageTournamentModal from '../components/ManageTournamentModal';
 import { useWalletStore } from '../stores/useWalletStore';
+import {getProvider} from '../lib/aaUtils';
+import { TESTNET_CONFIG } from '../config';
+import TournamentHubABI from '../abi/TournamentHub.json';
 
 const SponsorDashboard = () => {
   const navigate = useNavigate();
+  const [activeTournaments, setActiveTournaments] = useState<any[]>([]);
   const { aaWalletAddress } = useWalletStore();
+
 
   // Add modal state
   const [selectedTournament, setSelectedTournament] = useState(null);
@@ -36,28 +43,60 @@ const SponsorDashboard = () => {
     completedTournaments: 12
   };
 
-  const activeTournaments = [
-    {
-      id: 1,
-      title: "CRYPTO CHAMPIONSHIP",
-      game: "Crypto Battles",
-      prizePool: "10 ETH",
-      participants: 1247,
-      status: "live",
-      startDate: "2024-06-15",
-      yourContribution: "10 ETH"
-    },
-    {
-      id: 2,
-      title: "NFT GRAND PRIX",
-      game: "NFT Racing", 
-      prizePool: "5 ETH",
-      participants: 892,
-      status: "upcoming",
-      startDate: "2024-06-20",
-      yourContribution: "5 ETH"
-    }
-  ];
+  // const activeTournaments = [
+  //   {
+  //     id: 1,
+  //     title: "CRYPTO CHAMPIONSHIP",
+  //     game: "Crypto Battles",
+  //     prizePool: "10 ETH",
+  //     participants: 1247,
+  //     status: "live",
+  //     startDate: "2024-06-15",
+  //     yourContribution: "10 ETH"
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "NFT GRAND PRIX",
+  //     game: "NFT Racing", 
+  //     prizePool: "5 ETH",
+  //     participants: 892,
+  //     status: "upcoming",
+  //     startDate: "2024-06-20",
+  //     yourContribution: "5 ETH"
+  //   }
+  // ];
+
+  React.useEffect(() => {
+    const fetchTournaments = async () => {
+      if (!aaWalletAddress) return;
+      const provider = getProvider();
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHubABI,
+        provider
+      );
+      // 1. Get tournament IDs created by this user
+      const ids: number[] = await contract.getUserCreatedTournaments(aaWalletAddress);
+      // 2. Fetch info for each tournament
+      const tournaments = await Promise.all(
+        ids.map(async (id) => {
+          const info = await contract.getTournamentInfo(id, aaWalletAddress);
+          return {
+            id: info.id.toNumber(),
+            title: info.name,
+            game: info.game || '', // adjust if needed
+            prizePool: ethers.formatEther(info.prizePool),
+            participants: info.participants.length,
+            status: info.isActive ? 'live' : (info.prizesDistributed ? 'completed' : 'upcoming'),
+            startDate: new Date(Number(info.startTime) * 1000).toISOString().slice(0, 10),
+            yourContribution: ethers.formatEther(info.prizePool), // adjust if needed
+          };
+        })
+      );
+      setActiveTournaments(tournaments);
+    };
+    fetchTournaments();
+  }, [aaWalletAddress]);
 
   // Redirect if not logged in
  

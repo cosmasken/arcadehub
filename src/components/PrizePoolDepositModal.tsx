@@ -60,7 +60,7 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
 
   // Fetch ARC balance
   useEffect(() => {
-    const getUserArcBalance = async (userAddress: string) => {
+    const getUserArcBalance = async () => {
       try {
         const provider = getProvider();
         const contract = new ethers.Contract(
@@ -68,13 +68,13 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
           ['function balanceOf(address) external view returns (uint256)'],
           provider
         );
-        const balance = await contract.balanceOf(userAddress);
+        const balance = await contract.balanceOf(aaWalletAddress);
         setBalance(ethers.formatUnits(balance, 18));
       } catch {
         setBalance('0');
       }
     };
-    if (aaWalletAddress) getUserArcBalance(aaWalletAddress);
+    getUserArcBalance();
   }, [aaWalletAddress]);
 
 

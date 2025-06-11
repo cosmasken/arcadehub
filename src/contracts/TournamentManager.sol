@@ -1,18 +1,27 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract TournamentManager is Ownable, ReentrancyGuard {
-    using ECDSA for bytes32;
-
-    IERC20 public arcToken;
+contract TournamentHub is Ownable, ReentrancyGuard {
+    IERC20 public immutable arcToken;
     address public trustedSigner;
 
-    constructor(address _arcToken) {
-        arcToken = IERC20(_arcToken);
+    struct Tournament {
+        uint256 id;
+        address creator;
+        string name;
+        uint256 prizePool;
+        uint256 startTime;
+        uint256 endTime;
+        address[] participants;
+        mapping(address => bool) isParticipant;
+        bool isActive;
+        bool prizesDistributed;
+        mapping(address => uint256) scores;
     }
 
     struct TournamentInfo {
@@ -29,30 +38,17 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         bool isParticipant;
     }
 
-    struct Tournament {
-        uint256 id;
-        address creator;
-        string name;
-        uint256 prizePool;
-        uint256 startTime;
-        uint256 endTime;
-        address[] participants;
-        mapping(address => bool) isParticipant;
-        bool isActive;
-        bool prizesDistributed;
-        mapping(address => uint256) scores;
-    }
-
     uint256 public nextTournamentId;
-    mapping(uint256 => Tournament) private tournaments;
+    mapping(uint256 => Tournament) public tournaments;
 
     event TournamentCreated(uint256 indexed id, address indexed creator, uint256 prizePool, uint256 startTime, uint256 endTime);
     event TournamentJoined(uint256 indexed id, address indexed player);
     event TournamentScoreSubmitted(uint256 indexed id, address indexed player, uint256 score);
     event TournamentPrizesDistributed(uint256 indexed id);
 
-    function setTrustedSigner(address _signer) external onlyOwner {
-        trustedSigner = _signer;
+    constructor(address _arcToken, address _initialOwner) Ownable(_initialOwner) {
+        require(_arcToken != address(0), "Invalid token address");
+        arcToken = IERC20(_arcToken);
     }
 
     function createTournament(
@@ -86,6 +82,11 @@ contract TournamentManager is Ownable, ReentrancyGuard {
         t.participants.push(msg.sender);
         t.isParticipant[msg.sender] = true;
         emit TournamentJoined(tournamentId, msg.sender);
+    }
+
+    function setTrustedSigner(address _signer) external onlyOwner {
+        require(_signer != address(0), "Invalid signer address");
+        trustedSigner = _signer;
     }
 
     function toEthSignedMessageHash(bytes32 hash) internal pure returns (bytes32) {
@@ -137,7 +138,7 @@ contract TournamentManager is Ownable, ReentrancyGuard {
 
     function getTournamentInfo(uint256 tournamentId, address user) external view returns (TournamentInfo memory) {
         Tournament storage t = tournaments[tournamentId];
-        TournamentInfo memory info = TournamentInfo({
+        return TournamentInfo({
             id: t.id,
             creator: t.creator,
             name: t.name,
@@ -150,7 +151,6 @@ contract TournamentManager is Ownable, ReentrancyGuard {
             participantScore: t.scores[user],
             isParticipant: t.isParticipant[user]
         });
-        return info;
     }
 
     function getAllTournamentIds() external view returns (uint256[] memory) {
@@ -168,7 +168,6 @@ contract TournamentManager is Ownable, ReentrancyGuard {
                 count++;
             }
         }
-
         uint256[] memory ids = new uint256[](count);
         uint256 index = 0;
         for (uint256 i = 0; i < nextTournamentId; i++) {
@@ -196,7 +195,6 @@ contract TournamentManager is Ownable, ReentrancyGuard {
                 count++;
             }
         }
-
         uint256[] memory ids = new uint256[](count);
         uint256 index = 0;
         for (uint256 i = 0; i < nextTournamentId; i++) {

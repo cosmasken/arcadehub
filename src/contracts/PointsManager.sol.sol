@@ -1,9 +1,12 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract PointsManager {
-    IERC20 public arcToken;
+contract PointsSystem is Ownable, ReentrancyGuard {
+    IERC20 public immutable arcToken;
     mapping(address => uint256) public userPoints;
     mapping(address => uint256) public pendingPointsClaims;
     uint256 public pointsToTokensRate = 1000;
@@ -12,36 +15,47 @@ contract PointsManager {
     event PointsClaimApproved(address indexed player, uint256 points);
     event PointsClaimRejected(address indexed player);
     event TokensClaimed(address indexed player, uint256 amount);
+    event TokensDeposited(address indexed owner, uint256 amount);
 
-    constructor(address _arcToken) {
+    constructor(address _arcToken, address _initialOwner) Ownable(_initialOwner) {
+        require(_arcToken != address(0), "Invalid token address");
         arcToken = IERC20(_arcToken);
     }
 
+    function setPointsToTokensRate(uint256 _newRate) external onlyOwner {
+        require(_newRate > 0, "Rate must be greater than zero");
+        pointsToTokensRate = _newRate;
+    }
+
+    function depositTokens(uint256 amount) external onlyOwner {
+        require(amount > 0, "Amount must be greater than zero");
+        require(arcToken.transferFrom(msg.sender, address(this), amount), "Deposit failed");
+        emit TokensDeposited(msg.sender, amount);
+    }
+
     function submitPointsClaim(uint256 points) external {
+        require(points > 0, "Points must be greater than zero");
         require(pendingPointsClaims[msg.sender] == 0, "Pending claim exists");
         pendingPointsClaims[msg.sender] = points;
         emit PointsClaimSubmitted(msg.sender, points);
     }
 
-    
     function approvePointsClaim(address player) external onlyOwner nonReentrant {
-    uint256 points = pendingPointsClaims[player];
-    require(points > 0, "No pending claim");
-    pendingPointsClaims[player] = 0;
-    uint256 tokens = points * pointsToTokensRate;
-    require(arcToken.transfer(player, tokens), "Transfer failed");
-    emit PointsClaimApproved(player, points);
-    emit TokensClaimed(player, tokens);
+        uint256 points = pendingPointsClaims[player];
+        require(points > 0, "No pending claim");
+        pendingPointsClaims[player] = 0;
+        uint256 tokens = points * pointsToTokensRate;
+        require(arcToken.transfer(player, tokens), "Transfer failed");
+        emit PointsClaimApproved(player, points);
+        emit TokensClaimed(player, tokens);
     }
 
-    // Reject points claim
     function rejectPointsClaim(address player) external onlyOwner {
         require(pendingPointsClaims[player] > 0, "No pending claim");
         pendingPointsClaims[player] = 0;
         emit PointsClaimRejected(player);
     }
 
-    // Claim tokens from points
     function claimTokens() external nonReentrant {
         uint256 points = userPoints[msg.sender];
         require(points > 0, "No points to claim");
@@ -50,5 +64,4 @@ contract PointsManager {
         require(arcToken.transfer(msg.sender, tokens), "Transfer failed");
         emit TokensClaimed(msg.sender, tokens);
     }
-
 }

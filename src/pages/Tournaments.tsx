@@ -16,6 +16,12 @@ import {
   Target,
   Gamepad2
 } from 'lucide-react';
+import { ethers } from 'ethers';
+import { useWalletStore } from '../stores/useWalletStore';
+import { getProvider, joinTournamentAA } from '../lib/aaUtils';
+import { TESTNET_CONFIG } from '../config';
+import TournamentHubABI from '../abi/TournamentHub.json';
+
 
 const Tournaments = () => {
   const { toast } = useToast();
@@ -24,57 +30,90 @@ const Tournaments = () => {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<any>(null);
   const [actionType, setActionType] = useState<'join' | 'register'>('register');
+    const [activeTournaments, setActiveTournaments] = useState<any[]>([]);
+    const { aaWalletAddress, aaSigner } = useWalletStore();
 
-  const tournaments = [
-    {
-      id: 1,
-      title: "CRYPTO CHAMPIONSHIP",
-      game: "Crypto Battles",
-      prize: "10 NERO",
-      participants: 1247,
-      maxParticipants: 2000,
-      startTime: "2024-06-15 18:00",
-      status: "live",
-      duration: "72 HOURS",
-      entryFee: "0.1 NERO"
-    },
-    {
-      id: 2,
-      title: "NFT GRAND PRIX",
-      game: "NFT Racing",
-      prize: "5 NERO",
-      participants: 892,
-      maxParticipants: 1500,
-      startTime: "2024-06-20 12:00",
-      status: "upcoming",
-      duration: "48 HOURS",
-      entryFee: "0.05 NERO"
-    },
-    {
-      id: 3,
-      title: "DEFI QUEST MASTERS",
-      game: "DeFi Quest",
-      prize: "15 NERO",
-      participants: 2000,
-      maxParticipants: 2000,
-      startTime: "2024-06-10 10:00",
-      status: "completed",
-      duration: "96 HOURS",
-      entryFee: "0.2 NERO"
-    },
-    {
-      id: 4,
-      title: "PIXEL WARRIORS CUP",
-      game: "Pixel Warriors",
-      prize: "3 NERO",
-      participants: 456,
-      maxParticipants: 1000,
-      startTime: "2024-06-25 16:00",
-      status: "upcoming",
-      duration: "24 HOURS",
-      entryFee: "0.03 NERO"
-    }
-  ];
+ React.useEffect(() => {
+  const fetchTournaments = async () => {
+    const provider = getProvider();
+    const contract = new ethers.Contract(
+      TESTNET_CONFIG.smartContracts.tournamentHub,
+      TournamentHubABI,
+      provider
+    );
+    // Get all or only active tournaments
+    const ids: number[] = await contract.getActiveTournamentIds(); // or getAllTournamentIds()
+    const tournaments = await Promise.all(
+      ids.map(async (id) => {
+        const info = await contract.getTournamentInfo(id, aaWalletAddress);
+        return {
+          id: Number(info.id),
+          title: info.name,
+          game: info.game || '',
+          prizePool: ethers.formatEther(info.prizePool),
+          participants: info.participants.length,
+          status: info.isActive ? 'live' : (info.prizesDistributed ? 'completed' : 'upcoming'),
+          startDate: new Date(Number(info.startTime) * 1000).toISOString().slice(0, 10),
+          yourContribution: ethers.formatEther(info.prizePool),
+        };
+      })
+    );
+    setActiveTournaments(tournaments);
+  };
+  fetchTournaments();
+}, [aaWalletAddress]);
+  
+
+  // const tournaments = [
+  //   {
+  //     id: 1,
+  //     title: "CRYPTO CHAMPIONSHIP",
+  //     game: "Crypto Battles",
+  //     prize: "10 NERO",
+  //     participants: 1247,
+  //     maxParticipants: 2000,
+  //     startTime: "2024-06-15 18:00",
+  //     status: "live",
+  //     duration: "72 HOURS",
+  //     entryFee: "0.1 NERO"
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "NFT GRAND PRIX",
+  //     game: "NFT Racing",
+  //     prize: "5 NERO",
+  //     participants: 892,
+  //     maxParticipants: 1500,
+  //     startTime: "2024-06-20 12:00",
+  //     status: "upcoming",
+  //     duration: "48 HOURS",
+  //     entryFee: "0.05 NERO"
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "DEFI QUEST MASTERS",
+  //     game: "DeFi Quest",
+  //     prize: "15 NERO",
+  //     participants: 2000,
+  //     maxParticipants: 2000,
+  //     startTime: "2024-06-10 10:00",
+  //     status: "completed",
+  //     duration: "96 HOURS",
+  //     entryFee: "0.2 NERO"
+  //   },
+  //   {
+  //     id: 4,
+  //     title: "PIXEL WARRIORS CUP",
+  //     game: "Pixel Warriors",
+  //     prize: "3 NERO",
+  //     participants: 456,
+  //     maxParticipants: 1000,
+  //     startTime: "2024-06-25 16:00",
+  //     status: "upcoming",
+  //     duration: "24 HOURS",
+  //     entryFee: "0.03 NERO"
+  //   }
+  // ];
 
   const handleTournamentAction = (tournament: any, action: 'join' | 'register') => {
     setSelectedTournament(tournament);
@@ -87,33 +126,65 @@ const Tournaments = () => {
     }
   };
 
-  const handleJoinConfirm = async () => {
-    setIsConfirmationModalOpen(false);
-    setIsLoadingModalOpen(true);
+  // const handleJoinConfirm = async () => {
+  //   setIsConfirmationModalOpen(false);
+  //   setIsLoadingModalOpen(true);
 
-    try {
-      // Simulate joining process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+  //   try {
+  //     // Simulate joining process
+  //     await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setIsLoadingModalOpen(false);
+  //     setIsLoadingModalOpen(false);
       
-      toast({
-        title: "Successfully Joined Tournament!",
-        description: `You have joined ${selectedTournament?.title}. Good luck!`,
-        className: "bg-green-400 text-black border-green-400",
-      });
+  //     toast({
+  //       title: "Successfully Joined Tournament!",
+  //       description: `You have joined ${selectedTournament?.title}. Good luck!`,
+  //       className: "bg-green-400 text-black border-green-400",
+  //     });
       
-    } catch (error) {
-      setIsLoadingModalOpen(false);
+  //   } catch (error) {
+  //     setIsLoadingModalOpen(false);
       
-      toast({
-        title: "Join Failed",
-        description: "Failed to join the tournament. Please try again.",
-        variant: "destructive",
-        className: "bg-red-500 text-white border-red-500",
-      });
-    }
-  };
+  //     toast({
+  //       title: "Join Failed",
+  //       description: "Failed to join the tournament. Please try again.",
+  //       variant: "destructive",
+  //       className: "bg-red-500 text-white border-red-500",
+  //     });
+  //   }
+  // };
+  const handleJoinConfirm = async () => {
+  setIsConfirmationModalOpen(false);
+  setIsLoadingModalOpen(true);
+
+  try {
+    // Replace selectedTournament.id with the actual tournament ID
+    const result = await joinTournamentAA(
+      aaSigner,
+      selectedTournament.id
+      // paymentType and selectedToken if needed
+    );
+
+    // setIsLoadingModalOpen(false);
+
+    toast({
+      title: "Successfully Joined Tournament!",
+      description: `You have joined ${selectedTournament?.title}. Good luck!`,
+      className: "bg-green-400 text-black border-green-400",
+    });
+
+
+  } catch (error) {
+    setIsLoadingModalOpen(false);
+
+    toast({
+      title: "Join Failed",
+      description: "Failed to join the tournament. Please try again.",
+      variant: "destructive",
+      className: "bg-red-500 text-white border-red-500",
+    });
+  }
+};
 
   const handleRegister = async (tournamentId: number, agreedToTerms: boolean) => {
     setIsLoadingModalOpen(true);
@@ -200,7 +271,7 @@ const Tournaments = () => {
 
             {/* Tournament List */}
             <div className="space-y-6">
-              {tournaments.map((tournament) => (
+              {activeTournaments.map((tournament) => (
                 <Card key={tournament.id} className="bg-black border-cyan-400 border-2 p-6 hover:border-green-400 transition-colors">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex-1 mb-4 lg:mb-0">

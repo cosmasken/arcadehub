@@ -20,7 +20,7 @@ import {
   Gift
 } from 'lucide-react';
 import { useWalletStore } from '../stores/useWalletStore';
-import {TESTNET_CONFIG } from '../config';
+import { TESTNET_CONFIG } from '../config';
 import { ethers } from 'ethers';
 import { getProvider } from '../lib/aaUtils';
 import TokenApproval from './TokenApproval';
@@ -40,9 +40,9 @@ interface PrizePoolDepositModalProps {
     amount: string,
     gasMultiplier?: number
     //  token: string
-    ) => void;
+  ) => void;
   tournament: Tournament;
-  
+
 }
 
 const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
@@ -53,10 +53,10 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
 }) => {
 
   const [amount, setAmount] = useState('');
-   const {  aaWalletAddress } = useWalletStore();
-    const [ balance, setBalance ] = useState('0');
-    const [selectedToken, setSelectedToken] = useState('');
-      const [arcApproved, setArcApproved] = useState(false);
+  const { aaWalletAddress } = useWalletStore();
+  const [balance, setBalance] = useState('0');
+  const [selectedToken, setSelectedToken] = useState('');
+  const [arcApproved, setArcApproved] = useState(false);
 
   // Fetch ARC balance
   useEffect(() => {
@@ -86,7 +86,7 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
     { symbol: 'DAI', name: 'Dai Stablecoin', balance: '3,200.75' }
   ];
 
-    const handleDeposit = () => {
+  const handleDeposit = () => {
     if (!amount || parseFloat(amount) <= 0) return;
     onDeposit(amount);
     setAmount('');
@@ -181,11 +181,11 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
                 ARC
               </div>
             </div>
-            
-              <p className="text-green-400 text-xs">
-                Available balance: {balance} ARC
-              </p>
-           
+
+            <p className="text-green-400 text-xs">
+              Available balance: {balance} ARC
+            </p>
+
           </div>
 
 

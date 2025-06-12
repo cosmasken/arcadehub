@@ -3,12 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
-import { 
-  Trophy, 
-  Users, 
-  Calendar, 
-  Coins, 
-  Eye, 
+import {
+  Trophy,
+  Users,
+  Calendar,
+  Coins,
+  Eye,
   Settings,
   TrendingUp,
   Target
@@ -82,7 +82,7 @@ const ViewTournamentModal = ({ isOpen, onClose, onManage, tournament }: ViewTour
                 <div className="text-lg font-bold text-yellow-400 font-mono">
                   {tournament.yourContribution}
                 </div>
-                <div className="text-green-400 text-xs">YOUR_CONTRIBUTION</div>
+                <div className="text-green-400 text-xs">POOL</div>
               </CardContent>
             </Card>
 
@@ -112,19 +112,18 @@ const ViewTournamentModal = ({ isOpen, onClose, onManage, tournament }: ViewTour
             <div className="flex justify-between text-sm mb-2">
               <span className="text-green-400">TOURNAMENT PROGRESS</span>
               <span className="text-cyan-400">
-                {tournament.status === 'completed' ? '100%' : 
-                 tournament.status === 'live' ? '60%' : '0%'}
+                {tournament.status === 'completed' ? '100%' :
+                  tournament.status === 'live' ? '60%' : '0%'}
               </span>
             </div>
             <div className="w-full bg-gray-800 h-2 border border-green-400">
-              <div 
-                className={`h-full transition-all duration-300 ${
-                  tournament.status === 'completed' ? 'bg-green-400' :
-                  tournament.status === 'live' ? 'bg-yellow-400' : 'bg-gray-600'
-                }`}
-                style={{ 
-                  width: tournament.status === 'completed' ? '100%' : 
-                         tournament.status === 'live' ? '60%' : '0%' 
+              <div
+                className={`h-full transition-all duration-300 ${tournament.status === 'completed' ? 'bg-green-400' :
+                    tournament.status === 'live' ? 'bg-yellow-400' : 'bg-gray-600'
+                  }`}
+                style={{
+                  width: tournament.status === 'completed' ? '100%' :
+                    tournament.status === 'live' ? '60%' : '0%'
                 }}
               ></div>
             </div>

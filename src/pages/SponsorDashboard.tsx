@@ -43,28 +43,6 @@ const SponsorDashboard = () => {
     completedTournaments: 12
   };
 
-  // const activeTournaments = [
-  //   {
-  //     id: 1,
-  //     title: "CRYPTO CHAMPIONSHIP",
-  //     game: "Crypto Battles",
-  //     prizePool: "10 ETH",
-  //     participants: 1247,
-  //     status: "live",
-  //     startDate: "2024-06-15",
-  //     yourContribution: "10 ETH"
-  //   },
-  //   {
-  //     id: 2,
-  //     title: "NFT GRAND PRIX",
-  //     game: "NFT Racing", 
-  //     prizePool: "5 ETH",
-  //     participants: 892,
-  //     status: "upcoming",
-  //     startDate: "2024-06-20",
-  //     yourContribution: "5 ETH"
-  //   }
-  // ];
 
   React.useEffect(() => {
     const fetchTournaments = async () => {
@@ -213,8 +191,8 @@ const SponsorDashboard = () => {
                             {tournament.id}
                           </h3>
                           <Badge className={`font-mono ${tournament.status === 'live'
-                              ? 'bg-green-400 text-black animate-pulse'
-                              : 'bg-yellow-400 text-black'
+                            ? 'bg-green-400 text-black animate-pulse'
+                            : 'bg-yellow-400 text-black'
                             }`}>
                             {tournament.status.toUpperCase()}
                           </Badge>

@@ -19,10 +19,11 @@ import {
   Target,
   Gamepad2
 } from 'lucide-react';
-import { createTournamentAA, approveTokenForContractAA } from '../lib/aaUtils';
+import { createTournamentAA, approveTokenForContractAA, getProvider } from '../lib/aaUtils';
 import { ethers } from 'ethers';
-import { TESTNET_CONFIG } from '../config'; // Assuming you have a config file with contract addresses
-import { useWalletStore } from '../stores/useWalletStore'; // Adjust the import based on your store structure
+import { TESTNET_CONFIG } from '../config';
+import { useWalletStore } from '../stores/useWalletStore';
+import supabase from '../hooks/use-supabase';
 
 const CreateTournament = () => {
   const { toast } = useToast();
@@ -69,42 +70,21 @@ const CreateTournament = () => {
     setIsDepositModalOpen(true);
   };
 
-  const handlePrizePoolDeposit = async (amount: string
-    // , token: string
-  ) => {
-    // setIsDepositModalOpen(false);
+  const handlePrizePoolDeposit = async (amount: string) => {
     setIsLoadingModalOpen(true);
 
     try {
-      // Get the user's signer (e.g., from MetaMask)
-
       if (!aaSigner) {
         throw new Error("Wallet not connected. Please connect your wallet.");
       }
 
-      // Validate token (assuming ARC token for now)
-      // if (token.toLowerCase() !== 'arc') {
-      //   throw new Error("Only ARC tokens are supported for prize pools.");
-      // }
-
-      // Convert amount to wei (assuming 18 decimals for ARC token)
       const prizePool = ethers.parseUnits(amount, 18);
-
-      // 1. Approve only the required ARC amount for ArcadeHub
-      // Approve token for a specific contract using AA
-      // export const approveTokenForContractAA = async (
-      //   accountSigner: ethers.Signer,
-      //   tokenAddress: string,
-      //   amount: bigint,
-      //   contractAddress: string,
-      //   options?: { apiKey?: string; gasMultiplier?: number }
-      // ) => {
 
       const approvalResult = await approveTokenForContractAA(
         aaSigner, TESTNET_CONFIG.smartContracts.arcadeToken,
         prizePool,
         TESTNET_CONFIG.smartContracts.tournamentHub)
-      // const approvalResult = await approveArcadeHubArc(aaSigner, prizePool);
+
       if (!approvalResult || approvalResult.error) {
         throw new Error("Token approval failed. Please try again.");
       }
@@ -132,13 +112,77 @@ const CreateTournament = () => {
         throw new Error("Transaction failed. No UserOperation hash returned.");
       }
 
+      // --- Get tournament ID from event logs ---
+
+
+      // ...existing code...
+      let tournamentId = null;
+      const iface = new ethers.Interface([
+        "event TournamentCreated(uint256 indexed id, address indexed creator, uint256 prizePool, uint256 startTime, uint256 endTime)"
+      ]);
+
+      // Try to get logs from result.receipt.logs or result.receipt.receipt.logs
+      let logs = [];
+      if (result.receipt && Array.isArray(result.receipt.logs)) {
+        logs = result.receipt.logs;
+      } else if (result.receipt && result.receipt.receipt && Array.isArray(result.receipt.receipt.logs)) {
+        logs = result.receipt.receipt.logs;
+      }
+
+      // Try to parse logs if present
+      if (logs.length > 0) {
+        for (const log of logs) {
+          try {
+            if (log.address.toLowerCase() !== TESTNET_CONFIG.smartContracts.tournamentHub.toLowerCase()) continue;
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === "TournamentCreated") {
+              tournamentId = parsed.args.id.toString();
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+
+      // Fallback: fetch logs from provider if not found
+      if (!tournamentId && result.transactionHash && result.receipt && result.receipt.blockNumber) {
+        const provider = getProvider();
+        const fetchedLogs = await provider.getLogs({
+          address: TESTNET_CONFIG.smartContracts.tournamentHub,
+          fromBlock: result.receipt.blockNumber,
+          toBlock: result.receipt.blockNumber,
+          topics: [ethers.id("TournamentCreated(uint256,address,uint256,uint256,uint256)")]
+        });
+        if (fetchedLogs.length > 0) {
+          console.log("fetched logs ",fetchedLogs);
+          const parsed = iface.parseLog(fetchedLogs[0]);
+          tournamentId = parsed.args.id.toString();
+        }
+      }
+
+      if (!tournamentId) {
+        throw new Error("Could not fetch tournament ID from transaction logs.");
+      }
+
+      // ...rest of your code...
+
+      // --- Insert tournament metadata into Supabase ---
+      await supabase.from('tournaments').insert({
+        id: tournamentId,
+        title: formData.title,
+        game_id: formData.game,
+        description: formData.description,
+        sponsor_id: null, // set if you have a sponsor UUID
+        max_participants: formData.maxParticipants,
+        duration_hours: formData.duration,
+        start_date: formData.startDate,
+        rules: formData.rules,
+        image_url: null // set if you have an image
+      });
+
       setIsLoadingModalOpen(false);
 
-      // toast({
-      //   title: "Tournament Created Successfully!",
-      //   description: `${formData.title} has been created with ${amount} ARC prize pool. UserOpHash: ${result.userOpHash}`,
-      //   className: "bg-green-400 text-black border-green-400",
-      // });
 
       toast({
         title: "Tournament Created Successfully!",

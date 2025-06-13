@@ -1249,6 +1249,7 @@ export const submitPointsClaimAA = async (
   );
 };
 
+
 // Apply for admin to AdminApplications
 export const applyForAdminAA = async (
   accountSigner: ethers.Signer,
@@ -1401,16 +1402,33 @@ export const submitPointsClaimSponsored = async (
   );
 };
 
-// Approve points claim (admin only) in PointsSystem
 export const approvePointsClaimAA = async (
   accountSigner: ethers.Signer,
   player: string,
-  paymentType: number = 1,
+  paymentType: number = 0,
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
+  const aaWalletAddress = await getAAWalletAddress(accountSigner);
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.pointsSystem,
+    [
+      "function isAdmin(address) view returns (bool)",
+      "function pendingPointsClaims(address) view returns (uint256)"
+    ],
+    getProvider()
+  );
+  if (!(await contract.isAdmin(aaWalletAddress))) {
+    throw new Error(`AA wallet ${aaWalletAddress} is not an admin`);
+  }
+  const points = await contract.pendingPointsClaims(player);
+  if (points === 0n) {
+    throw new Error(`No pending claim for player ${player}`);
+  }
+
   const opKey = generateOperationKey('approvePointsClaimAA', [
     await accountSigner.getAddress(),
+    player,
     paymentType,
     selectedToken,
     options?.gasMultiplier || 100
@@ -1419,18 +1437,43 @@ export const approvePointsClaimAA = async (
     opKey,
     accountSigner,
     async (client, builder) => {
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`Approving ${points} points for ${player}`);
+      }
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.pointsSystem,
-        ["function approvePointsClaim(address player) external"],
+        [
+          "function approvePointsClaim(address player) external",
+          "event PointsClaimApproved(address indexed player, uint256 points)"
+        ],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('approvePointsClaim', [player]);
       const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`UserOperation sent: ${res.userOpHash}`);
+      }
       const receipt = await res.wait();
+      let approvedPoints = null;
+      if (receipt && receipt.logs) {
+        const iface = new ethers.Interface(["event PointsClaimApproved(address indexed player, uint256 points)"]);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === "PointsClaimApproved") {
+              approvedPoints = parsed.args.points.toString();
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
       return {
         userOpHash: res.userOpHash,
         transactionHash: receipt?.transactionHash,
+        approvedPoints,
         receipt
       };
     },
@@ -1440,16 +1483,58 @@ export const approvePointsClaimAA = async (
   );
 };
 
+// Approve points claim (admin only) in PointsSystem
+// export const approvePointsClaimAA = async (
+//   accountSigner: ethers.Signer,
+//   player: string,
+//   paymentType: number = 0,
+//   selectedToken: string = '',
+//   options?: { apiKey?: string; gasMultiplier?: number }
+// ) => {
+//   const opKey = generateOperationKey('approvePointsClaimAA', [
+//     await accountSigner.getAddress(),
+//     player,
+//     paymentType,
+//     selectedToken,
+//     options?.gasMultiplier || 100
+//   ]);
+  
+//   return executeOperation(
+//     opKey,
+//     accountSigner,
+//     async (client, builder) => {
+//       const contract = new ethers.Contract(
+//         TESTNET_CONFIG.smartContracts.pointsSystem,
+//         ["function approvePointsClaim(address player) external"],
+//         getProvider()
+//       );
+//       const callData = contract.interface.encodeFunctionData('approvePointsClaim', [player]);
+//       const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
+//       const res = await client.sendUserOperation(userOp);
+//       const receipt = await res.wait();
+//       return {
+//         userOpHash: res.userOpHash,
+//         transactionHash: receipt?.transactionHash,
+//         receipt
+//       };
+//     },
+//     paymentType,
+//     selectedToken,
+//     options
+//   );
+// };
+
 // Reject points claim (admin only) in PointsSystem
 export const rejectPointsClaimAA = async (
   accountSigner: ethers.Signer,
   player: string,
-  paymentType: number = 1,
+  paymentType: number = 0,
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
   const opKey = generateOperationKey('rejectPointsClaimAA', [
     await accountSigner.getAddress(),
+    player,
     paymentType,
     selectedToken,
     options?.gasMultiplier || 100
@@ -1866,6 +1951,220 @@ export const claimDeveloperPayoutAA = async (
         userOpHash: res.userOpHash,
         transactionHash: receipt?.transactionHash,
         receipt
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+export const addAdminAA = async (
+  accountSigner: ethers.Signer,
+  admin: string,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const aaWalletAddress = await getAAWalletAddress(accountSigner);
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.pointsSystem,
+    ["function isOwner() view returns (bool)"],
+    getProvider()
+  );
+  // const isOwner = await contract.connect(accountSigner).isOwner();
+  // if (!isOwner) {
+  //   throw new Error(`AA wallet ${aaWalletAddress} is not the owner`);
+  // }
+  // if (!ethers.isAddress(admin)) {
+  //   throw new Error(`Invalid admin address: ${admin}`);
+  // }
+
+  const opKey = generateOperationKey('addAdminAA', [
+    await accountSigner.getAddress(),
+    admin,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100,
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`Adding admin ${admin}`);
+      }
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.pointsSystem,
+        [
+          "function addAdmin(address admin) external",
+          "event AdminAdded(address indexed admin)",
+        ],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('addAdmin', [admin]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`UserOperation sent: ${res.userOpHash}`);
+      }
+      const receipt = await res.wait();
+      let addedAdmin = null;
+      if (receipt && receipt.logs) {
+        const iface = new ethers.Interface(["event AdminAdded(address indexed admin)"]);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === "AdminAdded") {
+              addedAdmin = parsed.args.admin;
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        addedAdmin,
+        receipt,
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+export const removeAdminAA = async (
+  accountSigner: ethers.Signer,
+  admin: string,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const aaWalletAddress = await getAAWalletAddress(accountSigner);
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.pointsSystem,
+    ["function isOwner() view returns (bool)"],
+    getProvider()
+  );
+  // const isOwner = await contract.connect(accountSigner).isOwner();
+  // if (!isOwner) {
+  //   throw new Error(`AA wallet ${aaWalletAddress} is not the owner`);
+  // }
+  // if (!ethers.isAddress(admin)) {
+  //   throw new Error(`Invalid admin address: ${admin}`);
+  // }
+
+  const opKey = generateOperationKey('removeAdminAA', [
+    await accountSigner.getAddress(),
+    admin,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100,
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`Removing admin ${admin}`);
+      }
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.pointsSystem,
+        [
+          "function removeAdmin(address admin) external",
+          "event AdminRemoved(address indexed admin)",
+        ],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('removeAdmin', [admin]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`UserOperation sent: ${res.userOpHash}`);
+      }
+      const receipt = await res.wait();
+      let removedAdmin = null;
+      if (receipt && receipt.logs) {
+        const iface = new ethers.Interface(["event AdminRemoved(address indexed admin)"]);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === "AdminRemoved") {
+              removedAdmin = parsed.args.admin;
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        removedAdmin,
+        receipt,
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+export const setPointsToTokensRateAA = async (
+  accountSigner: ethers.Signer,
+  newRate: number,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const aaWalletAddress = await getAAWalletAddress(accountSigner);
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.pointsSystem,
+    ["function isAdmin(address) view returns (bool)"],
+    getProvider()
+  );
+  if (!(await contract.isAdmin(aaWalletAddress))) {
+    throw new Error(`AA wallet ${aaWalletAddress} is not an admin`);
+  }
+  if (newRate <= 0) {
+    throw new Error(`Invalid rate: ${newRate}`);
+  }
+
+  const opKey = generateOperationKey('setPointsToTokensRateAA', [
+    await accountSigner.getAddress(),
+    newRate,
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100,
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`Setting points to tokens rate to ${newRate}`);
+      }
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.pointsSystem,
+        ["function setPointsToTokensRate(uint256 _newRate) external"],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('setPointsToTokensRate', [newRate]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`UserOperation sent: ${res.userOpHash}`);
+      }
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt,
       };
     },
     paymentType,

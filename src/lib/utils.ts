@@ -4,3 +4,7 @@ import { twMerge } from "tailwind-merge"
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export function truncateAddress(aaWalletAddress: string) {
+    return `${aaWalletAddress.slice(0, 6)}...${aaWalletAddress.slice(-4)}`;
+};

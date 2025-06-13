@@ -9,6 +9,7 @@ import { CheckCircle, X, Loader2, User, Gamepad2, Code } from 'lucide-react';
 import { toast } from '../components/ui/use-toast';
 import useProfileStore from '../stores/useProfileStore';
 import useWalletStore from '../stores/useWalletStore';
+import { usePinata } from '../hooks/use-pinata';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -26,6 +27,9 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   const [bio, setBio] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { uploadFile, error } = usePinata();
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { checkUsernameExists, onboardUser } = useProfileStore();
   const { aaWalletAddress } = useWalletStore();
@@ -39,6 +43,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     setUsernameStatus('checking');
     const exists = await checkUsernameExists(username.trim());
     setUsernameStatus(exists ? 'taken' : 'available');
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAvatarFile(e.target.files?.[0] || null);
   };
 
   const handleUsernameChange = (value: string) => {
@@ -58,6 +66,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   };
 
   const handleComplete = async () => {
+    
     if (!username.trim()) {
       toast({
         title: "Error",
@@ -114,10 +123,26 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     }
 
     setIsSubmitting(true);
+
+    let avatarHash = null;
+    if (avatarFile) {
+      avatarHash = await uploadFile(avatarFile);
+      if (!avatarHash) {
+        toast({
+          title: "Avatar Upload Failed",
+          description: error || "Could not upload avatar to IPFS.",
+          variant: "destructive"
+        });
+        setIsUploading(false);
+        return;
+      }
+    }
+
     const success = await onboardUser(aaWalletAddress, {
       username: username.trim(),
       bio: bio.trim() || null,
       role: userType,
+      avatar: avatarHash
     });
     setIsSubmitting(false);
     if (success) {
@@ -238,7 +263,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
             </p>
 
             <div className="space-y-2">
-              <Label htmlFor="username">Username *</Label>
+              <Label htmlFor="username" className='text-black'>Username *</Label>
               <div className="relative">
                 <Input
                   id="username"
@@ -246,7 +271,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   value={username}
                   onChange={(e) => handleUsernameChange(e.target.value)}
                   className={`pr-10 ${usernameStatus === 'available' ? 'border-green-500' :
-                      usernameStatus === 'taken' ? 'border-red-500' : ''
+                    usernameStatus === 'taken' ? 'border-red-500' : ''
                     }`}
                   disabled={isSubmitting}
                 />
@@ -261,7 +286,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio (Optional)</Label>
+              <Label htmlFor="bio" className='text-black'>Bio (Optional)</Label>
               <Textarea
                 id="bio"
                 placeholder="Tell us a bit about yourself..."
@@ -276,6 +301,24 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
               </p>
             </div>
 
+            <label htmlFor="avatar" className="block font-medium text-black">Avatar</label>
+            <input
+              id="avatar"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              disabled={isUploading}
+              className="block text-black"
+            />
+            {/* Optionally show preview */}
+            {avatarFile && (
+              <img
+                src={URL.createObjectURL(avatarFile)}
+                alt="Avatar Preview"
+                className="w-16 h-16 rounded-full mt-2"
+              />
+            )}
+
             <Button
               onClick={handleComplete}
               disabled={!isFormValid() || isSubmitting}
@@ -287,7 +330,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                   Creating Profile...
                 </>
               ) : (
-                'Complete Setup'
+                'Complete Onboarding'
               )}
             </Button>
           </div>
@@ -301,7 +344,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
             <div className="text-center">
               <h3 className="text-2xl font-bold text-green-600">All Set!</h3>
               <p className="text-gray-600 dark:text-gray-300 mt-2">
-                Welcome to Web3 Portal, @{username}!
+                Welcome to ArcadeHub, @{username}!
               </p>
               <p className="text-sm text-gray-500 mt-1">
                 {userType === 'developer' ? 'Ready to upload your games!' : 'Ready to discover amazing games!'}

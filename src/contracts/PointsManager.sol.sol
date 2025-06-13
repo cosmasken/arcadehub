@@ -11,23 +11,46 @@ contract PointsSystem is Ownable, ReentrancyGuard {
     mapping(address => uint256) public pendingPointsClaims;
     uint256 public pointsToTokensRate = 1000;
 
+    mapping(address => bool) public isAdmin;
+
+
     event PointsClaimSubmitted(address indexed player, uint256 points);
     event PointsClaimApproved(address indexed player, uint256 points);
     event PointsClaimRejected(address indexed player);
     event TokensClaimed(address indexed player, uint256 amount);
     event TokensDeposited(address indexed owner, uint256 amount);
 
+    event AdminAdded(address indexed admin);
+    event AdminRemoved(address indexed admin);
+
     constructor(address _arcToken, address _initialOwner) Ownable(_initialOwner) {
         require(_arcToken != address(0), "Invalid token address");
         arcToken = IERC20(_arcToken);
+        isAdmin[_initialOwner] = true;
     }
 
-    function setPointsToTokensRate(uint256 _newRate) external onlyOwner {
+    modifier onlyAdmin() {
+        require(isAdmin[msg.sender], "Caller is not an admin");
+        _;
+    }
+    function addAdmin(address admin) external onlyOwner {
+        require(admin != address(0), "Invalid admin address");
+        require(!isAdmin[admin], "Already an admin");
+        isAdmin[admin] = true;
+        emit AdminAdded(admin);
+    }
+    function removeAdmin(address admin) external onlyOwner {
+        require(isAdmin[admin], "Not an admin");
+        isAdmin[admin] = false;
+        emit AdminRemoved(admin);
+    }
+
+    function setPointsToTokensRate(uint256 _newRate) external onlyAdmin() {
         require(_newRate > 0, "Rate must be greater than zero");
         pointsToTokensRate = _newRate;
     }
 
-    function depositTokens(uint256 amount) external onlyOwner {
+    function depositTokens(uint256 amount) external onlyAdmin() {
         require(amount > 0, "Amount must be greater than zero");
         require(arcToken.transferFrom(msg.sender, address(this), amount), "Deposit failed");
         emit TokensDeposited(msg.sender, amount);
@@ -40,7 +63,7 @@ contract PointsSystem is Ownable, ReentrancyGuard {
         emit PointsClaimSubmitted(msg.sender, points);
     }
 
-    function approvePointsClaim(address player) external onlyOwner nonReentrant {
+    function approvePointsClaim(address player) external onlyAdmin() nonReentrant {
         uint256 points = pendingPointsClaims[player];
         require(points > 0, "No pending claim");
         pendingPointsClaims[player] = 0;
@@ -50,7 +73,7 @@ contract PointsSystem is Ownable, ReentrancyGuard {
         emit TokensClaimed(player, tokens);
     }
 
-    function rejectPointsClaim(address player) external onlyOwner {
+    function rejectPointsClaim(address player) external onlyAdmin() {
         require(pendingPointsClaims[player] > 0, "No pending claim");
         pendingPointsClaims[player] = 0;
         emit PointsClaimRejected(player);

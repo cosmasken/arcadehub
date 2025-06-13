@@ -13,7 +13,6 @@ import {
 import { LogOut, Wallet, User, Settings, ChevronDown, Copy, Check } from 'lucide-react';
 
 import { useWalletStore } from '../stores/useWalletStore';
-// import OnboardingModal from './onboarding/Onboarding';
 import supabase from '../hooks/use-supabase';
 import useProfileStore from '../stores/useProfileStore';
 import OnboardingModal from './OnboardingModal';
@@ -263,20 +262,20 @@ const Header = () => {
                         <>
                           <DropdownMenuItem asChild>
                             <Link
-                              to="/developer-profile"
+                              to={aaWalletAddress ? `/developer/profile/${aaWalletAddress}` : "/developer"}
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
                               <span>&gt; DEV DASHBOARD</span>
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
+                          {/* <DropdownMenuItem asChild>
                             <Link
                               to="/upload"
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
                               <span>&gt; UPLOAD GAME</span>
                             </Link>
-                          </DropdownMenuItem>
+                          </DropdownMenuItem> */}
                         </>
                       )}
                       <DropdownMenuItem className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400">

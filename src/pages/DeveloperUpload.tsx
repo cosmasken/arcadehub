@@ -341,7 +341,7 @@ const DeveloperUpload = () => {
               <div className="text-center">
                 <div className="relative inline-block mb-4">
                   <img
-                    src='https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop'
+                    src={`https://gateway.pinata.cloud/ipfs/${developer.avatar}`}
                     alt={developer.name}
                     className="w-20 h-20 rounded-lg border-2 border-cyan-400 group-hover:border-green-400 transition-colors"
                   />

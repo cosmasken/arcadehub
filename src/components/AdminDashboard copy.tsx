@@ -5,10 +5,9 @@ import { Badge } from './ui/badge';
 import { useToast } from '../hooks/use-toast';
 import {
     TESTNET_CONFIG,
-    getGasParameters,
-    API_OPTIMIZATION,
 } from '../config';
-
+import LoadingModal from '../components/LoadingModal';
+import { Slider } from './ui/slider';
 import {
     Shield,
     Coins,
@@ -22,40 +21,71 @@ import {
     Settings
 } from 'lucide-react';
 
-import ArcadeHubABI from '../abi/ArcadeHub.json'
+import PointsSystem from '../abi/PointsSystem.json'
+import TokenSelector from './TokenSelector';
 import { ethers } from 'ethers';
+import { approvePointsClaimAA, rejectPointsClaimAA, getProvider } from '../lib/aaUtils';
+import { useWalletStore } from '../stores/useWalletStore';
 
-// const ARCADE_HUB_ADDRESS = ;
-
-interface TokenClaim {
-    id: number;
-    playerName: string;
-    amount: number;
-    honeySpent: number;
-    timestamp: string;
-    status: 'pending' | 'approved' | 'rejected';
-}
-
-interface AdminDashboardProps {
-    onLogout: () => void;
-}
-
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
+const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     const [activeTab, setActiveTab] = useState<'claims' | 'games' | 'admins'>('claims');
     const { toast } = useToast();
-
     const [pendingClaims, setPendingClaims] = useState<any[]>([]);
+    const [loadingClaim, setLoadingClaim] = useState<string | null>(null);
+    const { aaSigner } = useWalletStore();
+    const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
+    const [loadingModalText, setLoadingModalText] = useState<string | undefined>(undefined);
 
+    const [selectedToken, setSelectedToken] = useState<string>('');
+    const [gasMultiplier, setGasMultiplier] = useState([1.5]);
+
+    // Clamp and convert to percent for AA utils
+    const gasMultiplierPercent = Math.round(gasMultiplier[0] * 100);
+    const clampedGasMultiplier = Math.max(50, Math.min(500, gasMultiplierPercent));
+
+    const fetchPendingClaims = async () => {
+        const provider = getProvider();
+        const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, PointsSystem, provider);
+
+        // Get all PointsClaimSubmitted events
+        const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+        // Get all PointsClaimApproved and PointsClaimRejected events
+        const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+        const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
+            .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+
+        // Build sets of processed claims
+        const processed = new Set([
+            ...approved.map(e => e.args.player.toLowerCase()),
+            ...rejected.map(e => e.args.player.toLowerCase()),
+        ]);
+
+        // Filter out processed claims
+        const pending = submitted
+            .filter(e => !processed.has(e.args.player.toLowerCase()))
+            .map(e => ({
+                player: e.args.player,
+                points: Number(e.args.points),
+                blockNumber: e.blockNumber,
+            }));
+
+        setPendingClaims(pending);
+    };
     useEffect(() => {
         const fetchPendingClaims = async () => {
-            const provider = new ethers.JsonRpcProvider(TESTNET_CONFIG.chain.rpcUrl); 
-            const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, ArcadeHubABI, provider);
+            const provider = getProvider();
+            const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, PointsSystem, provider);
 
             // Get all PointsClaimSubmitted events
-            const submitted = await contract.queryFilter(contract.filters.PointsClaimSubmitted());
+            const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
+                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
             // Get all PointsClaimApproved and PointsClaimRejected events
-            const approved = await contract.queryFilter(contract.filters.PointsClaimApproved());
-            const rejected = await contract.queryFilter(contract.filters.PointsClaimRejected());
+            const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
+                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
+            const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
+                .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
 
             // Build sets of processed claims
             const processed = new Set([
@@ -68,74 +98,76 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 .filter(e => !processed.has(e.args.player.toLowerCase()))
                 .map(e => ({
                     player: e.args.player,
-                    points: e.args.points.toNumber(),
+                    points: Number(e.args.points),
                     blockNumber: e.blockNumber,
                 }));
 
             setPendingClaims(pending);
         };
-
+        console.log("Fetching pending claims...");
         fetchPendingClaims();
     }, []);
 
-    //   const [tokenClaims, setTokenClaims] = useState<TokenClaim[]>([
-    //     { id: 1, playerName: 'CyberGamer42', amount: 5, honeySpent: 50000, timestamp: '2024-01-15 14:30', status: 'pending' },
-    //     { id: 2, playerName: 'HoneyMaster', amount: 3, honeySpent: 30000, timestamp: '2024-01-15 13:45', status: 'pending' },
-    //     { id: 3, playerName: 'RetroKing', amount: 8, honeySpent: 80000, timestamp: '2024-01-15 12:20', status: 'approved' },
-    //     { id: 4, playerName: 'PixelWarrior', amount: 2, honeySpent: 20000, timestamp: '2024-01-15 11:15', status: 'pending' },
-    //   ]);
+    const handleApprove = async (player: string) => {
+        if (!aaSigner) {
+            toast({ title: "No admin wallet", description: "Connect your admin AA wallet.", variant: "destructive" });
+            return;
+        }
+        setLoadingClaim(player);
+        setLoadingModalText("Approving claim...");
+        setIsLoadingModalOpen(true);
+        try {
+            await approvePointsClaimAA(aaSigner, player);
+            toast({ title: "Claim Approved", description: `Claim for ${player} approved.`, className: "bg-green-400 text-black border-green-400" });
+            // Re-fetch claims after successful approval
+            await fetchPendingClaims();
+        } catch (err: any) {
+            toast({ title: "Approval Failed", description: err.message || "Error approving claim.", variant: "destructive" });
+        }
+        setLoadingClaim(null);
+        setIsLoadingModalOpen(false);
+    };
 
-    //   const [games, setGames] = useState([
-    //     { id: 1, name: 'Honey Clicker', status: 'approved', players: 156 },
-    //     { id: 2, name: 'Space Invaders', status: 'approved', players: 89 },
-    //     { id: 3, name: 'Retro Puzzle', status: 'pending', players: 0 },
-    //   ]);
+    const handleReject = async (player: string) => {
+        if (!aaSigner) {
+            toast({ title: "No admin wallet", description: "Connect your admin AA wallet.", variant: "destructive" });
+            return;
+        }
+        setLoadingClaim(player);
+        setLoadingModalText("Rejecting claim...");
+        setIsLoadingModalOpen(true);
+        try {
+            await rejectPointsClaimAA(aaSigner, player, 1, selectedToken, { gasMultiplier: clampedGasMultiplier }); // <-- add gasMultiplier
+            toast({ title: "Claim Rejected", description: `Claim for ${player} rejected.`, className: "bg-red-400 text-black border-red-400" });
+            setPendingClaims(prev => prev.filter(claim => claim.player !== player));
+        } catch (err: any) {
+            toast({ title: "Rejection Failed", description: err.message || "Error rejecting claim.", variant: "destructive" });
+        }
+        setLoadingClaim(null);
+        setIsLoadingModalOpen(false);
+    };
 
-    //   const pendingClaims = tokenClaims.filter(claim => claim.status === 'pending');
 
-    //   const handleApprove = (claimId: number) => {
-    //     setTokenClaims(prev => prev.map(claim => 
-    //       claim.id === claimId ? { ...claim, status: 'approved' as const } : claim
-    //     ));
-    //     toast({
-    //       title: "Claim Approved",
-    //       description: "Token claim has been approved",
-    //       className: "bg-green-400 text-black border-green-400",
-    //     });
-    //   };
 
-    //   const handleReject = (claimId: number) => {
-    //     setTokenClaims(prev => prev.map(claim => 
-    //       claim.id === claimId ? { ...claim, status: 'rejected' as const } : claim
-    //     ));
-    //     toast({
-    //       title: "Claim Rejected",
-    //       description: "Token claim has been rejected",
-    //       className: "bg-red-400 text-black border-red-400",
-    //     });
-    //   };
+    // Approve all pending claims
+    const handleApproveAll = async () => {
+        setLoadingModalText("Approving all claims...");
+        setIsLoadingModalOpen(true);
+        for (const claim of pendingClaims) {
+            await handleApprove(claim.player);
+        }
+        setIsLoadingModalOpen(false);
+    };
 
-    //   const handleApproveAll = () => {
-    //     setTokenClaims(prev => prev.map(claim => 
-    //       claim.status === 'pending' ? { ...claim, status: 'approved' as const } : claim
-    //     ));
-    //     toast({
-    //       title: "All Claims Approved",
-    //       description: `${pendingClaims.length} claims approved`,
-    //       className: "bg-green-400 text-black border-green-400",
-    //     });
-    //   };
-
-    //   const handleRejectAll = () => {
-    //     setTokenClaims(prev => prev.map(claim => 
-    //       claim.status === 'pending' ? { ...claim, status: 'rejected' as const } : claim
-    //     ));
-    //     toast({
-    //       title: "All Claims Rejected",
-    //       description: `${pendingClaims.length} claims rejected`,
-    //       className: "bg-red-400 text-black border-red-400",
-    //     });
-    //   };
+    // Reject all pending claims
+    const handleRejectAll = async () => {
+        setLoadingModalText("Rejecting all claims...");
+        setIsLoadingModalOpen(true);
+        for (const claim of pendingClaims) {
+            await handleReject(claim.player);
+        }
+        setIsLoadingModalOpen(false);
+    };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
@@ -153,8 +185,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         }
     };
 
+    // Dummy games/admins for UI completeness
+    const games = [
+        { id: 1, name: 'Honey Clicker', status: 'approved', players: 156 },
+        { id: 2, name: 'Space Invaders', status: 'approved', players: 89 },
+        { id: 3, name: 'Retro Puzzle', status: 'pending', players: 0 },
+    ];
+
     return (
         <div className="min-h-screen bg-black text-green-400 font-mono">
+            <LoadingModal
+                isOpen={isLoadingModalOpen}
+                title="PROCESSING"
+                description={loadingModalText}
+            />
             {/* Header */}
             <div className="bg-black border-b-2 border-red-400 p-6">
                 <div className="container mx-auto flex justify-between items-center">
@@ -204,6 +248,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                 {/* Token Claims Tab */}
                 {activeTab === 'claims' && (
                     <div>
+                        {/* Gas Multiplier Slider */}
+                        <div className="mb-6">
+                            <label className="text-cyan-400 text-sm font-bold mb-2 block">
+                                GAS_MULTIPLIER: {gasMultiplier[0]}x
+                            </label>
+                            <Slider
+                                value={gasMultiplier}
+                                onValueChange={setGasMultiplier}
+                                min={0.5}
+                                max={5}
+                                step={0.1}
+                                className="w-full"
+                            />
+                            <div className="flex justify-between text-xs text-green-400">
+                                <span>0.5x (MIN)</span>
+                                <span>1.0x (NORMAL)</span>
+                                <span>5.0x (MAX)</span>
+                            </div>
+                        </div>
+                        {/* Token Selector */}
+                        <div className="mb-6">
+                            <label className="text-cyan-400 text-sm font-bold mb-2 block">
+                                SELECT GAS TOKEN
+                            </label>
+                            <TokenSelector
+                                selectedToken={selectedToken}
+                                onTokenSelect={setSelectedToken}
+                            />
+                        </div>
+
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-cyan-400">
                                 PENDING TOKEN CLAIMS ({pendingClaims.length})
@@ -211,13 +285,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                             {pendingClaims.length > 0 && (
                                 <div className="space-x-4">
                                     <Button
-                                        // onClick={handleApproveAll}
+                                        onClick={handleApproveAll}
                                         className="bg-green-400 text-black hover:bg-green-300 font-mono"
                                     >
                                         APPROVE_ALL
                                     </Button>
                                     <Button
-                                        // onClick={handleRejectAll}
+                                        onClick={handleRejectAll}
                                         className="bg-red-400 text-black hover:bg-red-300 font-mono"
                                     >
                                         REJECT_ALL
@@ -227,41 +301,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                         </div>
 
                         <div className="space-y-4">
-                            {tokenClaims.map((claim) => (
-                                <Card key={claim.id} className="bg-black border-cyan-400 p-6">
+                            {pendingClaims.map((claim, idx) => (
+                                <Card key={claim.player + idx} className="bg-black border-cyan-400 p-6">
                                     <div className="flex justify-between items-center">
                                         <div className="flex items-center space-x-4">
-                                            {getStatusIcon(claim.status)}
+                                            <Clock className="w-4 h-4 text-yellow-400" />
                                             <div>
-                                                <p className="font-bold text-cyan-400">{claim.playerName}</p>
+                                                <p className="font-bold text-cyan-400">{claim.player}</p>
                                                 <p className="text-green-400 text-sm">
-                                                    {claim.amount} HIVE tokens • {claim.honeySpent.toLocaleString()} honey
+                                                    {claim.points} points
                                                 </p>
-                                                <p className="text-gray-400 text-xs">{claim.timestamp}</p>
+                                                <p className="text-gray-400 text-xs">Block: {claim.blockNumber}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center space-x-4">
-                                            <Badge className={getStatusColor(claim.status)}>
-                                                {claim.status.toUpperCase()}
-                                            </Badge>
-                                            {claim.status === 'pending' && (
-                                                <div className="space-x-2">
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleApprove(claim.id)}
-                                                        className="bg-green-400 text-black hover:bg-green-300 font-mono"
-                                                    >
-                                                        APPROVE
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleReject(claim.id)}
-                                                        className="bg-red-400 text-black hover:bg-red-300 font-mono"
-                                                    >
-                                                        REJECT
-                                                    </Button>
-                                                </div>
-                                            )}
+                                            <Badge className="bg-yellow-400 text-black">PENDING</Badge>
+                                            <div className="space-x-2">
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleApprove(claim.player)}
+                                                    disabled={loadingClaim === claim.player}
+                                                    className="bg-green-400 text-black hover:bg-green-300 font-mono"
+                                                >
+                                                    {loadingClaim === claim.player ? "..." : "APPROVE"}
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => handleReject(claim.player)}
+                                                    disabled={loadingClaim === claim.player}
+                                                    className="bg-red-400 text-black hover:bg-red-300 font-mono"
+                                                >
+                                                    {loadingClaim === claim.player ? "..." : "REJECT"}
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </Card>

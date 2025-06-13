@@ -268,14 +268,14 @@ const Header = () => {
                               <span>&gt; DEV DASHBOARD</span>
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
+                          {/* <DropdownMenuItem asChild>
                             <Link
                               to="/upload"
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
                               <span>&gt; UPLOAD GAME</span>
                             </Link>
-                          </DropdownMenuItem>
+                          </DropdownMenuItem> */}
                         </>
                       )}
                       <DropdownMenuItem className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400">

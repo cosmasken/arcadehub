@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import Header from '../components/Header';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -27,12 +27,14 @@ import useWalletStore from '../stores/useWalletStore';
 import { toast } from '../hooks/use-toast';
 import { ethers } from 'ethers';
 import LoadingModal from '../components/LoadingModal';
+import { truncateAddress } from '../lib/utils';
 
 const DeveloperUpload = () => {
   const [activeTab, setActiveTab] = useState('upload');
   const { aaSigner, aaWalletAddress } = useWalletStore();
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const { error, uploadFile } = usePinata();
+  const [developers, setDevelopers] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -41,6 +43,17 @@ const DeveloperUpload = () => {
     assets: null as File | null
   });
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+  const fetchDevelopers = async () => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, wallet_address, username, bio")
+      .eq("role", "developer");
+    if (!error) setDevelopers(data || []);
+  };
+  fetchDevelopers();
+}, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -177,87 +190,6 @@ const DeveloperUpload = () => {
       featured: false
     }
   ];
-
-  // const renderUploadForm = () => (
-  //   <div className="max-w-2xl mx-auto">
-  //     <Card className="bg-black border-cyan-400 border-2 p-8 text-center">
-  //       <h2 className="text-2xl font-bold text-cyan-400 mb-6 neon-text">
-  //         &gt; UPLOAD_NEW_GAME &lt;
-  //       </h2>
-
-  //       <form className="space-y-6">
-  //         <div>
-  //           <Label htmlFor="title" className="text-green-400 font-mono">GAME_TITLE</Label>
-  //           <Input
-  //             id="title"
-  //             placeholder="Enter game title..."
-  //             className="bg-black border-cyan-400 text-green-400 font-mono mt-2"
-  //           />
-  //         </div>
-
-  //         <div>
-  //           <Label htmlFor="description" className="text-green-400 font-mono">DESCRIPTION</Label>
-  //           <Textarea
-  //             id="description"
-  //             placeholder="Describe your game..."
-  //             className="bg-black border-cyan-400 text-green-400 font-mono mt-2 min-h-[100px]"
-  //           />
-  //         </div>
-
-  //         <div className="grid grid-cols-2 gap-4">
-  //           <div>
-  //             <Label htmlFor="category" className="text-green-400 font-mono">CATEGORY</Label>
-  //             <Input
-  //               id="category"
-  //               placeholder="e.g. ACTION, RPG..."
-  //               className="bg-black border-cyan-400 text-green-400 font-mono mt-2"
-  //             />
-  //           </div>
-  //           <div>
-  //             <Label htmlFor="price" className="text-green-400 font-mono">PRICE_ETH</Label>
-  //             <Input
-  //               id="price"
-  //               placeholder="0.05"
-  //               className="bg-black border-cyan-400 text-green-400 font-mono mt-2"
-  //             />
-  //           </div>
-  //         </div>
-
-  //         <div>
-  //           <Label htmlFor="gameFile" className="text-green-400 font-mono">GAME_FILE</Label>
-  //           <div className="mt-2 border-2 border-dashed border-cyan-400 rounded-lg p-8 text-center hover:border-green-400 transition-colors">
-  //             <Upload className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
-  //             <p className="text-cyan-400 font-mono">DRAG_AND_DROP_YOUR_GAME_FILE</p>
-  //             <p className="text-green-400 text-sm mt-2">.ZIP, .RAR files supported</p>
-  //             <Button type="button" className="mt-4 bg-cyan-400 text-black hover:bg-green-400 font-mono">
-  //               BROWSE_FILES
-  //             </Button>
-  //           </div>
-  //         </div>
-
-  //         <div>
-  //           <Label htmlFor="thumbnail" className="text-green-400 font-mono">THUMBNAIL</Label>
-  //           <div className="mt-2 border-2 border-dashed border-cyan-400 rounded-lg p-8 text-center hover:border-green-400 transition-colors">
-  //             <Upload className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
-  //             <p className="text-cyan-400 font-mono text-sm">UPLOAD_THUMBNAIL</p>
-  //             <p className="text-green-400 text-xs mt-1">PNG, JPG (1920x1080 recommended)</p>
-  //           </div>
-  //         </div>
-
-  //         <div className="flex space-x-4">
-  //           <Button className="flex-1 bg-cyan-400 text-black hover:bg-green-400 font-mono">
-  //             &gt; UPLOAD_GAME
-  //           </Button>
-  //           <Button variant="outline" className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono">
-  //             SAVE_DRAFT
-  //           </Button>
-  //         </div>
-  //       </form>
-  //     </Card>
-  //   </div>
-  // );
-
-  // ...existing code...
 
   const renderUploadForm = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -403,30 +335,32 @@ const DeveloperUpload = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {featuredDevelopers.map((developer) => (
-          <Link key={developer.id} to={`/developer/profile/${developer.id}`}>
+        {developers.map((developer) => (
+          <Link key={developer.id} to={`/developer/profile/${developer.wallet_address}`}>
             <Card className="bg-black border-cyan-400 border-2 p-6 hover:border-green-400 transition-colors group cursor-pointer">
               <div className="text-center">
                 <div className="relative inline-block mb-4">
                   <img
-                    src={developer.avatar}
+                    src='https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop'
                     alt={developer.name}
                     className="w-20 h-20 rounded-lg border-2 border-cyan-400 group-hover:border-green-400 transition-colors"
                   />
-                  {developer.featured && (
+                  {/* {developer.featured && (
                     <div className="absolute -top-2 -right-2">
                       <Badge className="bg-yellow-500 text-black p-1">
                         <Star className="w-3 h-3" />
                       </Badge>
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <h3 className="text-lg font-bold text-cyan-400 mb-1 tracking-wider">
                   {developer.name}
                 </h3>
-                <p className="text-green-400 text-sm mb-4">{developer.username}</p>
-
+                <p className="text-green-400 text-sm mb-4">
+                  {truncateAddress(developer.wallet_address)}
+                  </p>
+              {/* 
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-green-400">GAMES</span>
@@ -443,7 +377,7 @@ const DeveloperUpload = () => {
                       <span className="text-cyan-400 font-bold">{developer.rating}</span>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <Button size="sm" className="w-full mt-4 bg-cyan-400 text-black hover:bg-green-400 font-mono text-xs">
                   VIEW_PROFILE

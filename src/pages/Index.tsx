@@ -16,28 +16,7 @@ import { TESTNET_CONFIG } from '@/config';
 const TOKEN_ABI = "../abi/ArcadeToken.json";
 
 const Index = () => {
-//   const [arcBalance, setArcBalance] = React.useState<string>('0');
-// async function getArcTokenBalance() {
-//   const provider = getProvider();
-//   const tokenContract = new ethers.Contract(TESTNET_CONFIG.smartContracts.arcadeToken, TOKEN_ABI, provider);
-//   const balance = await tokenContract.balanceOf(USER_ADDRESS);
-//   return ethers.formatUnits(balance, 18); // Assuming 18 decimals, adjust as needed
-// }
-//   // Fetch Arc token balance
-//   React.useEffect(() => {
-//     const fetchArcBalance = async () => {
-//       try {
-//         const balance = await getArcTokenBalance();
-//         setArcBalance(balance);
-//         console.log("Arc Token Balance:", balance);
-//       } catch (error) {
-//         console.error("Error fetching Arc token balance:", error);
-//       }
-//     };
 
-//     fetchArcBalance();
-//   }
-//   , []);
   const navigate = useNavigate();
   const featuredGames = [
     {

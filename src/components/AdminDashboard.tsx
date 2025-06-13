@@ -42,6 +42,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [newAdminAddress, setNewAdminAddress] = useState<string>('');
   const [pointsToTokensRate, setPointsToTokensRate] = useState<number>(1000);
   const [newRate, setNewRate] = useState<string>('1000');
+  const [refreshFlag, setRefreshFlag] = useState(0);
 
   const gasMultiplierPercent = Math.round(gasMultiplier[0] * 100);
   const clampedGasMultiplier = Math.max(50, Math.min(500, gasMultiplierPercent));
@@ -194,7 +195,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       contract.removeAllListeners('AdminAdded');
       contract.removeAllListeners('AdminRemoved');
     };
-  }, [contract, provider, toast, fetchInitialData]);
+  }, [contract, provider, toast, fetchInitialData,refreshFlag]);
 
   const handleApprove = async (player: string) => {
     if (!aaSigner) {
@@ -206,6 +207,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     setIsLoadingModalOpen(true);
     try {
       const result = await approvePointsClaimAA(aaSigner, player, 0, selectedToken, { gasMultiplier: clampedGasMultiplier });
+     setRefreshFlag(f => f + 1); // Triggers refresh
       toast({
         title: 'Claim Approved',
         description: (
@@ -241,6 +243,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     setIsLoadingModalOpen(true);
     try {
       await rejectPointsClaimAA(aaSigner, player, 0, selectedToken, { gasMultiplier: clampedGasMultiplier });
+     setRefreshFlag(f => f + 1); // Triggers refresh
       toast({
         title: 'Claim Rejected',
         description: `Claim for ${player} rejected.`,

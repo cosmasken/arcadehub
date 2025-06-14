@@ -37,7 +37,7 @@ const TokenClaimModal: React.FC<TokenClaimModalProps> = ({
   onClaim
 }) => {
 
-  const { aaSigner } = useWalletStore();
+const { aaSigner } = useWalletStore();
 const { toast } = useToast();
 const [isClaiming, setIsClaiming] = useState(false);
 const [claimResult, setClaimResult] = useState<{ success: boolean; txHash?: string; error?: string } | null>(null);

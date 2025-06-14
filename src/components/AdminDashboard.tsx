@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -17,8 +17,8 @@ import {
   Clock,
   LogOut,
   UserPlus,
-  Settings,
   DollarSign,
+  RefreshCw,
 } from 'lucide-react';
 import PointsSystem from '../abi/PointsSystem.json';
 import TokenSelector from './TokenSelector';
@@ -26,10 +26,19 @@ import { ethers } from 'ethers';
 import { approvePointsClaimAA, rejectPointsClaimAA, getProvider, setPointsToTokensRateAA, addAdminAA, removeAdminAA } from '../lib/aaUtils';
 import { useWalletStore } from '../stores/useWalletStore';
 
+interface Claim {
+  player: string;
+  claimIndex: number;
+  points: number;
+  blockNumber: number;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<'claims' | 'games' | 'admins' | 'balance'>('claims');
+  const [activeClaimsTab, setActiveClaimsTab] = useState<'pending' | 'approved' | 'rejected' | 'history'>('pending');
   const { toast } = useToast();
-  const [pendingClaims, setPendingClaims] = useState<any[]>([]);
+  const [allClaims, setAllClaims] = useState<Claim[]>([]);
   const [recentActivities, setRecentActivities] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [contractBalance, setContractBalance] = useState<string>('0');
@@ -42,7 +51,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const [newAdminAddress, setNewAdminAddress] = useState<string>('');
   const [pointsToTokensRate, setPointsToTokensRate] = useState<number>(1000);
   const [newRate, setNewRate] = useState<string>('1000');
-  const [refreshFlag, setRefreshFlag] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const gasMultiplierPercent = Math.round(gasMultiplier[0] * 100);
   const clampedGasMultiplier = Math.max(50, Math.min(500, gasMultiplierPercent));
@@ -50,28 +59,45 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const provider = getProvider();
   const contract = new ethers.Contract(TESTNET_CONFIG.smartContracts.pointsSystem, PointsSystem, provider);
 
+  // Derive filtered claims
+  const pendingClaims = useMemo(() => allClaims.filter(claim => claim.status === 'pending'), [allClaims]);
+  const approvedClaims = useMemo(() => allClaims.filter(claim => claim.status === 'approved'), [allClaims]);
+  const rejectedClaims = useMemo(() => allClaims.filter(claim => claim.status === 'rejected'), [allClaims]);
+
   // Fetch initial data
   const fetchInitialData = useCallback(async () => {
     try {
-      // Fetch pending claims
-      const submitted = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
+      setIsRefreshing(true);
+      // Fetch all claims
+      const submittedEvents = (await contract.queryFilter(contract.filters.PointsClaimSubmitted()))
         .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-      const approved = (await contract.queryFilter(contract.filters.PointsClaimApproved()))
-        .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-      const rejected = (await contract.queryFilter(contract.filters.PointsClaimRejected()))
-        .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
-      const processed = new Set([
-        ...approved.map(e => e.args.player.toLowerCase()),
-        ...rejected.map(e => e.args.player.toLowerCase()),
-      ]);
-      const pending = submitted
-        .filter(e => !processed.has(e.args.player.toLowerCase()))
-        .map(e => ({
-          player: e.args.player,
-          points: Number(e.args.points),
-          blockNumber: e.blockNumber,
-        }));
-      setPendingClaims(pending);
+      const claims: Claim[] = [];
+      const processedClaims = new Set<string>(); // player:claimIndex
+
+      const uniquePlayers = new Set(submittedEvents.map(e => e.args.player));
+      for (const player of uniquePlayers) {
+        const claimCount = Number(await contract.getClaimsCount(player));
+        for (let i = 0; i < claimCount; i++) {
+          const [points, approved, rejected] = await contract.getClaim(player, i);
+          if (processedClaims.has(`${player.toLowerCase()}:${i}`)) continue;
+          const event = submittedEvents.find(
+            e => e.args.player.toLowerCase() === player.toLowerCase() && Number(e.args.claimIndex) === i
+          );
+          let status: 'pending' | 'approved' | 'rejected' = 'pending';
+          if (approved) status = 'approved';
+          else if (rejected) status = 'rejected';
+          claims.push({
+            player,
+            claimIndex: i,
+            points: Number(points),
+            blockNumber: event?.blockNumber || 0,
+            status,
+          });
+          processedClaims.add(`${player.toLowerCase()}:${i}`);
+        }
+      }
+
+      setAllClaims(claims.sort((a, b) => b.blockNumber - a.blockNumber));
 
       // Fetch contract balance
       const balance = await contract.getContractTokenBalance();
@@ -79,7 +105,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       const decimals = await tokenContract.decimals();
       setContractBalance(ethers.formatUnits(balance, decimals));
 
-      // Fetch admins (via AdminAdded events, assuming initial owner is admin)
+      // Fetch admins
       const adminAdded = (await contract.queryFilter(contract.filters.AdminAdded()))
         .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e);
       const adminRemoved = (await contract.queryFilter(contract.filters.AdminRemoved()))
@@ -92,7 +118,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       const rate = await contract.pointsToTokensRate();
       setPointsToTokensRate(Number(rate));
 
-      // Fetch recent activities (TokensClaimed, TokensDeposited)
+      // Fetch recent activities
       const tokensClaimed = (await contract.queryFilter(contract.filters.TokensClaimed()))
         .filter((e): e is ethers.EventLog => e instanceof Object && 'args' in e)
         .map(e => ({
@@ -113,28 +139,53 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     } catch (err) {
       console.error('Error fetching initial data:', err);
       toast({ title: 'Error', description: 'Failed to fetch data.', variant: 'destructive' });
+    } finally {
+      setIsRefreshing(false);
     }
   }, [contract, provider, toast]);
 
-  // Setup event listeners
+  // Setup polling and event listeners
   useEffect(() => {
     fetchInitialData();
 
+    // Polling every 30 seconds
+    const pollingInterval = setInterval(() => {
+      fetchInitialData();
+    }, 30000);
+
     // Real-time event listeners
-    const handlePointsClaimSubmitted = (player: string, points: ethers.BigNumberish) => {
-      setPendingClaims(prev => {
-        if (prev.some(claim => claim.player.toLowerCase() === player.toLowerCase())) return prev;
-        return [...prev, { player, points: Number(points), blockNumber: 0 }];
+    const handlePointsClaimSubmitted = (player: string, claimIndex: ethers.BigNumberish, points: ethers.BigNumberish) => {
+      setAllClaims(prev => {
+        if (prev.some(claim => claim.player.toLowerCase() === player.toLowerCase() && claim.claimIndex === Number(claimIndex))) {
+          return prev;
+        }
+        return [...prev, {
+          player,
+          claimIndex: Number(claimIndex),
+          points: Number(points),
+          blockNumber: 0,
+          status: 'pending',
+        }].sort((a, b) => b.blockNumber - a.blockNumber);
       });
-      toast({ title: 'New Claim', description: `${player} submitted ${points} points.` });
+      toast({ title: 'New Claim', description: `${player} submitted ${points} points (Claim #${claimIndex}).` });
     };
-    const handlePointsClaimApproved = (player: string, points: ethers.BigNumberish) => {
-      setPendingClaims(prev => prev.filter(claim => claim.player.toLowerCase() !== player.toLowerCase()));
-      toast({ title: 'Claim Approved', description: `${player}'s ${points} points approved.` });
+    const handlePointsClaimApproved = (player: string, claimIndex: ethers.BigNumberish, points: ethers.BigNumberish) => {
+      setAllClaims(prev => prev.map(claim =>
+        claim.player.toLowerCase() === player.toLowerCase() && claim.claimIndex === Number(claimIndex)
+          ? { ...claim, status: 'approved' }
+          : claim
+      ));
+      toast({ title: 'Claim Approved', description: `${player}'s ${points} points (Claim #${claimIndex}) approved.` });
+      fetchInitialData(); // Immediate refresh
     };
-    const handlePointsClaimRejected = (player: string) => {
-      setPendingClaims(prev => prev.filter(claim => claim.player.toLowerCase() !== player.toLowerCase()));
-      toast({ title: 'Claim Rejected', description: `${player}'s claim rejected.` });
+    const handlePointsClaimRejected = (player: string, claimIndex: ethers.BigNumberish) => {
+      setAllClaims(prev => prev.map(claim =>
+        claim.player.toLowerCase() === player.toLowerCase() && claim.claimIndex === Number(claimIndex)
+          ? { ...claim, status: 'rejected' }
+          : claim
+      ));
+      toast({ title: 'Claim Rejected', description: `${player}'s Claim #${claimIndex} rejected.` });
+      fetchInitialData(); // Immediate refresh
     };
     const handleTokensClaimed = (player: string, amount: ethers.BigNumberish) => {
       contract.getContractTokenBalance().then(balance => {
@@ -147,6 +198,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               ...prev.slice(0, 9),
             ]);
             toast({ title: 'Tokens Claimed', description: `${player} claimed ${ethers.formatUnits(amount, decimals)} ARC.` });
+            fetchInitialData(); // Immediate refresh
           });
         });
       });
@@ -162,6 +214,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               ...prev.slice(0, 9),
             ]);
             toast({ title: 'Tokens Deposited', description: `${owner} deposited ${ethers.formatUnits(amount, decimals)} ARC.` });
+            fetchInitialData(); // Immediate refresh
           });
         });
       });
@@ -172,10 +225,12 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         return [...prev, { address: admin, role: 'Administrator' }];
       });
       toast({ title: 'Admin Added', description: `${admin} added as admin.` });
+      fetchInitialData(); // Immediate refresh
     };
     const handleAdminRemoved = (admin: string) => {
       setAdmins(prev => prev.filter(a => a.address.toLowerCase() !== admin.toLowerCase()));
       toast({ title: 'Admin Removed', description: `${admin} removed as admin.` });
+      fetchInitialData(); // Immediate refresh
     };
 
     contract.on('PointsClaimSubmitted', handlePointsClaimSubmitted);
@@ -187,6 +242,7 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     contract.on('AdminRemoved', handleAdminRemoved);
 
     return () => {
+      clearInterval(pollingInterval);
       contract.removeAllListeners('PointsClaimSubmitted');
       contract.removeAllListeners('PointsClaimApproved');
       contract.removeAllListeners('PointsClaimRejected');
@@ -195,24 +251,36 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       contract.removeAllListeners('AdminAdded');
       contract.removeAllListeners('AdminRemoved');
     };
-  }, [contract, provider, toast, fetchInitialData,refreshFlag]);
+  }, [contract, provider, toast, fetchInitialData]);
 
-  const handleApprove = async (player: string) => {
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    try {
+      await fetchInitialData();
+      toast({ title: 'Refreshed', description: 'Data refreshed successfully.' });
+    } catch (err) {
+      console.error('Refresh error:', err);
+      toast({ title: 'Refresh Failed', description: 'Failed to refresh data.', variant: 'destructive' });
+    }
+  };
+
+  const handleApprove = async (player: string, claimIndex: number) => {
     if (!aaSigner) {
       toast({ title: 'No admin wallet', description: 'Connect your admin AA wallet.', variant: 'destructive' });
       return;
     }
-    setLoadingClaim(player);
+    const claimKey = `${player}:${claimIndex}`;
+    setLoadingClaim(claimKey);
     setLoadingModalText('Approving claim...');
     setIsLoadingModalOpen(true);
     try {
-      const result = await approvePointsClaimAA(aaSigner, player, 0, selectedToken, { gasMultiplier: clampedGasMultiplier });
-     setRefreshFlag(f => f + 1); // Triggers refresh
+      console.log(`Approving claim for player: ${player}, claimIndex: ${claimIndex}`);
+      const result = await approvePointsClaimAA(aaSigner, player, claimIndex, selectedToken ? 1 : 0, selectedToken, { gasMultiplier: clampedGasMultiplier });
       toast({
         title: 'Claim Approved',
         description: (
           <span>
-            Approved {result.approvedPoints} points for {player}.{' '}
+            Approved {result.approvedPoints} points for {player} (Claim #{claimIndex}).{' '}
             <a
               href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
               target="_blank"
@@ -226,34 +294,52 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         className: 'bg-green-400 text-black border-green-400',
       });
     } catch (err: any) {
-      toast({ title: 'Approval Failed', description: err.message || 'Error approving claim.', variant: 'destructive' });
+      const errorMessage = err.message.includes('revert')
+        ? `Transaction reverted: ${err.message}`
+        : err.message || 'Unknown error approving claim';
+      console.error(`Approval error: ${errorMessage}`, err);
+      toast({
+        title: 'Approval Failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setLoadingClaim(null);
       setIsLoadingModalOpen(false);
+      fetchInitialData(); // Refresh after approval
     }
   };
 
-  const handleReject = async (player: string) => {
+  const handleReject = async (player: string, claimIndex: number) => {
     if (!aaSigner) {
       toast({ title: 'No admin wallet', description: 'Connect your admin AA wallet.', variant: 'destructive' });
       return;
     }
-    setLoadingClaim(player);
+    const claimKey = `${player}:${claimIndex}`;
+    setLoadingClaim(claimKey);
     setLoadingModalText('Rejecting claim...');
     setIsLoadingModalOpen(true);
     try {
-      await rejectPointsClaimAA(aaSigner, player, 0, selectedToken, { gasMultiplier: clampedGasMultiplier });
-     setRefreshFlag(f => f + 1); // Triggers refresh
+      await rejectPointsClaimAA(aaSigner, player, claimIndex, selectedToken ? 1 : 0, selectedToken, { gasMultiplier: clampedGasMultiplier });
       toast({
         title: 'Claim Rejected',
-        description: `Claim for ${player} rejected.`,
+        description: `Claim #${claimIndex} for ${player} rejected.`,
         className: 'bg-red-400 text-black border-red-400',
       });
     } catch (err: any) {
-      toast({ title: 'Rejection Failed', description: err.message || 'Error rejecting claim.', variant: 'destructive' });
+      const errorMessage = err.message.includes('revert')
+        ? `Transaction reverted: ${err.message}`
+        : err.message || 'Unknown error rejecting claim';
+      console.error(`Rejection error: ${errorMessage}`, err);
+      toast({
+        title: 'Rejection Failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setLoadingClaim(null);
       setIsLoadingModalOpen(false);
+      fetchInitialData(); // Refresh after rejection
     }
   };
 
@@ -266,13 +352,15 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     setIsLoadingModalOpen(true);
     try {
       for (const claim of pendingClaims) {
-        await handleApprove(claim.player);
+        await handleApprove(claim.player, claim.claimIndex);
       }
       toast({ title: 'All Claims Approved', description: 'All pending claims have been approved.' });
     } catch (err: any) {
+      console.error('Batch approval error:', err);
       toast({ title: 'Batch Approval Failed', description: err.message || 'Error approving claims.', variant: 'destructive' });
     } finally {
       setIsLoadingModalOpen(false);
+      fetchInitialData(); // Refresh after batch approval
     }
   };
 
@@ -285,13 +373,15 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
     setIsLoadingModalOpen(true);
     try {
       for (const claim of pendingClaims) {
-        await handleReject(claim.player);
+        await handleReject(claim.player, claim.claimIndex);
       }
       toast({ title: 'All Claims Rejected', description: 'All pending claims have been rejected.' });
     } catch (err: any) {
+      console.error('Batch rejection error:', err);
       toast({ title: 'Batch Rejection Failed', description: err.message || 'Error rejecting claims.', variant: 'destructive' });
     } finally {
       setIsLoadingModalOpen(false);
+      fetchInitialData(); // Refresh after batch rejection
     }
   };
 
@@ -311,9 +401,11 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       setNewAdminAddress('');
       toast({ title: 'Admin Added', description: `${newAdminAddress} added as admin.` });
     } catch (err: any) {
+      console.error('Add admin error:', err);
       toast({ title: 'Add Admin Failed', description: err.message || 'Error adding admin.', variant: 'destructive' });
     } finally {
       setIsLoadingModalOpen(false);
+      fetchInitialData(); // Refresh after adding admin
     }
   };
 
@@ -328,9 +420,11 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       await removeAdminAA(aaSigner, adminAddress);
       toast({ title: 'Admin Removed', description: `${adminAddress} removed as admin.` });
     } catch (err: any) {
+      console.error('Remove admin error:', err);
       toast({ title: 'Remove Admin Failed', description: err.message || 'Error removing admin.', variant: 'destructive' });
     } finally {
       setIsLoadingModalOpen(false);
+      fetchInitialData(); // Refresh after removing admin
     }
   };
 
@@ -351,9 +445,11 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       setPointsToTokensRate(rate);
       toast({ title: 'Rate Updated', description: `Points to tokens rate set to ${rate}.` });
     } catch (err: any) {
+      console.error('Rate update error:', err);
       toast({ title: 'Rate Update Failed', description: err.message || 'Error updating rate.', variant: 'destructive' });
     } finally {
       setIsLoadingModalOpen(false);
+      fetchInitialData(); // Refresh after rate update
     }
   };
 
@@ -466,58 +562,100 @@ const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
               <TokenSelector selectedToken={selectedToken} onTokenSelect={setSelectedToken} />
             </div>
 
+            {/* Claims Sub-Tabs */}
+            <div className="flex space-x-4 mb-6">
+              <Button
+                onClick={() => setActiveClaimsTab('pending')}
+                className={`font-mono ${activeClaimsTab === 'pending' ? 'bg-cyan-400 text-black' : 'bg-gray-800 text-green-400 hover:bg-gray-700'}`}
+              >
+                PENDING ({pendingClaims.length})
+              </Button>
+              <Button
+                onClick={() => setActiveClaimsTab('approved')}
+                className={`font-mono ${activeClaimsTab === 'approved' ? 'bg-cyan-400 text-black' : 'bg-gray-800 text-green-400 hover:bg-gray-700'}`}
+              >
+                APPROVED ({approvedClaims.length})
+              </Button>
+              <Button
+                onClick={() => setActiveClaimsTab('rejected')}
+                className={`font-mono ${activeClaimsTab === 'rejected' ? 'bg-cyan-400 text-black' : 'bg-gray-800 text-green-400 hover:bg-gray-700'}`}
+              >
+                REJECTED ({rejectedClaims.length})
+              </Button>
+              <Button
+                onClick={() => setActiveClaimsTab('history')}
+                className={`font-mono ${activeClaimsTab === 'history' ? 'bg-cyan-400 text-black' : 'bg-gray-800 text-green-400 hover:bg-gray-700'}`}
+              >
+                HISTORY ({allClaims.length})
+              </Button>
+            </div>
+
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-cyan-400">PENDING TOKEN CLAIMS ({pendingClaims.length})</h2>
-              {pendingClaims.length > 0 && (
-                <div className="space-x-4">
-                  <Button
-                    onClick={handleApproveAll}
-                    className="bg-green-400 text-black hover:bg-green-300 font-mono"
-                  >
-                    APPROVE_ALL
-                  </Button>
-                  <Button
-                    onClick={handleRejectAll}
-                    className="bg-red-400 text-black hover:bg-red-300 font-mono"
-                  >
-                    REJECT_ALL
-                  </Button>
-                </div>
-              )}
+              <h2 className="text-xl font-bold text-cyan-400">
+                {activeClaimsTab.toUpperCase()} CLAIMS ({activeClaimsTab === 'pending' ? pendingClaims.length : activeClaimsTab === 'approved' ? approvedClaims.length : activeClaimsTab === 'rejected' ? rejectedClaims.length : allClaims.length})
+              </h2>
+              <div className="space-x-4">
+                <Button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="bg-blue-400 text-black hover:bg-blue-300 font-mono"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'REFRESHING...' : 'REFRESH'}
+                </Button>
+                {activeClaimsTab === 'pending' && pendingClaims.length > 0 && (
+                  <>
+                    <Button
+                      onClick={handleApproveAll}
+                      className="bg-green-400 text-black hover:bg-green-300 font-mono"
+                    >
+                      APPROVE_ALL
+                    </Button>
+                    <Button
+                      onClick={handleRejectAll}
+                      className="bg-red-400 text-black hover:bg-red-300 font-mono"
+                    >
+                      REJECT_ALL
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
 
             <div className="space-y-4">
-              {pendingClaims.map((claim, idx) => (
-                <Card key={claim.player + idx} className="bg-black border-cyan-400 p-6">
+              {(activeClaimsTab === 'pending' ? pendingClaims : activeClaimsTab === 'approved' ? approvedClaims : activeClaimsTab === 'rejected' ? rejectedClaims : allClaims).map((claim, idx) => (
+                <Card key={`${claim.player}:${claim.claimIndex}`} className="bg-black border-cyan-400 p-6">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center space-x-4">
-                      <Clock className="w-4 h-4 text-yellow-400" />
+                      {getStatusIcon(claim.status)}
                       <div>
                         <p className="font-bold text-cyan-400">{claim.player}</p>
-                        <p className="text-green-400 text-sm">{claim.points} points</p>
+                        <p className="text-green-400 text-sm">{claim.points} points (Claim #{claim.claimIndex})</p>
                         <p className="text-gray-400 text-xs">Block: {claim.blockNumber || 'Pending'}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-4">
-                      <Badge className="bg-yellow-400 text-black">PENDING</Badge>
-                      <div className="space-x-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleApprove(claim.player)}
-                          disabled={loadingClaim === claim.player}
-                          className="bg-green-400 text-black hover:bg-green-300 font-mono"
-                        >
-                          {loadingClaim === claim.player ? '...' : 'APPROVE'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleReject(claim.player)}
-                          disabled={loadingClaim === claim.player}
-                          className="bg-red-400 text-black hover:bg-red-300 font-mono"
-                        >
-                          {loadingClaim === claim.player ? '...' : 'REJECT'}
-                        </Button>
-                      </div>
+                      <Badge className={getStatusColor(claim.status)}>{claim.status.toUpperCase()}</Badge>
+                      {claim.status === 'pending' && (
+                        <div className="space-x-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleApprove(claim.player, claim.claimIndex)}
+                            disabled={loadingClaim === `${claim.player}:${claim.claimIndex}`}
+                            className="bg-green-400 text-black hover:bg-green-300 font-mono"
+                          >
+                            {loadingClaim === `${claim.player}:${claim.claimIndex}` ? '...' : 'APPROVE'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleReject(claim.player, claim.claimIndex)}
+                            disabled={loadingClaim === `${claim.player}:${claim.claimIndex}`}
+                            className="bg-red-400 text-black hover:bg-red-300 font-mono"
+                          >
+                            {loadingClaim === `${claim.player}:${claim.claimIndex}` ? '...' : 'REJECT'}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>

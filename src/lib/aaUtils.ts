@@ -1171,43 +1171,6 @@ export const submitGameAA = async (
   );
 };
 
-// Claim tokens from PointsSystem
-export const claimTokensAA = async (
-  accountSigner: ethers.Signer,
-  paymentType: number = 0,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  const opKey = generateOperationKey('claimTokensAA', [
-    await accountSigner.getAddress(),
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.pointsSystem,
-        ["function claimTokens() external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('claimTokens', []);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
 
 // Submit points claim to PointsSystem
 export const submitPointsClaimAA = async (
@@ -1383,7 +1346,10 @@ export const submitPointsClaimSponsored = async (
     async (client, builder) => {
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.pointsSystem,
-        ["function submitPointsClaim(uint256 points) external"],
+        [
+          "function submitPointsClaim(uint256 points) external",
+          "event PointsClaimSubmitted(address indexed player, uint256 indexed claimIndex, uint256 points)",
+        ],
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('submitPointsClaim', [points]);
@@ -1405,6 +1371,7 @@ export const submitPointsClaimSponsored = async (
 export const approvePointsClaimAA = async (
   accountSigner: ethers.Signer,
   player: string,
+  claimIndex: number,
   paymentType: number = 0,
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
@@ -1414,41 +1381,52 @@ export const approvePointsClaimAA = async (
     TESTNET_CONFIG.smartContracts.pointsSystem,
     [
       "function isAdmin(address) view returns (bool)",
-      "function pendingPointsClaims(address) view returns (uint256)"
+      "function getClaim(address player, uint256 claimIndex) view returns (uint256 points, bool approved, bool rejected)",
     ],
     getProvider()
   );
   if (!(await contract.isAdmin(aaWalletAddress))) {
     throw new Error(`AA wallet ${aaWalletAddress} is not an admin`);
   }
-  const points = await contract.pendingPointsClaims(player);
-  if (points === 0n) {
-    throw new Error(`No pending claim for player ${player}`);
+  if (!ethers.isAddress(player)) {
+    throw new Error(`Invalid player address: ${player}`);
+  }
+  try {
+    const [points, approved, rejected] = await contract.getClaim(player, claimIndex);
+    if (approved || rejected) {
+      throw new Error(`Claim at index ${claimIndex} for ${player} is already processed`);
+    }
+    if (points === 0) {
+      throw new Error(`Invalid claim at index ${claimIndex} for ${player}`);
+    }
+  } catch (err) {
+    throw new Error(`Failed to validate claim: ${err.message}`);
   }
 
   const opKey = generateOperationKey('approvePointsClaimAA', [
     await accountSigner.getAddress(),
     player,
+    claimIndex,
     paymentType,
     selectedToken,
-    options?.gasMultiplier || 100
+    options?.gasMultiplier || 100,
   ]);
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
       if (API_OPTIMIZATION.debugLogs) {
-        console.log(`Approving ${points} points for ${player}`);
+        console.log(`Approving claim ${claimIndex} for ${player}`);
       }
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.pointsSystem,
         [
-          "function approvePointsClaim(address player) external",
-          "event PointsClaimApproved(address indexed player, uint256 points)"
+          "function approvePointsClaim(address player, uint256 claimIndex) external",
+          "event PointsClaimApproved(address indexed player, uint256 indexed claimIndex, uint256 points)",
         ],
         getProvider()
       );
-      const callData = contract.interface.encodeFunctionData('approvePointsClaim', [player]);
+      const callData = contract.interface.encodeFunctionData('approvePointsClaim', [player, claimIndex]);
       const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
       if (API_OPTIMIZATION.debugLogs) {
@@ -1456,13 +1434,17 @@ export const approvePointsClaimAA = async (
       }
       const receipt = await res.wait();
       let approvedPoints = null;
+      let approvedClaimIndex = null;
       if (receipt && receipt.logs) {
-        const iface = new ethers.Interface(["event PointsClaimApproved(address indexed player, uint256 points)"]);
+        const iface = new ethers.Interface([
+          "event PointsClaimApproved(address indexed player, uint256 indexed claimIndex, uint256 points)",
+        ]);
         for (const log of receipt.logs) {
           try {
             const parsed = iface.parseLog(log);
             if (parsed && parsed.name === "PointsClaimApproved") {
               approvedPoints = parsed.args.points.toString();
+              approvedClaimIndex = parsed.args.claimIndex.toString();
               break;
             }
           } catch {
@@ -1474,7 +1456,8 @@ export const approvePointsClaimAA = async (
         userOpHash: res.userOpHash,
         transactionHash: receipt?.transactionHash,
         approvedPoints,
-        receipt
+        approvedClaimIndex,
+        receipt,
       };
     },
     paymentType,
@@ -1483,79 +1466,177 @@ export const approvePointsClaimAA = async (
   );
 };
 
-// Approve points claim (admin only) in PointsSystem
-// export const approvePointsClaimAA = async (
-//   accountSigner: ethers.Signer,
-//   player: string,
-//   paymentType: number = 0,
-//   selectedToken: string = '',
-//   options?: { apiKey?: string; gasMultiplier?: number }
-// ) => {
-//   const opKey = generateOperationKey('approvePointsClaimAA', [
-//     await accountSigner.getAddress(),
-//     player,
-//     paymentType,
-//     selectedToken,
-//     options?.gasMultiplier || 100
-//   ]);
-  
-//   return executeOperation(
-//     opKey,
-//     accountSigner,
-//     async (client, builder) => {
-//       const contract = new ethers.Contract(
-//         TESTNET_CONFIG.smartContracts.pointsSystem,
-//         ["function approvePointsClaim(address player) external"],
-//         getProvider()
-//       );
-//       const callData = contract.interface.encodeFunctionData('approvePointsClaim', [player]);
-//       const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
-//       const res = await client.sendUserOperation(userOp);
-//       const receipt = await res.wait();
-//       return {
-//         userOpHash: res.userOpHash,
-//         transactionHash: receipt?.transactionHash,
-//         receipt
-//       };
-//     },
-//     paymentType,
-//     selectedToken,
-//     options
-//   );
-// };
-
-// Reject points claim (admin only) in PointsSystem
 export const rejectPointsClaimAA = async (
   accountSigner: ethers.Signer,
   player: string,
+  claimIndex: number,
   paymentType: number = 0,
   selectedToken: string = '',
   options?: { apiKey?: string; gasMultiplier?: number }
 ) => {
+  const aaWalletAddress = await getAAWalletAddress(accountSigner);
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.pointsSystem,
+    [
+      "function isAdmin(address) view returns (bool)",
+      "function getClaim(address player, uint256 claimIndex) view returns (uint256 points, bool approved, bool rejected)",
+    ],
+    getProvider()
+  );
+  if (!(await contract.isAdmin(aaWalletAddress))) {
+    throw new Error(`AA wallet ${aaWalletAddress} is not an admin`);
+  }
+  if (!ethers.isAddress(player)) {
+    throw new Error(`Invalid player address: ${player}`);
+  }
+  try {
+    const [points, approved, rejected] = await contract.getClaim(player, claimIndex);
+    if (approved || rejected) {
+      throw new Error(`Claim at index ${claimIndex} for ${player} is already processed`);
+    }
+    if (points === 0) {
+      throw new Error(`Invalid claim at index ${claimIndex} for ${player}`);
+    }
+  } catch (err) {
+    throw new Error(`Failed to validate claim: ${err.message}`);
+  }
+
   const opKey = generateOperationKey('rejectPointsClaimAA', [
     await accountSigner.getAddress(),
     player,
+    claimIndex,
     paymentType,
     selectedToken,
-    options?.gasMultiplier || 100
+    options?.gasMultiplier || 100,
   ]);
   return executeOperation(
     opKey,
     accountSigner,
     async (client, builder) => {
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`Rejecting claim ${claimIndex} for ${player}`);
+      }
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.pointsSystem,
-        ["function rejectPointsClaim(address player) external"],
+        [
+          "function rejectPointsClaim(address player, uint256 claimIndex) external",
+          "event PointsClaimRejected(address indexed player, uint256 indexed claimIndex)",
+        ],
         getProvider()
       );
-      const callData = contract.interface.encodeFunctionData('rejectPointsClaim', [player]);
+      const callData = contract.interface.encodeFunctionData('rejectPointsClaim', [player, claimIndex]);
       const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
       const res = await client.sendUserOperation(userOp);
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`UserOperation sent: ${res.userOpHash}`);
+      }
       const receipt = await res.wait();
+      let rejectedClaimIndex = null;
+      if (receipt && receipt.logs) {
+        const iface = new ethers.Interface([
+          "event PointsClaimRejected(address indexed player, uint256 indexed claimIndex)",
+        ]);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === "PointsClaimRejected") {
+              rejectedClaimIndex = parsed.args.claimIndex.toString();
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
       return {
         userOpHash: res.userOpHash,
         transactionHash: receipt?.transactionHash,
-        receipt
+        rejectedClaimIndex,
+        receipt,
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+export const claimTokensAA = async (
+  accountSigner: ethers.Signer,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options?: { apiKey?: string; gasMultiplier?: number }
+) => {
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.pointsSystem,
+    [
+      "function userPoints(address) view returns (uint256)",
+      "function pointsToTokensRate() view returns (uint256)",
+      "function arcToken() view returns (address)",
+      "function getContractTokenBalance() view returns (uint256)",
+    ],
+    getProvider()
+  );
+  const userAddress = await accountSigner.getAddress();
+  const points = await contract.userPoints(userAddress);
+  if (points === 0) {
+    throw new Error(`No points to claim for ${userAddress}`);
+  }
+  const rate = await contract.pointsToTokensRate();
+  const tokensNeeded = points.mul(rate);
+  const balance = await contract.getContractTokenBalance();
+  if (balance.lt(tokensNeeded)) {
+    throw new Error(`Insufficient contract balance: ${ethers.formatUnits(balance)} < ${ethers.formatUnits(tokensNeeded)} ARC`);
+  }
+
+  const opKey = generateOperationKey('claimTokensAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    selectedToken,
+    options?.gasMultiplier || 100,
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`Claiming ${points} points for ${ethers.formatUnits(tokensNeeded)} ARC`);
+      }
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.pointsSystem,
+        [
+          "function claimTokens() external",
+          "event TokensClaimed(address indexed player, uint256 amount)",
+        ],
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('claimTokens', []);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      if (API_OPTIMIZATION.debugLogs) {
+        console.log(`UserOperation sent: ${res.userOpHash}`);
+      }
+      const receipt = await res.wait();
+      let claimedAmount = null;
+      if (receipt && receipt.logs) {
+        const iface = new ethers.Interface(["event TokensClaimed(address indexed player, uint256 amount)"]);
+        for (const log of receipt.logs) {
+          try {
+            const parsed = iface.parseLog(log);
+            if (parsed && parsed.name === "TokensClaimed") {
+              claimedAmount = ethers.formatUnits(parsed.args.amount);
+              break;
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        claimedAmount,
+        receipt,
       };
     },
     paymentType,

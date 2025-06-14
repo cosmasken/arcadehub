@@ -9,7 +9,7 @@ interface GameState {
   ownedItems: Record<string, number>;
 }
 
-export const useGameState = (isPaused: boolean = false) => {
+export const useGameState = (isPaused: boolean = false,) => {
   const [gameState, setGameState] = useState<GameState>(() => {
     const saved = localStorage.getItem('honeyClickerSave');
     if (saved) {
@@ -64,6 +64,7 @@ export const useGameState = (isPaused: boolean = false) => {
   }, [pointsPerSecond, isPaused]);
 
   const addPoints = (amount: number) => {
+    if (isPaused) return; // Do not add points if paused
     setGameState(prev => ({
       ...prev,
       points: prev.points + amount,
@@ -82,6 +83,7 @@ export const useGameState = (isPaused: boolean = false) => {
   };
 
   const buyItem = (itemId: string): boolean => {
+    if (isPaused) return; // Do not add points if paused
     const item = shopItems.find(i => i.id === itemId);
     if (!item || !canAfford(itemId)) return false;
 
@@ -103,6 +105,7 @@ export const useGameState = (isPaused: boolean = false) => {
   const canClaim = gameState.points >= 10000;
 
   const claimPoints = (amount: number) => {
+    if (isPaused || gameState.points < amount) return false; // Check isPaused here too
     if (gameState.points < amount) return false;
     setGameState(prev => ({
       ...prev,

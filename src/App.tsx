@@ -23,6 +23,7 @@ import SponsorLogin from "./pages/SponsorLogin";
 import SponsorDashboard from "./pages/SponsorDashboard";
 import CreateTournament from "./pages/CreateTournament";
 import SponsorAnalytics from "./components/SponsorAnalytics";
+import RequireWallet from "./components/RequireWallet";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => {
           description="Please wait while we set up your wallet and connection."
           transactionText="Setting up your wallet and secure Web3 connection..."
         />
+           {/* <RequireWallet> */}
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -63,6 +65,7 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        {/* </RequireWallet> */}
       </TooltipProvider>
     </QueryClientProvider>
   );

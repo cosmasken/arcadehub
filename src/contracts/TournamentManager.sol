@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract TournamentHub is Ownable, ReentrancyGuard {
     IERC20 public immutable arcToken;
     address public trustedSigner;
+    bool public demoMode = true; // Enable demo mode for development
 
     struct Tournament {
         uint256 id;
@@ -93,21 +94,44 @@ contract TournamentHub is Ownable, ReentrancyGuard {
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
+    // function submitTournamentScore(
+    //     uint256 tournamentId,
+    //     uint256 score,
+    //     bytes calldata signature
+    // ) external {
+    //     Tournament storage t = tournaments[tournamentId];
+    //     require(t.isActive, "Inactive");
+    //     require(block.timestamp >= t.startTime && block.timestamp <= t.endTime, "Not active");
+    //     require(t.isParticipant[msg.sender], "Not registered");
+    //     require(score > t.scores[msg.sender], "Score not higher");
+
+    //     bytes32 messageHash = keccak256(abi.encodePacked(tournamentId, msg.sender, score));
+    //     bytes32 ethSignedMessageHash = toEthSignedMessageHash(messageHash);
+    //     address signer = ECDSA.recover(ethSignedMessageHash, signature);
+    //     require(signer == trustedSigner, "Invalid signature");
+
+    //     t.scores[msg.sender] = score;
+    //     emit TournamentScoreSubmitted(tournamentId, msg.sender, score);
+    // }
+
     function submitTournamentScore(
         uint256 tournamentId,
         uint256 score,
         bytes calldata signature
     ) external {
         Tournament storage t = tournaments[tournamentId];
-        require(t.isActive, "Inactive");
+        // require(t.isActive, "Inactive");
         require(block.timestamp >= t.startTime && block.timestamp <= t.endTime, "Not active");
         require(t.isParticipant[msg.sender], "Not registered");
         require(score > t.scores[msg.sender], "Score not higher");
 
-        bytes32 messageHash = keccak256(abi.encodePacked(tournamentId, msg.sender, score));
-        bytes32 ethSignedMessageHash = toEthSignedMessageHash(messageHash);
-        address signer = ECDSA.recover(ethSignedMessageHash, signature);
-        require(signer == trustedSigner, "Invalid signature");
+        // Skip signature verification in demo mode
+        if (!demoMode) {
+            bytes32 messageHash = keccak256(abi.encodePacked(tournamentId, msg.sender, score));
+            bytes32 ethSignedMessageHash = toEthSignedMessageHash(messageHash);
+            address signer = ECDSA.recover(ethSignedMessageHash, signature);
+            require(signer == trustedSigner, "Invalid signature");
+        }
 
         t.scores[msg.sender] = score;
         emit TournamentScoreSubmitted(tournamentId, msg.sender, score);

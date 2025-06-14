@@ -1172,46 +1172,6 @@ export const submitGameAA = async (
 };
 
 
-// Submit points claim to PointsSystem
-export const submitPointsClaimAA = async (
-  accountSigner: ethers.Signer,
-  points: number,
-  paymentType: number = 0,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  const opKey = generateOperationKey('submitPointsClaimAA', [
-    await accountSigner.getAddress(),
-    points,
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.pointsSystem,
-        ["function submitPointsClaim(uint256 points) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('submitPointsClaim', [points]);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
 
 // Apply for admin to AdminApplications
 export const applyForAdminAA = async (

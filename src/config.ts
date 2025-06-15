@@ -42,6 +42,10 @@ interface SmartContracts {
   adminApplications: string;
 }
 
+interface AdminContracts {
+  adminAddresses:[string];
+}
+
 interface ERC20Addresses {
   dai: string;
   usdt: string;

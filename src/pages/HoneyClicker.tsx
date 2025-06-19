@@ -19,8 +19,11 @@ import { achievements as achievementsMap } from '../data/achievements';
 import { shopItems } from '../data/shopItems';
 import supabase from '../hooks/use-supabase';
 import { useWalletStore } from '../stores/useWalletStore';
-import { submitTournamentScoreAA } from '../lib/aaUtils'; // Import AA utility
-import { useToast } from '../hooks/use-toast'; // Assuming a toast hook for notifications
+import { submitTournamentScoreAA, getProvider } from '../lib/aaUtils';
+import { useToast } from '../hooks/use-toast';
+import { ethers } from 'ethers';
+import { TESTNET_CONFIG } from '../config';
+import TournamentHubABI from '../abi/TournamentHub.json';
 
 const achievements = Object.values(achievementsMap);
 
@@ -38,8 +41,12 @@ const HoneyClicker = () => {
     claimPoints,
   } = useGameState();
 
-  const { aaWalletAddress,aaSigner } = useWalletStore();
+  const { aaWalletAddress, aaSigner } = useWalletStore();
   const { toast } = useToast();
+
+  const [loadingTitle, setLoadingTitle] = useState<string>('Loading Game');
+  const [loadingDescription, setLoadingDescription] = useState<string>('Please wait while we load the game...');
+  const [loadingTransactionText, setLoadingTransactionText] = useState<string>('Loading...');
 
   const claimableTokens = Math.floor(honey / 10000);
   const honeyToSpend = claimableTokens * 10000;
@@ -50,22 +57,50 @@ const HoneyClicker = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
   const [selectedAchievement, setSelectedAchievement] = useState<unknown>(null);
+  const [loading, setLoading] = useState(true);
+  const [joinedLiveTournament, setJoinedLiveTournament] = useState<number | null>(null);
 
-  // Sync isPaused with component lifecycle
   useEffect(() => {
-    setIsPaused(false); // Game is active when mounted
-    return () => setIsPaused(true); // Game is paused when unmounted
+    async function fetchTournaments() {
+      setLoading(true);
+      try {
+        const provider = getProvider();
+        const contract = new ethers.Contract(
+          TESTNET_CONFIG.smartContracts.tournamentHub,
+          TournamentHubABI,
+          provider
+        );
+        const activeIds: number[] = await contract.getActiveTournamentIds();
+        for (const id of activeIds) {
+          const info = await contract.getTournamentInfo(id, aaWalletAddress);
+          if (info.isParticipant && info.isActive) {
+            setJoinedLiveTournament(Number(id));
+            break; // Use the first live tournament the user has joined
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching tournaments:', e);
+        setJoinedLiveTournament(null);
+      }
+      setLoading(false);
+    }
+    if (aaWalletAddress && TESTNET_CONFIG.smartContracts.tournamentHub) {
+      fetchTournaments();
+    }
+  }, [aaWalletAddress]);
+
+  useEffect(() => {
+    setIsPaused(false);
+    return () => setIsPaused(true);
   }, []);
+
   const [mintedAchievements, setMintedAchievements] = useState<string[]>(() => {
     const saved = localStorage.getItem('honeyClickerMintedAchievements');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Tournament state
-  const [joinedTournaments, setJoinedTournaments] = useState<number[]>([]);
   const [unlockedAchievements, setUnlockedAchievements] = useState<Record<number, boolean>>({});
 
-  // Pause passive income when tab is not in view
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -79,7 +114,6 @@ const HoneyClicker = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [gameStartTime]);
 
-  // Check achievement unlocks
   useEffect(() => {
     achievements.forEach((achievement) => {
       if (!achievement.id || unlockedAchievements[achievement.id]) return;
@@ -114,27 +148,64 @@ const HoneyClicker = () => {
     ]);
   };
 
-  // Submit score to tournament
   const handleSubmitScore = async (tournamentId: number) => {
     if (!aaSigner) {
       toast({ title: "Wallet Error", description: "Please connect your wallet.", variant: "destructive" });
       return;
     }
+    setIsLoadingModalOpen(true);
+    setLoadingTitle("Submitting Score");
+    setLoadingDescription("Please wait while we submit your score to the tournament...");
+    setLoadingTransactionText("Submitting...");
     try {
-      // In a real implementation, the signature should come from a server
-      const signature = '0x'; // Placeholder: Replace with server-side signature generation
-      await submitTournamentScoreAA(
-        aaSigner, // Assuming aaWalletAddress is an ethers.Signer in a real setup
+      const signature = '0x'; // Placeholder for demo mode
+      const result = await submitTournamentScoreAA(
+        aaSigner,
         tournamentId,
         Math.floor(honey),
-        signature
+        signature,
+        0 // paymentType: sponsored gas
       );
-      toast({ title: "Score Submitted", description: `Score ${Math.floor(honey)} submitted to Tournament #${tournamentId}.` });
+      if (!result.userOpHash) {
+        throw new Error("Transaction failed. No UserOperation hash returned.");
+      }
+      toast({
+        title: "Score Submitted",
+        description: (
+          <span>
+            Score {Math.floor(honey)} submitted to Tournament #{tournamentId}.
+            <a
+              href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline"
+            >
+              View on Sepolia Etherscan
+            </a>
+          </span>
+        )
+      });
     } catch (err) {
       console.error('Score submission error:', err);
-      toast({ title: "Submission Failed", description: "Failed to submit score.", variant: "destructive" });
+      toast({ title: "Submission Failed", description: err.message || "Failed to submit score.", variant: "destructive" });
+    } finally {
+      setIsLoadingModalOpen(false);
+      setLoadingTitle('Minting');
+      setLoadingDescription('Please wait while we mint your achievement...');
+      setLoadingTransactionText('Minting achievement...');
     }
   };
+
+  useEffect(() => {
+    if (loading) {
+      setIsLoadingModalOpen(true);
+      setLoadingTitle("Checking your tournaments");
+      setLoadingDescription("Please wait while we check your tournament participation...");
+      setLoadingTransactionText("Checking...");
+    } else {
+      setIsLoadingModalOpen(false);
+    }
+  }, [loading]);
 
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
@@ -149,11 +220,12 @@ const HoneyClicker = () => {
           setIsClaimModalOpen(false);
         }}
       />
+
       <div className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-6xl font-bold mb-4 text-cyan-400 neon-text">
-               HONEY_CLICKER 
+              HONEY_CLICKER
             </h1>
             <p className="text-green-400 text-lg tracking-wider">
               CLICK TO EARN SWEET HONEY
@@ -207,7 +279,6 @@ const HoneyClicker = () => {
                 </div>
               </Card>
 
-              {/* Achievements */}
               <Card className="bg-black border-cyan-400 border-2 p-6">
                 <div className="flex items-center space-x-4 mb-4">
                   <Trophy className="w-6 h-6 text-yellow-400" />
@@ -251,35 +322,23 @@ const HoneyClicker = () => {
                 </div>
               </Card>
 
-              {/* Tournament Section */}
               <Card className="bg-black border-cyan-400 border-2 p-6 mt-6">
                 <h3 className="text-xl font-bold text-cyan-400 mb-4"> TOURNAMENTS</h3>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-lg font-bold text-green-400">Join a Tournament</h4>
+                <div>
+                  {joinedLiveTournament !== null ? (
                     <Button
-                      onClick={() => setJoinedTournaments([...joinedTournaments, 1])}
+                      onClick={() => handleSubmitScore(joinedLiveTournament)}
                       className="bg-green-400 text-black hover:bg-cyan-400 font-mono"
                     >
-                      Join Tournament #1
+                      Submit Score to Tournament #{joinedLiveTournament}
                     </Button>
-                  </div>
-                  {joinedTournaments.length > 0 && (
-                    <div>
-                      <h4 className="text-lg font-bold text-green-400">Submit Score</h4>
-                      <Button
-                        onClick={() => handleSubmitScore(0)}
-                        className="bg-green-400 text-black hover:bg-cyan-400 font-mono"
-                      >
-                        Submit Score to Tournament #1
-                      </Button>
-                    </div>
+                  ) : (
+                    <p className="text-green-400">You must join a live tournament to submit a score.</p>
                   )}
                 </div>
               </Card>
             </div>
 
-            {/* Shop */}
             <div>
               <Card className="bg-black border-cyan-400 border-2 p-6">
                 <div className="flex items-center space-x-4 mb-6">
@@ -347,8 +406,9 @@ const HoneyClicker = () => {
       )}
       <LoadingModal
         isOpen={isLoadingModalOpen}
-        title="MINTING NFT"
-        description="Please wait while we mint your NFT..."
+        title={loadingTitle}
+        description={loadingDescription}
+        transactionText={loadingTransactionText}
       />
     </div>
   );

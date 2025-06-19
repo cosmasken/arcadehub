@@ -50,7 +50,7 @@ interface ERC20Addresses {
   dai: string;
   usdt: string;
   usdc: string;
-  gmxhub: string;
+  arc: string;
 }
 
 interface GasConfig {
@@ -107,14 +107,14 @@ export const TESTNET_CONFIG: {
     stakingSystem: '0x48c3d13633b00C95CFa763bA2293F31f0b8448Eb',
     developerPayouts: '0xF27a858EC52Cc789F87e93A87D6E854ec103B2AF',
     nftManager: '0x92CD16b242D30451e6e53B93cB8C641A678dbc74',
-    tournamentHub: '0x606A38a7aD4f7F6360faE194D6CF489fA814E1d5',
+    tournamentHub: '0xb0fd335193F9cea1c1ce069739761B41d0cae97c',
     adminApplications: '0x0797FE7109Ec3E711b7445036051409e2bB7d558',
   },
   erc20: {
     dai: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345',
     usdt: '0x1dA998CfaA0C044d7205A17308B20C7de1bdCf74',
     usdc: '0xC86Fed58edF0981e927160C50ecB8a8B05B32fed',
-    gmxhub: '0xe4f95D88f440F138e525E658D984F08De3b5f1EC',
+    arc: '0x150E812D3443699e8b829EF6978057Ed7CB47AE6',
   },
 };
 
@@ -149,7 +149,7 @@ const MAINNET_CONFIG: {
     dai: '0x...',
     usdt: '0x...',
     usdc: '0x...',
-    gmxhub: '0x...',
+    arc: '0x...',
   },
 };
 

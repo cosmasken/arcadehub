@@ -12,6 +12,13 @@ import {
   Users,
   Target
 } from 'lucide-react';
+import { ethers } from "ethers";
+import TournamentHubABI from "../abi/TournamentHub.json";
+
+import { TESTNET_CONFIG } from "../config";
+import { getProvider } from "../lib/aaUtils";
+
+const POLL_INTERVAL = 10000; // 10 seconds
 
 const Leaderboard = () => {
   const leaderboardData = [

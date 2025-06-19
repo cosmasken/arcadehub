@@ -290,7 +290,7 @@ const Collections: React.FC = () => {
                     <img
                       src={nft.image}
                       alt={nft.name}
-                      onError={(e) => { e.currentTarget.src = '/placeholder.svg'; }}
+                      onError={(e) => { e.currentTarget.src = '/placeholder.jpeg'; }}
                       className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                     <div className="absolute top-3 right-3">

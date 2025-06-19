@@ -24,6 +24,18 @@ import { TESTNET_CONFIG } from '../config';
 import { ethers } from 'ethers';
 import { getProvider } from '../lib/aaUtils';
 import TokenApproval from './TokenApproval';
+import { checkAAWalletTokenAllowance } from '../lib/aaUtils';
+
+
+const tokenSymbols = {
+  '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345': 'DAI',
+  '0x1dA998CfaA0C044d7205A17308B20C7de1bdCf74': 'USDT',
+  '0xC86Fed58edF0981e927160C50ecB8a8B05B32fed': 'USDC',
+  '0x150E812D3443699e8b829EF6978057Ed7CB47AE6': 'ARC',
+};
+
+const supportedTokens = Object.entries(tokenSymbols).map(([address, symbol]) => ({ address, symbol }));
+
 
 interface Tournament {
   title: string;
@@ -53,38 +65,62 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
 }) => {
 
   const [amount, setAmount] = useState('');
-  const { aaWalletAddress } = useWalletStore();
+  const { aaWalletAddress, aaSigner } = useWalletStore();
   const [balance, setBalance] = useState('0');
-  const [selectedToken, setSelectedToken] = useState('');
+  const [selectedToken, setSelectedToken] = useState(supportedTokens[0].address);
+  const [allowance, setAllowance] = useState('0');
   const [arcApproved, setArcApproved] = useState(false);
+  const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
 
-  // Fetch ARC balance
+
+  // Fetch balance for selected token
   useEffect(() => {
-    const getUserArcBalance = async () => {
+    const getUserTokenBalance = async () => {
+        setIsCheckingAllowance(true);
       try {
-        const provider = getProvider();
-        const contract = new ethers.Contract(
-          TESTNET_CONFIG.smartContracts.arcadeToken,
-          ['function balanceOf(address) external view returns (uint256)'],
-          provider
-        );
-        const balance = await contract.balanceOf(aaWalletAddress);
-        setBalance(ethers.formatUnits(balance, 18));
+        if (!aaWalletAddress || !selectedToken) {
+          setBalance('0');
+          return;
+        }
+        // if (selectedToken === '0x0000000000000000000000000000000000000000') {
+        //   // Native token (NERO)
+        //   const provider = getProvider();
+        //   const bal = await provider.getBalance(aaWalletAddress);
+        //   setBalance(ethers.formatUnits(bal, 18));
+        // } else {
+          // ERC20 token
+          const provider = getProvider();
+          const contract = new ethers.Contract(
+            selectedToken,
+            ['function balanceOf(address) external view returns (uint256)'],
+            provider
+          );
+          const bal = await contract.balanceOf(aaWalletAddress);
+          setBalance(ethers.formatUnits(bal, 18));
+        // }
       } catch {
         setBalance('0');
+      } finally {
+        setIsCheckingAllowance(false);
       }
     };
-    getUserArcBalance();
-  }, [aaWalletAddress]);
+    getUserTokenBalance();
+  }, [aaWalletAddress, selectedToken]);
 
+  // Check allowance for selected token and amount
+  useEffect(() => {
+    const fetchAllowance = async () => {
+      if (aaSigner && selectedToken && aaWalletAddress && amount) {
+        const allowanceStr = await checkAAWalletTokenAllowance(aaSigner, selectedToken);
+        setAllowance(allowanceStr);
+        setArcApproved(Number(amount) <= Number(allowanceStr));
+      } else {
+        setArcApproved(false);
+      }
+    };
+    fetchAllowance();
+  }, [aaSigner, selectedToken, aaWalletAddress, amount]);
 
-
-  const tokenOptions = [
-    { symbol: 'ETH', name: 'Ethereum', balance: '5.234' },
-    { symbol: 'USDC', name: 'USD Coin', balance: '12,500.00' },
-    { symbol: 'USDT', name: 'Tether', balance: '8,750.50' },
-    { symbol: 'DAI', name: 'Dai Stablecoin', balance: '3,200.75' }
-  ];
 
   const handleDeposit = () => {
     if (!amount || parseFloat(amount) <= 0) return;
@@ -97,7 +133,6 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
     onClose();
   };
 
-  const selectedTokenData = tokenOptions.find(token => token.symbol === selectedToken);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -161,6 +196,21 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
             </div>
           </div>
 
+          <div className="mb-4">
+            <label className="block text-cyan-400 font-bold mb-1">Token</label>
+            <select
+              className="w-full bg-black border-2 border-green-400 text-green-400 px-3 py-2 rounded font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              value={selectedToken}
+              onChange={e => setSelectedToken(e.target.value)}
+            >
+              {supportedTokens.map(token => (
+                <option key={token.address} value={token.address}>
+                  {token.symbol}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Amount Input */}
           <div className="space-y-3">
             <Label htmlFor="amount" className="text-cyan-400 font-bold">
@@ -176,10 +226,6 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
                 onChange={(e) => setAmount(e.target.value)}
                 className="bg-black border-green-400 text-green-400 font-mono pr-16"
               />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-cyan-400 font-mono">
-                {/* {selectedToken} */}
-                ARC
-              </div>
             </div>
 
             <p className="text-green-400 text-xs">
@@ -189,10 +235,9 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
           </div>
 
 
-          {/* ARC Approval */}
           {!arcApproved && (
             <TokenApproval
-              selectedToken={ARC_TOKEN_ADDRESS}
+              selectedToken={selectedToken}
               onApprovalComplete={() => setArcApproved(true)}
             />
           )}
@@ -249,7 +294,7 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
           </Button>
           <Button
             onClick={handleDeposit}
-            disabled={!amount || parseFloat(amount) <= 0}
+            disabled={!amount || parseFloat(amount) <= 0 || isCheckingAllowance}
             className="bg-yellow-400 text-black hover:bg-yellow-300 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Coins className="w-4 h-4 mr-2" />

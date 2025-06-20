@@ -16,12 +16,15 @@ import {
   getTournamentInfo,
   forceEndTournamentAA,
   finalizeTournamentAA,
+  getProvider,
   listenForTournamentEvents,
   isTokenAllowed,
   checkAAWalletTokenAllowance
 } from '../lib/aaUtils';
 import { TESTNET_CONFIG } from '../config';
 import { decodeError } from '../lib/utils';
+import TournamentHubABI from '../abi/TournamentHub.json';
+import LoadingModal from '@/components/LoadingModal';
 
 
 const SponsorDashboard = () => {
@@ -32,6 +35,10 @@ const SponsorDashboard = () => {
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
+    const [loadingTitle, setLoadingTitle] = useState<string>('Loading Game');
+    const [loadingDescription, setLoadingDescription] = useState<string>('Please wait while we load the game...');
+    const [loadingTransactionText, setLoadingTransactionText] = useState<string>('Loading...');
+    const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const [sponsorStats, setSponsorStats] = useState({
     totalSponsored: "0.00",
     activeTournaments: 0,
@@ -56,89 +63,121 @@ const SponsorDashboard = () => {
     '0x150E812D3443699e8b829EF6978057Ed7CB47AE6': 'ARC',
   };
 
-  const fetchTournaments = async () => {
-    if (!aaWalletAddress) return;
-    try {
-      const ids = await getUserCreatedTournaments(aaWalletAddress);
-      const tournaments = await Promise.all(
-        ids.map(async (id) => {
-          const info = await getTournamentInfo(id, aaWalletAddress);
-          const decimals = tokenDecimals[info.token] || 18;
-          const symbol = tokenSymbols[info.token] || 'UNKNOWN';
-         let prizePool;
-            if (typeof info.prizePool === 'string') {
-              console.warn(`PrizePool is string: ${info.prizePool}`);
-              const [integerPart] = info.prizePool.split('.');
-              prizePool = ethers.parseUnits(integerPart, decimals);
-            } else {
-              prizePool = ethers.toBigInt(info.prizePool);
-            }
-          return {
-            id: info.id,
-            title: info.name,
-             prizePool: Number(ethers.formatUnits(prizePool, decimals)).toFixed(2),
-            // prizePool: Number(ethers.formatUnits(info.prizePool, decimals)).toFixed(2),
-            token: info.token,
-            tokenSymbol: symbol,
-            participants: info.participants.length,
-            status: info.isActive ? 'live' : info.prizesDistributed ? 'completed' : 'ended',
-            startTime: new Date(info.startTime).toISOString().slice(0, 10),
-            yourContribution: Number(ethers.formatUnits(info.prizePool, decimals)).toFixed(2), // Assume creator contributed all
-            // distributionTime: info.distributionTime
-          };
-        })
-      );
-      setActiveTournaments(tournaments);
-      setSponsorStats(prev => ({
-        ...prev,
-        activeTournaments: tournaments.filter(t => t.status === 'live').length,
-        completedTournaments: tournaments.filter(t => t.status === 'completed').length,
-        totalPlayers: tournaments.reduce((sum, t) => sum + t.participants, 0),
-        totalSponsored: tournaments.reduce((sum, t) => sum + parseFloat(t.prizePool), 0).toFixed(2)
-      }));
-    } catch (error) {
-      toast({
-        title: "Fetch Failed",
-        description: decodeError(error),
-        variant: "destructive"
-      });
-    }
-  };
+  React.useEffect(() => {
+      const fetchTournaments = async () => {
+        if (!aaWalletAddress) return;
+        const provider = getProvider();
+        const contract = new ethers.Contract(
+          TESTNET_CONFIG.smartContracts.tournamentHub,
+          TournamentHubABI,
+          provider
+        );
+        // 1. Get tournament IDs created by this user
+        const ids: number[] = await contract.getUserCreatedTournaments(aaWalletAddress);
+        // 2. Fetch info for each tournament
+        const tournaments = await Promise.all(
+          ids.map(async (id) => {
+            const info = await contract.getTournamentInfo(id, aaWalletAddress);
+            return {
+              id: Number(info.id),
+              title: info.name,
+              game: info.game || '',
+              prizePool: ethers.formatEther(info.prizePool),
+              participants: info.participants.length,
+              status: info.isActive ? 'live' : (info.prizesDistributed ? 'completed' : 'upcoming'),
+              startDate: new Date(Number(info.startTime) * 1000).toISOString().slice(0, 10),
+              yourContribution: ethers.formatEther(info.prizePool),
+            };
+          })
+        );
+        setActiveTournaments(tournaments);
+      };
+      fetchTournaments();
+    }, [aaWalletAddress]);
 
-  useEffect(() => {
-    fetchTournaments();
-    const handleEvent = (event) => {
-      if (event.event === 'TournamentCreated' && event.data.creator.toLowerCase() === aaWalletAddress.toLowerCase()) {
-        fetchTournaments();
-      } else if (event.event === 'PrizesDistributed') {
-        setActiveTournaments(prev =>
-          prev.map(t =>
-            t.id === event.data.tournamentId ? { ...t, status: 'completed' } : t
-          )
-        );
-      } else if (event.event === 'TournamentJoined') {
-        setActiveTournaments(prev =>
-          prev.map(t =>
-            t.id === event.data.tournamentId
-              ? { ...t, participants: t.participants + 1 }
-              : t
-          )
-        );
-      } else if (event.event === 'TournamentEnded') {
-        setActiveTournaments(prev =>
-          prev.map(t =>
-            t.id === event.data.tournamentId
-              ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 }
-              : t
-          )
-        );
-      }
-    };
-    // listenForTournamentEvents(handleEvent);
-    return () => {
-      // Cleanup event listeners (implement in listenForTournamentEvents)
-    };
-  }, [aaWalletAddress]);
+  // const fetchTournaments = async () => {
+  //   if (!aaWalletAddress) return;
+  //   try {
+  //     const ids = await getUserCreatedTournaments(aaWalletAddress);
+  //     const tournaments = await Promise.all(
+  //       ids.map(async (id) => {
+  //         const info = await getTournamentInfo(id, aaWalletAddress);
+  //         const decimals = tokenDecimals[info.token] || 18;
+  //         const symbol = tokenSymbols[info.token] || 'UNKNOWN';
+  //        let prizePool;
+  //           if (typeof info.prizePool === 'string') {
+  //             console.warn(`PrizePool is string: ${info.prizePool}`);
+  //             const [integerPart] = info.prizePool.split('.');
+  //             prizePool = ethers.parseUnits(integerPart, decimals);
+  //           } else {
+  //             prizePool = ethers.toBigInt(info.prizePool);
+  //           }
+  //         return {
+  //           id: info.id,
+  //           title: info.name,
+  //            prizePool: Number(ethers.formatUnits(prizePool, decimals)).toFixed(2),
+  //           // prizePool: Number(ethers.formatUnits(info.prizePool, decimals)).toFixed(2),
+  //           token: info.token,
+  //           tokenSymbol: symbol,
+  //           participants: info.participants.length,
+  //           status: info.isActive ? 'live' : info.prizesDistributed ? 'completed' : 'ended',
+  //           startTime: new Date(info.startTime).toISOString().slice(0, 10),
+  //           yourContribution: Number(ethers.formatUnits(info.prizePool, decimals)).toFixed(2), // Assume creator contributed all
+  //           // distributionTime: info.distributionTime
+  //         };
+  //       })
+  //     );
+  //     setActiveTournaments(tournaments);
+  //     setSponsorStats(prev => ({
+  //       ...prev,
+  //       activeTournaments: tournaments.filter(t => t.status === 'live').length,
+  //       completedTournaments: tournaments.filter(t => t.status === 'completed').length,
+  //       totalPlayers: tournaments.reduce((sum, t) => sum + t.participants, 0),
+  //       totalSponsored: tournaments.reduce((sum, t) => sum + parseFloat(t.prizePool), 0).toFixed(2)
+  //     }));
+  //   } catch (error) {
+  //     toast({
+  //       title: "Fetch Failed",
+  //       description: decodeError(error),
+  //       variant: "destructive"
+  //     });
+  //   }
+  // };
+
+  // useEffect(() => {
+  //   fetchTournaments();
+  //   const handleEvent = (event) => {
+  //     if (event.event === 'TournamentCreated' && event.data.creator.toLowerCase() === aaWalletAddress.toLowerCase()) {
+  //       fetchTournaments();
+  //     } else if (event.event === 'PrizesDistributed') {
+  //       setActiveTournaments(prev =>
+  //         prev.map(t =>
+  //           t.id === event.data.tournamentId ? { ...t, status: 'completed' } : t
+  //         )
+  //       );
+  //     } else if (event.event === 'TournamentJoined') {
+  //       setActiveTournaments(prev =>
+  //         prev.map(t =>
+  //           t.id === event.data.tournamentId
+  //             ? { ...t, participants: t.participants + 1 }
+  //             : t
+  //         )
+  //       );
+  //     } else if (event.event === 'TournamentEnded') {
+  //       setActiveTournaments(prev =>
+  //         prev.map(t =>
+  //           t.id === event.data.tournamentId
+  //             ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 }
+  //             : t
+  //         )
+  //       );
+  //     }
+  //   };
+  //   // listenForTournamentEvents(handleEvent);
+  //   return () => {
+  //     // Cleanup event listeners (implement in listenForTournamentEvents)
+  //   };
+  // }, [aaWalletAddress]);
 
   const handleViewTournament = (tournament) => {
     setSelectedTournament(tournament);
@@ -157,6 +196,10 @@ const SponsorDashboard = () => {
 
   const handleDistribute = async (tournament) => {
     try {
+      isLoadingModalOpen(true);
+      setLoadingTitle("Ending Tournament");
+      setLoadingDescription("Please wait while we end the tournament...");
+      setLoadingTransactionText("Ending tournament...");
       if (!aaSigner) throw new Error("Wallet not connected.");
       const result = await forceEndTournamentAA(aaSigner, tournament.id, 0);
       toast({
@@ -182,6 +225,11 @@ const SponsorDashboard = () => {
         description: decodeError(error),
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingModalOpen(false);
+      setLoadingTitle("");
+      setLoadingDescription("");
+      setLoadingTransactionText("");
     }
   };
 
@@ -422,6 +470,12 @@ const SponsorDashboard = () => {
           </div>
         </div>
       </main>
+      <LoadingModal
+        isOpen={isLoadingModalOpen}
+        title={loadingTitle}
+        description={loadingDescription}
+        transactionText={loadingTransactionText}
+      />
       <ViewTournamentModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}

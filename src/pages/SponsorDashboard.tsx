@@ -24,7 +24,7 @@ import {
 import { TESTNET_CONFIG } from '../config';
 import { decodeError } from '../lib/utils';
 import TournamentHubABI from '../abi/TournamentHub.json';
-import LoadingModal from '@/components/LoadingModal';
+import LoadingModal from '../components/LoadingModal';
 
 
 const SponsorDashboard = () => {
@@ -128,13 +128,13 @@ const SponsorDashboard = () => {
   //       })
   //     );
   //     setActiveTournaments(tournaments);
-  //     setSponsorStats(prev => ({
-  //       ...prev,
-  //       activeTournaments: tournaments.filter(t => t.status === 'live').length,
-  //       completedTournaments: tournaments.filter(t => t.status === 'completed').length,
-  //       totalPlayers: tournaments.reduce((sum, t) => sum + t.participants, 0),
-  //       totalSponsored: tournaments.reduce((sum, t) => sum + parseFloat(t.prizePool), 0).toFixed(2)
-  //     }));
+      // setSponsorStats(prev => ({
+      //   ...prev,
+      //   activeTournaments: tournaments.filter(t => t.status === 'live').length,
+      //   completedTournaments: tournaments.filter(t => t.status === 'completed').length,
+      //   totalPlayers: tournaments.reduce((sum, t) => sum + t.participants, 0),
+      //   totalSponsored: tournaments.reduce((sum, t) => sum + parseFloat(t.prizePool), 0).toFixed(2)
+      // }));
   //   } catch (error) {
   //     toast({
   //       title: "Fetch Failed",
@@ -196,10 +196,10 @@ const SponsorDashboard = () => {
 
   const handleDistribute = async (tournament) => {
     try {
-      isLoadingModalOpen(true);
-      setLoadingTitle("Ending Tournament");
-      setLoadingDescription("Please wait while we end the tournament...");
-      setLoadingTransactionText("Ending tournament...");
+      setIsLoadingModalOpen(true);
+      setLoadingTitle("Distributing Prizes");
+      setLoadingDescription("Please wait while we distribute the prizes...");
+      setLoadingTransactionText("Distributing...");
       if (!aaSigner) throw new Error("Wallet not connected.");
       const result = await forceEndTournamentAA(aaSigner, tournament.id, 0);
       toast({
@@ -235,6 +235,11 @@ const SponsorDashboard = () => {
 
   const handleFinalizeTournament = async (tournament) => {
     try {
+      setIsLoadingModalOpen(true);
+      setLoadingTitle("Finalizing Tournament");
+      setLoadingDescription("Calculating winners");
+      setLoadingTransactionText("Finalizing...");
+
       if (!aaSigner) throw new Error("Wallet not connected.");
       const result = await finalizeTournamentAA(aaSigner, tournament.id, 0);
       toast({
@@ -260,6 +265,11 @@ const SponsorDashboard = () => {
         description: decodeError(error),
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingModalOpen(false);
+      setLoadingTitle("");
+      setLoadingDescription("");
+      setLoadingTransactionText("");
     }
   };
 
@@ -387,7 +397,7 @@ const SponsorDashboard = () => {
                           onClick={() => handleDistribute(tournament)}
                         >
                           <Eye className="w-4 h-4 mr-1" />
-                          END NOW
+                          DISTRIBUTE
                         </Button>
                         <Button
                           variant="outline"
@@ -397,7 +407,7 @@ const SponsorDashboard = () => {
                           onClick={() => handleFinalizeTournament(tournament)}
                         >
                           <Eye className="w-4 h-4 mr-1" />
-                          FINALIZE
+                          END TOURNAMENT
                         </Button>
                         <Button
                           variant="outline"

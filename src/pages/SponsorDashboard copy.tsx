@@ -1,25 +1,34 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import Header from './Header';
+import { useNavigate } from 'react-router-dom';
+import Header from '../components/Header';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { 
-  Plus, 
-  Trophy, 
-  Coins, 
-  Users, 
+import {
+  Plus,
+  Trophy,
+  Coins,
+  Users,
   Eye,
   Calendar,
   Target,
   BarChart3,
   Settings
 } from 'lucide-react';
-import ViewTournamentModal from './ViewTournamentModal';
-import ManageTournamentModal from './ManageTournamentModal';
+import { ethers } from 'ethers';
+import ViewTournamentModal from '../components/ViewTournamentModal';
+import ManageTournamentModal from '../components/ManageTournamentModal';
+import { useWalletStore } from '../stores/useWalletStore';
+import { getProvider } from '../lib/aaUtils';
+import { TESTNET_CONFIG } from '../config';
+import TournamentHubABI from '../abi/TournamentHub.json';
 
 const SponsorDashboard = () => {
   const navigate = useNavigate();
+  const [activeTournaments, setActiveTournaments] = useState<any[]>([]);
+  const { aaWalletAddress } = useWalletStore();
+
 
   // Add modal state
   const [selectedTournament, setSelectedTournament] = useState(null);
@@ -28,45 +37,47 @@ const SponsorDashboard = () => {
 
   // Mock sponsor data
   const sponsorStats = {
-    totalSponsored: "25.5 ETH",
+    totalSponsored: "25.5 NERO",
     activeTournaments: 3,
     totalPlayers: 1247,
     completedTournaments: 12
   };
 
-  const activeTournaments = [
-    {
-      id: 1,
-      title: "CRYPTO CHAMPIONSHIP",
-      game: "Crypto Battles",
-      prizePool: "10 ETH",
-      participants: 1247,
-      status: "live",
-      startDate: "2024-06-15",
-      yourContribution: "10 ETH"
-    },
-    {
-      id: 2,
-      title: "NFT GRAND PRIX",
-      game: "NFT Racing", 
-      prizePool: "5 ETH",
-      participants: 892,
-      status: "upcoming",
-      startDate: "2024-06-20",
-      yourContribution: "5 ETH"
-    }
-  ];
+
+  React.useEffect(() => {
+    const fetchTournaments = async () => {
+      if (!aaWalletAddress) return;
+      const provider = getProvider();
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHubABI,
+        provider
+      );
+      // 1. Get tournament IDs created by this user
+      const ids: number[] = await contract.getUserCreatedTournaments(aaWalletAddress);
+      // 2. Fetch info for each tournament
+      const tournaments = await Promise.all(
+        ids.map(async (id) => {
+          const info = await contract.getTournamentInfo(id, aaWalletAddress);
+          return {
+            id: Number(info.id),
+            title: info.name,
+            game: info.game || '',
+            prizePool: ethers.formatEther(info.prizePool),
+            participants: info.participants.length,
+            status: info.isActive ? 'live' : (info.prizesDistributed ? 'completed' : 'upcoming'),
+            startDate: new Date(Number(info.startTime) * 1000).toISOString().slice(0, 10),
+            yourContribution: ethers.formatEther(info.prizePool),
+          };
+        })
+      );
+      setActiveTournaments(tournaments);
+    };
+    fetchTournaments();
+  }, [aaWalletAddress]);
 
   // Redirect if not logged in
-  // React.useEffect(() => {
-  //   if (!user) {
-  //     navigate('/sponsor/login');
-  //   }
-  // }, [user, navigate]);
 
-  // if (!user) {
-  //   return null;
-  // }
 
   const handleViewTournament = (tournament: any) => {
     setSelectedTournament(tournament);
@@ -86,7 +97,7 @@ const SponsorDashboard = () => {
   return (
     <div className="min-h-screen bg-black text-green-400">
       <Header />
-      
+
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
@@ -96,11 +107,11 @@ const SponsorDashboard = () => {
                 &gt; SPONSOR_DASHBOARD &lt;
               </h1>
               <p className="text-green-400 mt-2">
-                Welcome back, {user.name || 'SPONSOR_001'}
+                Welcome back, {aaWalletAddress || 'SPONSOR_001'}
               </p>
             </div>
             <div className="flex space-x-3">
-              <Button 
+              <Button
                 onClick={() => navigate('/sponsor/analytics')}
                 variant="outline"
                 className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black font-mono"
@@ -108,7 +119,7 @@ const SponsorDashboard = () => {
                 <BarChart3 className="w-4 h-4 mr-2" />
                 ANALYTICS
               </Button>
-              <Button 
+              <Button
                 onClick={() => navigate('/sponsor/create-tournament')}
                 className="bg-yellow-400 text-black hover:bg-green-400 font-mono"
               >
@@ -176,11 +187,13 @@ const SponsorDashboard = () => {
                           <h3 className="text-cyan-400 font-mono font-bold text-lg">
                             {tournament.title}
                           </h3>
-                          <Badge className={`font-mono ${
-                            tournament.status === 'live' 
-                              ? 'bg-green-400 text-black animate-pulse' 
-                              : 'bg-yellow-400 text-black'
-                          }`}>
+                          <h3 className="text-cyan-400 font-mono font-bold text-lg">
+                            {tournament.id}
+                          </h3>
+                          <Badge className={`font-mono ${tournament.status === 'live'
+                            ? 'bg-green-400 text-black animate-pulse'
+                            : 'bg-yellow-400 text-black'
+                            }`}>
                             {tournament.status.toUpperCase()}
                           </Badge>
                         </div>
@@ -205,8 +218,32 @@ const SponsorDashboard = () => {
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="flex space-x-2">
+                         <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"
+                          onClick={() =>  
+                            console.log('Distribute prizes for', tournament.id)
+                            // handleDistribute(tournament)
+                          }
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          DISTRIBUTE
+                        </Button>
+                         <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"
+                          onClick={() => 
+                            console.log('Finalize tournament', tournament.id)
+                            // handleFinalizeTournament(tournament)
+                          }
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          FINALIZE
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -246,7 +283,7 @@ const SponsorDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
+                <Button
                   onClick={() => navigate('/sponsor/create-tournament')}
                   className="w-full bg-yellow-400 text-black hover:bg-green-400 font-mono"
                 >
@@ -267,7 +304,7 @@ const SponsorDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button 
+                <Button
                   variant="outline"
                   className="w-full border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"
                 >
@@ -298,4 +335,3 @@ const SponsorDashboard = () => {
 };
 
 export default SponsorDashboard;
-// This

@@ -28,6 +28,14 @@ const throttledRequests = new Map<string, { timestamp: number, promise: Promise<
 const nftCache = new Map<string, { timestamp: number, data: any[] }>();
 const NFT_CACHE_DURATION = 60000; // 1 minute cache
 
+import TournamentHub from '../abi/TournamentHub.json'; 
+
+// Validate ABI at load time
+if (!TournamentHub || !Array.isArray(TournamentHub)) {
+  console.error('Invalid TournamentHubABI:', TournamentHub);
+  throw new Error('TournamentHubABI is not a valid ABI array');
+}
+
 export const throttledRequest = async (key: string, requestFn: () => Promise<any>, timeWindow: number = 5000) => {
   const now = Date.now();
   const existing = throttledRequests.get(key);
@@ -1777,23 +1785,19 @@ export const transferNFTAA = async (
 
 // Create tournament in TournamentHub
 export const createTournamentAA = async (
-  accountSigner: ethers.Signer,
-  name: string,
-  prizePool: bigint,
-  startTime: number,
-  endTime: number,
-  paymentType: number = 0,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
+  accountSigner,
+  name,
+  prizePool,
+  token,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
 ) => {
   const opKey = generateOperationKey('createTournamentAA', [
     await accountSigner.getAddress(),
     name,
     prizePool.toString(),
-    startTime,
-    endTime,
+    token,
     paymentType,
-    selectedToken,
     options?.gasMultiplier || 100
   ]);
   return executeOperation(
@@ -1802,16 +1806,19 @@ export const createTournamentAA = async (
     async (client, builder) => {
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.tournamentHub,
-        ["function createTournament(string name, uint256 prizePool, uint256 startTime, uint256 endTime) external"],
+        TournamentHub,
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('createTournament', [
         name,
         prizePool,
-        startTime,
-        endTime
+        token
       ]);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const userOp = await builder.execute(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        token === '0x0000000000000000000000000000000000000000' ? prizePool : 0, // NERO value
+        callData
+      );
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
       return {
@@ -1821,24 +1828,22 @@ export const createTournamentAA = async (
       };
     },
     paymentType,
-    selectedToken,
+    token,
     options
   );
 };
 
 // Join a tournament in TournamentHub
 export const joinTournamentAA = async (
-  accountSigner: ethers.Signer,
-  tournamentId: number,
-  paymentType: number = 0,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
+  accountSigner,
+  tournamentId,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
 ) => {
   const opKey = generateOperationKey('joinTournamentAA', [
     await accountSigner.getAddress(),
     tournamentId,
     paymentType,
-    selectedToken,
     options?.gasMultiplier || 100
   ]);
   return executeOperation(
@@ -1847,7 +1852,7 @@ export const joinTournamentAA = async (
     async (client, builder) => {
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.tournamentHub,
-        ["function joinTournament(uint256 tournamentId) external"],
+        TournamentHub,
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('joinTournament', [tournamentId]);
@@ -1861,20 +1866,19 @@ export const joinTournamentAA = async (
       };
     },
     paymentType,
-    selectedToken,
+    '',
     options
   );
 };
 
 // Submit tournament score to TournamentHub
 export const submitTournamentScoreAA = async (
-  accountSigner: ethers.Signer,
-  tournamentId: number,
-  score: number,
-  signature: string,
-  paymentType: number = 0,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
+  accountSigner,
+  tournamentId,
+  score,
+  signature,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
 ) => {
   const opKey = generateOperationKey('submitTournamentScoreAA', [
     await accountSigner.getAddress(),
@@ -1882,7 +1886,6 @@ export const submitTournamentScoreAA = async (
     score,
     signature,
     paymentType,
-    selectedToken,
     options?.gasMultiplier || 100
   ]);
   return executeOperation(
@@ -1891,7 +1894,7 @@ export const submitTournamentScoreAA = async (
     async (client, builder) => {
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.tournamentHub,
-        ["function submitTournamentScore(uint256 tournamentId, uint256 score, bytes signature) external"],
+        TournamentHub,
         getProvider()
       );
       const callData = contract.interface.encodeFunctionData('submitTournamentScore', [
@@ -1909,28 +1912,22 @@ export const submitTournamentScoreAA = async (
       };
     },
     paymentType,
-    selectedToken,
+    '',
     options
   );
 };
 
-// Distribute tournament prizes in TournamentHub (admin only)
-export const distributeTournamentPrizesAA = async (
-  accountSigner: ethers.Signer,
-  tournamentId: number,
-  winners: string[],
-  amounts: bigint[],
-  paymentType: number = 1,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
+// Force end tournament in TournamentHub (creator only, demo mode)
+export const forceEndTournamentAA = async (
+  accountSigner,
+  tournamentId,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
 ) => {
-  const opKey = generateOperationKey('distributeTournamentPrizesAA', [
+  const opKey = generateOperationKey('forceEndTournamentAA', [
     await accountSigner.getAddress(),
     tournamentId,
-    winners,
-    amounts.map(a => a.toString()),
     paymentType,
-    selectedToken,
     options?.gasMultiplier || 100
   ]);
   return executeOperation(
@@ -1939,14 +1936,10 @@ export const distributeTournamentPrizesAA = async (
     async (client, builder) => {
       const contract = new ethers.Contract(
         TESTNET_CONFIG.smartContracts.tournamentHub,
-        ["function distributeTournamentPrizes(uint256 tournamentId, address[] winners, uint256[] amounts) external"],
+        TournamentHub,
         getProvider()
       );
-      const callData = contract.interface.encodeFunctionData('distributeTournamentPrizes', [
-        tournamentId,
-        winners,
-        amounts
-      ]);
+      const callData = contract.interface.encodeFunctionData('forceEndTournament', [tournamentId]);
       const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
       const res = await client.sendUserOperation(userOp);
       const receipt = await res.wait();
@@ -1957,9 +1950,478 @@ export const distributeTournamentPrizesAA = async (
       };
     },
     paymentType,
-    selectedToken,
+    '',
     options
   );
+};
+
+// Finalize tournament in TournamentHub (automatic distribution)
+export const finalizeTournamentAA = async (
+  accountSigner,
+  tournamentId,
+  paymentType = 0, // Changed default to 0 (user pays gas)
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('finalizeTournamentAA', [
+    await accountSigner.getAddress(),
+    tournamentId,
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('finalizeTournament', [tournamentId]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    '',
+    options
+  );
+};
+
+// Get tournament info
+export const getTournamentInfo = async (tournamentId, userAddress) => {
+  const provider = getProvider();
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.tournamentHub,
+    TournamentHub,
+    provider
+  );
+  const info = await contract.getTournamentInfo(tournamentId, userAddress);
+  return {
+    id: Number(info.id),
+    creator: info.creator,
+    name: info.name,
+    prizePool: ethers.formatUnits(info.prizePool, 18), // Adjust decimals in frontend
+    token: info.token,
+    startTime: Number(info.startTime) * 1000, // Convert to milliseconds
+    endTime: Number(info.endTime) * 1000,
+    participants: info.participants,
+    isActive: info.isActive,
+    prizesDistributed: info.prizesDistributed,
+    participantScore: Number(info.participantScore),
+    isParticipant: info.isParticipant
+  };
+};
+
+// Get active tournament IDs
+export const getActiveTournamentIds = async () => {
+  const provider = getProvider();
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.tournamentHub,
+    TournamentHub,
+    provider
+  );
+  const ids = await contract.getActiveTournamentIds();
+  return ids.map(id => Number(id));
+};
+
+// Get user-created tournaments
+export const getUserCreatedTournaments = async (userAddress) => {
+  const provider = getProvider();
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.tournamentHub,
+    TournamentHub,
+    provider
+  );
+  const ids = await contract.getUserCreatedTournaments(userAddress);
+  return ids.map(id => Number(id));
+};
+
+// Get user-joined tournaments
+export const getUserJoinedTournaments = async (userAddress) => {
+  const provider = getProvider();
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.tournamentHub,
+    TournamentHub,
+    provider
+  );
+  const ids = await contract.getUserJoinedTournaments(userAddress);
+  return ids.map(id => Number(id));
+};
+
+// Check if a token is allowed
+export const isTokenAllowed = async (tokenAddress) => {
+  const provider = getProvider();
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.tournamentHub,
+    TournamentHub,
+    provider
+  );
+  return await contract.allowedTokens(tokenAddress);
+};
+
+// Admin: Add token (owner only)
+export const addTokenAA = async (
+  accountSigner,
+  tokenAddress,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('addTokenAA', [
+    await accountSigner.getAddress(),
+    tokenAddress,
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('addToken', [tokenAddress]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    '',
+    options
+  );
+};
+
+// Admin: Remove token (owner only)
+export const removeTokenAA = async (
+  accountSigner,
+  tokenAddress,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('removeTokenAA', [
+    await accountSigner.getAddress(),
+    tokenAddress,
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('removeToken', [tokenAddress]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    '',
+    options
+  );
+};
+
+// Admin: Set fee wallets (owner only)
+export const setFeeWalletsAA = async (
+  accountSigner,
+  developerWallet,
+  platformWallet,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('setFeeWalletsAA', [
+    await accountSigner.getAddress(),
+    developerWallet,
+    platformWallet,
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('setFeeWallets', [developerWallet, platformWallet]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    '',
+    options
+  );
+};
+
+// Admin: Set fees (owner only)
+export const setFeesAA = async (
+  accountSigner,
+  devFeePercent,
+  platformFeePercent,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('setFeesAA', [
+    await accountSigner.getAddress(),
+    devFeePercent,
+    platformFeePercent,
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('setFees', [devFeePercent, platformFeePercent]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    '',
+    options
+  );
+};
+
+// Admin: Toggle demo mode (owner only)
+export const toggleDemoModeAA = async (
+  accountSigner,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('toggleDemoModeAA', [
+    await accountSigner.getAddress(),
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('toggleDemoMode');
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    '',
+    options
+  );
+};
+
+// Admin: Set trusted signer (owner only)
+export const setTrustedSignerAA = async (
+  accountSigner,
+  trustedSigner,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('setTrustedSignerAA', [
+    await accountSigner.getAddress(),
+    trustedSigner,
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('setTrustedSigner', [trustedSigner]);
+      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    '',
+    options
+  );
+};
+
+export const addFundsAA = async (
+  accountSigner,
+  tournamentId,
+  amount,
+  token,
+  paymentType = 0,
+  options = { gasMultiplier: 100 }
+) => {
+  const opKey = generateOperationKey('addFundsAA', [
+    await accountSigner.getAddress(),
+    tournamentId,
+    amount.toString(),
+    token,
+    paymentType,
+    options?.gasMultiplier || 100
+  ]);
+  return executeOperation(
+    opKey,
+    accountSigner,
+    async (client, builder) => {
+      const contract = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHub,
+        getProvider()
+      );
+      const callData = contract.interface.encodeFunctionData('addFunds', [tournamentId, amount, token]);
+      const userOp = await builder.execute(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        token === '0x0000000000000000000000000000000000000000' ? amount : 0,
+        callData
+      );
+      const res = await client.sendUserOperation(userOp);
+      const receipt = await res.wait();
+      return {
+        userOpHash: res.userOpHash,
+        transactionHash: receipt?.transactionHash,
+        receipt
+      };
+    },
+    paymentType,
+    token,
+    options
+  );
+};
+
+export const listenForTournamentEvents = (callback) => {
+  const provider = getProvider();
+  const contract = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.tournamentHub,
+    TournamentHub,
+    provider
+  );
+
+  // Event listeners
+  const handleTournamentCreated = (id, creator, prizePool, token, startTime, endTime, event) => {
+    callback({
+      event: 'TournamentCreated',
+      data: {
+        id: Number(id),
+        creator,
+        prizePool: ethers.formatUnits(prizePool, 18), // Adjust decimals in callback if needed
+        token,
+        startTime: Number(startTime) * 1000,
+        endTime: Number(endTime) * 1000
+      }
+    });
+  };
+
+  const handlePrizesDistributed = (tournamentId, winners, amounts, token, event) => {
+    callback({
+      event: 'PrizesDistributed',
+      data: {
+        tournamentId: Number(tournamentId),
+        winners,
+        amounts: amounts.map(a => ethers.formatUnits(a, 18)), // Adjust decimals
+        token
+      }
+    });
+  };
+
+  const handleTournamentJoined = (tournamentId, participant, event) => {
+    callback({
+      event: 'TournamentJoined',
+      data: {
+        tournamentId: Number(tournamentId),
+        participant
+      }
+    });
+  };
+
+  const handleTournamentEnded = (tournamentId, endTime, event) => {
+    callback({
+      event: 'TournamentEnded',
+      data: {
+        tournamentId: Number(tournamentId),
+        endTime: Number(endTime) * 1000
+      }
+    });
+  };
+
+  const handleFundsAdded = (tournamentId, contributor, amount, token, event) => {
+    callback({
+      event: 'FundsAdded',
+      data: {
+        tournamentId: Number(tournamentId),
+        contributor,
+        amount: ethers.formatUnits(amount, 18), // Adjust decimals
+        token
+      }
+    });
+  };
+
+  // Attach listeners
+  contract.on('TournamentCreated', handleTournamentCreated);
+  contract.on('PrizesDistributed', handlePrizesDistributed);
+  contract.on('TournamentJoined', handleTournamentJoined);
+  contract.on('TournamentEnded', handleTournamentEnded);
+  contract.on('FundsAdded', handleFundsAdded);
+
+  // Return cleanup function
+  return () => {
+    contract.removeListener('TournamentCreated', handleTournamentCreated);
+    contract.removeListener('PrizesDistributed', handlePrizesDistributed);
+    contract.removeListener('TournamentJoined', handleTournamentJoined);
+    contract.removeListener('TournamentEnded', handleTournamentEnded);
+    contract.removeListener('FundsAdded', handleFundsAdded);
+  };
 };
 
 // Claim developer payout from DeveloperPayouts

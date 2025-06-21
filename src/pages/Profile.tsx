@@ -79,7 +79,7 @@ const Profile = () => {
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-center space-x-6 mb-6 lg:mb-0">
                   <div className="w-24 h-24 border-4 border-cyan-400 rounded bg-gray-900 flex items-center justify-center">
-                    <img src={avatar || "/placeholder.svg"} alt="avatar" className="w-20 h-20 rounded-full" />
+                    <img src={avatar || "/placeholder.jpeg"} alt="avatar" className="w-20 h-20 rounded-full" />
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-cyan-400 mb-2">{username || "GAMER"}</h1>

@@ -18,7 +18,7 @@ const SponsorAnalytics = () => {
 
   // Mock analytics data
   const analyticsData = {
-    totalInvestment: "25.5 ETH",
+    totalInvestment: "25.5 NERO",
     totalParticipants: 3421,
     completedTournaments: 12,
     avgEngagement: "87%",

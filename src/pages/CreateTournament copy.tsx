@@ -22,12 +22,12 @@ import { createTournamentAA, approveTokenForContractAA, getProvider } from '../l
 import { ethers } from 'ethers';
 import { TESTNET_CONFIG } from '../config';
 import { useWalletStore } from '../stores/useWalletStore';
-// import supabase from '../hooks/use-supabase';
+import supabase from '../hooks/use-supabase';
 
 const CreateTournament = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { aaSigner, aaWalletAddress } = useWalletStore();
+  const { aaSigner } = useWalletStore();
 
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
@@ -38,14 +38,15 @@ const CreateTournament = () => {
     maxParticipants: 1000,
     entryFee: 'FREE',
     rules: '',
-    prizePool: '', // New field for prize pool amount
     token: TESTNET_CONFIG.smartContracts.arcadeToken // Default to ARC token
   });
 
   const gameOptions = ['Honey Clicker'];
-  const tokenOptions = [
+   const tokenOptions = [
     { address: TESTNET_CONFIG.smartContracts.arcadeToken, symbol: 'ARC' },
-    { address: '0x0000000000000000000000000000000000000000', symbol: 'ETH' }
+    { address: TESTNET_CONFIG.erc20.dai, symbol: 'DAI' },
+    { address: TESTNET_CONFIG.erc20.usdc, symbol: 'USDC' },
+    { address: TESTNET_CONFIG.erc20.usdt, symbol: 'USDT' }
   ];
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -53,14 +54,15 @@ const CreateTournament = () => {
   };
 
   const handleCreateTournament = () => {
-    if (!formData.title || !formData.game || !formData.prizePool || parseFloat(formData.prizePool) <= 0 || !ethers.isAddress(formData.token)) {
+    if (!formData.title || !formData.game) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields, including a valid prize pool and token.",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
     }
+
     setIsDepositModalOpen(true);
   };
 
@@ -68,43 +70,38 @@ const CreateTournament = () => {
     setIsLoadingModalOpen(true);
 
     try {
-      if (!aaSigner || !aaWalletAddress) {
+      if (!aaSigner) {
         throw new Error("Wallet not connected. Please connect your wallet.");
       }
 
-      const decimals = formData.token === '0x0000000000000000000000000000000000000000' ? 18 : 18; // ARC and ETH both use 18 decimals
-      const prizePool = ethers.parseUnits(amount, decimals);
+      const prizePool = ethers.parseUnits(amount, 18);
 
-      // Approve token if not ETH
-      if (formData.token !== '0x0000000000000000000000000000000000000000') {
-        const approvalResult = await approveTokenForContractAA(
-          aaSigner,
-          formData.token,
-          prizePool,
-          TESTNET_CONFIG.smartContracts.tournamentHub
-        );
-        if (!approvalResult || approvalResult.error) {
-          throw new Error(`Token approval failed: ${approvalResult?.error || 'Unknown error'}`);
-        }
+      const approvalResult = await approveTokenForContractAA(
+        aaSigner,
+        TESTNET_CONFIG.smartContracts.arcadeToken,
+        prizePool,
+        TESTNET_CONFIG.smartContracts.tournamentHub
+      );
+
+      if (!approvalResult || approvalResult.error) {
+        throw new Error("Token approval failed. Please try again.");
       }
 
-      // Create tournament
       const result = await createTournamentAA(
         aaSigner,
         formData.title,
         prizePool,
-        formData.token, // Pass valid token address
-        0 // paymentType: sponsored gas
+        0, // paymentType: sponsored gas
+        '' // selectedToken: none for sponsored gas
       );
 
       if (!result.userOpHash) {
         throw new Error("Transaction failed. No UserOperation hash returned.");
       }
 
-      // Extract tournament ID from logs
       let tournamentId = null;
       const iface = new ethers.Interface([
-        "event TournamentCreated(uint256 indexed id, address indexed creator, uint256 prizePool, address token, uint256 startTime, uint256 endTime)"
+        "event TournamentCreated(uint256 indexed id, address indexed creator, uint256 prizePool, uint256 startTime, uint256 endTime)"
       ]);
 
       let logs = [];
@@ -135,7 +132,7 @@ const CreateTournament = () => {
           address: TESTNET_CONFIG.smartContracts.tournamentHub,
           fromBlock: result.receipt.blockNumber,
           toBlock: result.receipt.blockNumber,
-          topics: [ethers.id("TournamentCreated(uint256,address,uint256,address,uint256,uint256)")]
+          topics: [ethers.id("TournamentCreated(uint256,address,uint256,uint256,uint256)")]
         });
         if (fetchedLogs.length > 0) {
           const parsed = iface.parseLog(fetchedLogs[0]);
@@ -147,21 +144,16 @@ const CreateTournament = () => {
         throw new Error("Could not fetch tournament ID from transaction logs.");
       }
 
-      // // Insert into Supabase
-      // const { error: supabaseError } = await supabase.from('tournaments').insert({
-      //   id: tournamentId,
-      //   title: formData.title,
-      //   game_id: formData.game, // Verify this matches Supabase schema
-      //   description: formData.description,
-      //   sponsor_id: aaWalletAddress,
-      //   max_participants: formData.maxParticipants,
-      //   rules: formData.rules,
-      //   image_url: null
-      // });
-
-      // if (supabaseError) {
-      //   throw new Error(`Supabase insert failed: ${supabaseError.message}`);
-      // }
+      await supabase.from('tournaments').insert({
+        id: tournamentId,
+        title: formData.title,
+        game_id: formData.game,
+        description: formData.description,
+        sponsor_id: null,
+        max_participants: formData.maxParticipants,
+        rules: formData.rules,
+        image_url: null
+      });
 
       setIsLoadingModalOpen(false);
 
@@ -169,7 +161,7 @@ const CreateTournament = () => {
         title: "Tournament Created Successfully!",
         description: (
           <span>
-            <span>{formData.title} has been created with {amount} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'ETH'} prize pool. UserOpHash: {result.userOpHash}</span>
+            <span>{formData.title} has been created with {amount} ARC prize pool. UserOpHash: {result.userOpHash}</span>
             <a
               href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
               target="_blank"
@@ -215,7 +207,7 @@ const CreateTournament = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-mono font-bold text-cyan-400 neon-text">
-               &gt; CREATE_TOURNAMENT &lt;
+                &gt; CREATE_TOURNAMENT &lt;
               </h1>
               <p className="text-green-400 mt-2">
                 Set up a new sponsored tournament with custom prize pool
@@ -276,39 +268,6 @@ const CreateTournament = () => {
                       placeholder="Describe your tournament..."
                       rows={3}
                     />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="prizePool" className="text-green-400 font-mono">
-                      PRIZE_POOL *
-                    </Label>
-                    <Input
-                      id="prizePool"
-                      type="number"
-                      step="0.01"
-                      value={formData.prizePool}
-                      onChange={(e) => handleInputChange('prizePool', e.target.value)}
-                      className="bg-black border-green-400 text-green-400 font-mono"
-                      placeholder="Enter prize pool amount..."
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="token" className="text-green-400 font-mono">
-                      TOKEN *
-                    </Label>
-                    <Select value={formData.token} onValueChange={(value) => handleInputChange('token', value)}>
-                      <SelectTrigger className="bg-black border-green-400 text-green-400 font-mono">
-                        <SelectValue placeholder="Select a token..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-black border-green-400">
-                        {tokenOptions.map((token) => (
-                          <SelectItem key={token.address} value={token.address} className="text-green-400 font-mono">
-                            {token.symbol}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                   </div>
                 </CardContent>
               </Card>
@@ -374,12 +333,6 @@ const CreateTournament = () => {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-green-400">Prize Pool:</span>
-                      <span className="text-cyan-400 font-mono">
-                        {formData.prizePool || '0'} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'ETH'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-green-400">Max Players:</span>
                       <span className="text-cyan-400 font-mono">
                         {formData.maxParticipants}
@@ -442,8 +395,6 @@ const CreateTournament = () => {
         onClose={() => setIsDepositModalOpen(false)}
         onDeposit={handlePrizePoolDeposit}
         tournament={formData}
-        prizePool={formData.prizePool}
-        token={formData.token}
       />
 
       <LoadingModal

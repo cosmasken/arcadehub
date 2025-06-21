@@ -128,14 +128,14 @@ const CollectionDetail = () => {
               <Card className="bg-black border-cyan-400 border-2 p-6">
                 <div className="text-center">
                   <p className="text-sm text-green-400 mb-1">FLOOR_PRICE</p>
-                  <p className="text-2xl font-bold text-cyan-400">{collection.floor} ETH</p>
+                  <p className="text-2xl font-bold text-cyan-400">{collection.floor} NERO</p>
                 </div>
               </Card>
               
               <Card className="bg-black border-cyan-400 border-2 p-6">
                 <div className="text-center">
                   <p className="text-sm text-green-400 mb-1">VOLUME</p>
-                  <p className="text-2xl font-bold text-cyan-400">{collection.volume} ETH</p>
+                  <p className="text-2xl font-bold text-cyan-400">{collection.volume} NERO</p>
                 </div>
               </Card>
               

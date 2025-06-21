@@ -2,18 +2,48 @@
 	{
 		"inputs": [
 			{
+				"internalType": "address[]",
+				"name": "_allowedTokens",
+				"type": "address[]"
+			},
+			{
 				"internalType": "address",
-				"name": "_arcToken",
+				"name": "_developerWallet",
 				"type": "address"
 			},
 			{
 				"internalType": "address",
-				"name": "_initialOwner",
+				"name": "_platformWallet",
 				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_trustedSigner",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "_demoMode",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "AlreadyDistributed",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "AlreadyJoined",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "DisputePeriodActive",
+		"type": "error"
 	},
 	{
 		"inputs": [],
@@ -43,6 +73,76 @@
 		"type": "error"
 	},
 	{
+		"inputs": [],
+		"name": "ETHTransferFailed",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "FeesTooHigh",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InactiveTournament",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InsufficientPrizePool",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidFeeWallets",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidSignature",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidSigner",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidTokenAddress",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "InvalidTournamentId",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NoParticipants",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotActivePeriod",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotCreator",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotDemoMode",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "NotParticipant",
+		"type": "error"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -63,6 +163,108 @@
 		],
 		"name": "OwnableUnauthorizedAccount",
 		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ScoreBelowMinimum",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "TokenTransferFailed",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "TournamentHasEnded",
+		"type": "error"
+	},
+	{
+		"inputs": [],
+		"name": "ZeroPrizePool",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "demoMode",
+				"type": "bool"
+			}
+		],
+		"name": "DemoModeToggled",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "developerWallet",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "platformWallet",
+				"type": "address"
+			}
+		],
+		"name": "FeeWalletsUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "devFeePercent",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "platformFeePercent",
+				"type": "uint256"
+			}
+		],
+		"name": "FeesUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tournamentId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "contributor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "FundsAdded",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -89,6 +291,88 @@
 			{
 				"indexed": true,
 				"internalType": "uint256",
+				"name": "tournamentId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address[]",
+				"name": "winners",
+				"type": "address[]"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256[]",
+				"name": "amounts",
+				"type": "uint256[]"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "PrizesDistributed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tournamentId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "participant",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "score",
+				"type": "uint256"
+			}
+		],
+		"name": "ScoreSubmitted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "TokenAdded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "TokenRemoved",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
 				"name": "id",
 				"type": "uint256"
 			},
@@ -103,6 +387,12 @@
 				"internalType": "uint256",
 				"name": "prizePool",
 				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
 			},
 			{
 				"indexed": false,
@@ -126,13 +416,32 @@
 			{
 				"indexed": true,
 				"internalType": "uint256",
-				"name": "id",
+				"name": "tournamentId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "endTime",
+				"type": "uint256"
+			}
+		],
+		"name": "TournamentEnded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "tournamentId",
 				"type": "uint256"
 			},
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "player",
+				"name": "participant",
 				"type": "address"
 			}
 		],
@@ -143,48 +452,104 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			}
-		],
-		"name": "TournamentPrizesDistributed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "score",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "trustedSigner",
+				"type": "address"
 			}
 		],
-		"name": "TournamentScoreSubmitted",
+		"name": "TrustedSignerUpdated",
 		"type": "event"
 	},
 	{
 		"inputs": [],
-		"name": "arcToken",
+		"name": "DISPUTE_PERIOD",
 		"outputs": [
 			{
-				"internalType": "contract IERC20",
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MIN_SCORE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "NATIVE_TOKEN",
+		"outputs": [
+			{
+				"internalType": "address",
 				"name": "",
 				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tournamentId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "addFunds",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "addToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "allowedTokens",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -203,19 +568,14 @@
 				"type": "uint256"
 			},
 			{
-				"internalType": "uint256",
-				"name": "startTime",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "endTime",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
 			}
 		],
 		"name": "createTournament",
 		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -232,24 +592,53 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "devFeePercent",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "developerWallet",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
 				"name": "tournamentId",
 				"type": "uint256"
-			},
-			{
-				"internalType": "address[]",
-				"name": "winners",
-				"type": "address[]"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "amounts",
-				"type": "uint256[]"
 			}
 		],
-		"name": "distributeTournamentPrizes",
+		"name": "finalizeTournament",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tournamentId",
+				"type": "uint256"
+			}
+		],
+		"name": "forceEndTournament",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -258,48 +647,6 @@
 		"inputs": [],
 		"name": "getActiveTournamentIds",
 		"outputs": [
-			{
-				"internalType": "uint256[]",
-				"name": "",
-				"type": "uint256[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getAllTournamentIds",
-		"outputs": [
-			{
-				"internalType": "uint256[]",
-				"name": "",
-				"type": "uint256[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tournamentId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "maxEntries",
-				"type": "uint256"
-			}
-		],
-		"name": "getSortedLeaderboard",
-		"outputs": [
-			{
-				"internalType": "address[]",
-				"name": "",
-				"type": "address[]"
-			},
 			{
 				"internalType": "uint256[]",
 				"name": "",
@@ -345,6 +692,11 @@
 						"internalType": "uint256",
 						"name": "prizePool",
 						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
 					},
 					{
 						"internalType": "uint256",
@@ -393,18 +745,13 @@
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "tournamentId",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
 			}
 		],
-		"name": "getTournamentScores",
+		"name": "getUserCreatedTournaments",
 		"outputs": [
-			{
-				"internalType": "address[]",
-				"name": "",
-				"type": "address[]"
-			},
 			{
 				"internalType": "uint256[]",
 				"name": "",
@@ -418,11 +765,11 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "creator",
+				"name": "user",
 				"type": "address"
 			}
 		],
-		"name": "getUserCreatedTournaments",
+		"name": "getUserJoinedTournaments",
 		"outputs": [
 			{
 				"internalType": "uint256[]",
@@ -474,7 +821,82 @@
 	},
 	{
 		"inputs": [],
+		"name": "platformFeePercent",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "platformWallet",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "removeToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_developerWallet",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_platformWallet",
+				"type": "address"
+			}
+		],
+		"name": "setFeeWallets",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_devFeePercent",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_platformFeePercent",
+				"type": "uint256"
+			}
+		],
+		"name": "setFees",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -516,6 +938,13 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "toggleDemoMode",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -531,19 +960,24 @@
 				"type": "uint256"
 			},
 			{
-				"internalType": "address",
-				"name": "creator",
-				"type": "address"
-			},
-			{
 				"internalType": "string",
 				"name": "name",
 				"type": "string"
 			},
 			{
+				"internalType": "address",
+				"name": "creator",
+				"type": "address"
+			},
+			{
 				"internalType": "uint256",
 				"name": "prizePool",
 				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
 			},
 			{
 				"internalType": "uint256",
@@ -553,6 +987,11 @@
 			{
 				"internalType": "uint256",
 				"name": "endTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "distributionTime",
 				"type": "uint256"
 			},
 			{
@@ -594,5 +1033,57 @@
 		],
 		"stateMutability": "view",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "userCreatedTournaments",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "userJoinedTournaments",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ]

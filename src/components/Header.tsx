@@ -59,15 +59,24 @@ const Header = () => {
     }
   }, [isConnected, aaWalletAddress]);
 
-  const handleOnboardingComplete = async (userData: any) => {
+  const handleOnboardingComplete = async (userData: { username: string; bio: string; userType: 'developer' | 'gamer' }) => {
+    if (!aaWalletAddress) return;
+    
     // Save onboarding data to Supabase
     await supabase.from('profiles').insert([
       {
         wallet_address: aaWalletAddress,
-        ...userData,
+        username: userData.username,
+        bio: userData.bio,
+        role: userData.userType,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       },
     ]);
     setShowOnboarding(false);
+    
+    // Refresh the profile
+    useProfileStore.getState().fetchProfile(aaWalletAddress);
   };
 
 

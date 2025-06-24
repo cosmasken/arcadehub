@@ -45,7 +45,7 @@ const CreateTournament = () => {
   const gameOptions = ['Honey Clicker'];
   const tokenOptions = [
     { address: TESTNET_CONFIG.smartContracts.arcadeToken, symbol: 'ARC' },
-    { address: '0x0000000000000000000000000000000000000000', symbol: 'ETH' }
+    { address: '0x0000000000000000000000000000000000000000', symbol: 'NERO' }
   ];
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -72,10 +72,10 @@ const CreateTournament = () => {
         throw new Error("Wallet not connected. Please connect your wallet.");
       }
 
-      const decimals = formData.token === '0x0000000000000000000000000000000000000000' ? 18 : 18; // ARC and ETH both use 18 decimals
+      const decimals = formData.token === '0x0000000000000000000000000000000000000000' ? 18 : 18; // ARC and NERO both use 18 decimals
       const prizePool = ethers.parseUnits(amount, decimals);
 
-      // Approve token if not ETH
+      // Approve token if not NERO
       if (formData.token !== '0x0000000000000000000000000000000000000000') {
         const approvalResult = await approveTokenForContractAA(
           aaSigner,
@@ -169,7 +169,7 @@ const CreateTournament = () => {
         title: "Tournament Created Successfully!",
         description: (
           <span>
-            <span>{formData.title} has been created with {amount} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'ETH'} prize pool. UserOpHash: {result.userOpHash}</span>
+            <span>{formData.title} has been created with {amount} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'NERO'} prize pool. UserOpHash: {result.userOpHash}</span>
             <a
               href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
               target="_blank"
@@ -215,7 +215,7 @@ const CreateTournament = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-mono font-bold text-cyan-400 neon-text">
-               &gt; CREATE_TOURNAMENT &lt;
+                &gt; CREATE_TOURNAMENT &lt;
               </h1>
               <p className="text-green-400 mt-2">
                 Set up a new sponsored tournament with custom prize pool
@@ -376,7 +376,7 @@ const CreateTournament = () => {
                     <div className="flex justify-between">
                       <span className="text-green-400">Prize Pool:</span>
                       <span className="text-cyan-400 font-mono">
-                        {formData.prizePool || '0'} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'ETH'}
+                        {formData.prizePool || '0'} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'NERO'}
                       </span>
                     </div>
                     <div className="flex justify-between">

@@ -25,6 +25,7 @@ import CreateTournament from "./pages/CreateTournament";
 import SponsorAnalytics from "./components/SponsorAnalytics";
 import RequireWallet from "./components/RequireWallet";
 import ErrorBoundary from "./components/ErrorBoundary";
+import PacMan from "./games/PacMan";
 
 const queryClient = new QueryClient();
 
@@ -43,30 +44,31 @@ const App = () => {
           description="Please wait while we set up your wallet and connection."
           transactionText="Setting up your wallet and secure Web3 connection..."
         />
-           {/* <RequireWallet> */}
-           <ErrorBoundary>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/sponsors" element={<Sponsors />} />
-             <Route path="/sponsor/login" element={<SponsorLogin />} />
-            <Route path="/sponsor/dashboard" element={<SponsorDashboard />} />
-            <Route path="/sponsor/create-tournament" element={<CreateTournament />} />
-            <Route path="/sponsor/analytics" element={<SponsorAnalytics />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/tournaments" element={<Tournaments />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/developer" element={<DeveloperUpload />} />
-            <Route path="/developer/profile/:id" element={<DeveloperProfile />} />
-            <Route path="/collections" element={<Collections />} />
-            <Route path="/collections/:id" element={<CollectionDetail />} />
-            <Route path="/games/honey-clicker" element={<HoneyClicker />} />
-            <Route path="/games/space-invaders" element={<SpaceInvaders />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        {/* <RequireWallet> */}
+        <ErrorBoundary>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/sponsors" element={<Sponsors />} />
+              <Route path="/sponsor/login" element={<SponsorLogin />} />
+              <Route path="/sponsor/dashboard" element={<SponsorDashboard />} />
+              <Route path="/sponsor/create-tournament" element={<CreateTournament />} />
+              <Route path="/sponsor/analytics" element={<SponsorAnalytics />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/tournaments" element={<Tournaments />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/developer" element={<DeveloperUpload />} />
+              <Route path="/developer/profile/:id" element={<DeveloperProfile />} />
+              <Route path="/collections" element={<Collections />} />
+              <Route path="/collections/:id" element={<CollectionDetail />} />
+              <Route path="/games/honey-clicker" element={<HoneyClicker />} />
+              <Route path="/games/pacman" element={<PacMan />} />
+              <Route path="/games/space-invaders" element={<SpaceInvaders />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
         </ErrorBoundary>
         {/* </RequireWallet> */}
       </TooltipProvider>

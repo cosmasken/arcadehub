@@ -11,9 +11,15 @@ import useProfileStore from '../stores/useProfileStore';
 import useWalletStore from '../stores/useWalletStore';
 import { usePinata } from '../hooks/use-pinata';
 
+interface UserData {
+  username: string;
+  bio: string;
+  userType: UserType;
+}
+
 interface OnboardingModalProps {
   isOpen: boolean;
-  onComplete: (userData: any) => void;
+  onComplete: (userData: UserData) => void;
 }
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
@@ -66,7 +72,6 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   };
 
   const handleComplete = async () => {
-    
     if (!username.trim()) {
       toast({
         title: "Error",
@@ -189,8 +194,21 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     return username.trim().length >= 3 && usernameStatus === 'available';
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Only allow closing if not in the complete state
+      if (step !== 'complete') {
+        onComplete({
+          username: username.trim(),
+          bio: bio.trim(),
+          userType
+        });
+      }
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={() => { }}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle className="text-2xl text-black font-bold text-center flex items-center justify-center gap-2">

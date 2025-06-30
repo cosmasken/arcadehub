@@ -1,3 +1,5 @@
+import { ShopItem } from './types';
+
 // Game constants
 export const COLS = 10;
 export const ROWS = 20;
@@ -48,7 +50,7 @@ export const POINTS = {
 };
 
 // Shop items
-export const SHOP_ITEMS = [
+export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'ghost_piece',
     name: 'Ghost Piece',

@@ -11,17 +11,23 @@ const Board: React.FC = () => {
   const lastTick = useRef<number>(0);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  // Handle window resize
+  // Handle window resize and initial setup
   useEffect(() => {
     const handleResize = () => {
       if (canvasRef.current?.parentElement) {
-        const size = Math.min(
-          canvasRef.current.parentElement.clientWidth - 40,
-          (window.innerHeight - 200) * 0.8
-        );
+        // Calculate size based on the number of columns and block size
+        const blockSize = 30; // Fixed block size for better visibility
+        const width = COLS * blockSize;
+        const height = ROWS * blockSize;
+        
+        // Set canvas dimensions
+        canvasRef.current.width = width;
+        canvasRef.current.height = height;
+        
+        // Update state for rendering
         setDimensions({
-          width: size,
-          height: size * (ROWS / COLS),
+          width,
+          height,
         });
       }
     };
@@ -33,27 +39,37 @@ const Board: React.FC = () => {
 
   // Game loop
   useEffect(() => {
-    if (state.gameOver || state.isPaused || !state.isStarted) return;
+    if (state.gameOver || state.isPaused || !state.isStarted) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = undefined;
+      }
+      return;
+    }
 
-    const gameLoop = (timestamp: number) => {
-      const delta = timestamp - lastTick.current;
+    let lastTime = performance.now();
+    
+    const gameLoop = (currentTime: number) => {
+      const deltaTime = currentTime - lastTime;
       const currentLevel = LEVELS.find(lvl => lvl.level === state.stats.level) || LEVELS[0];
       const speed = currentLevel.speed;
 
-      if (delta > speed) {
-        lastTick.current = timestamp;
+      if (deltaTime >= speed) {
+        lastTime = currentTime - (deltaTime % speed);
         dispatch({ type: 'TICK' });
       }
       
       animationRef.current = requestAnimationFrame(gameLoop);
     };
 
-    lastTick.current = performance.now();
+    // Start the game loop
     animationRef.current = requestAnimationFrame(gameLoop);
 
+    // Cleanup function
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+        animationRef.current = undefined;
       }
     };
   }, [state.gameOver, state.isPaused, state.isStarted, state.stats.level, dispatch]);
@@ -69,7 +85,31 @@ const Board: React.FC = () => {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw board
+    // Draw grid background
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw grid lines
+    ctx.strokeStyle = '#16213e';
+    ctx.lineWidth = 0.5;
+    
+    // Vertical lines
+    for (let x = 0; x <= COLS; x++) {
+      ctx.beginPath();
+      ctx.moveTo(x * 30, 0);
+      ctx.lineTo(x * 30, ROWS * 30);
+      ctx.stroke();
+    }
+    
+    // Horizontal lines
+    for (let y = 0; y <= ROWS; y++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y * 30);
+      ctx.lineTo(COLS * 30, y * 30);
+      ctx.stroke();
+    }
+    
+    // Draw board pieces
     state.board.forEach((row: number[], y: number) => {
       row.forEach((value: number, x: number) => {
         if (value !== 0) {
@@ -130,28 +170,62 @@ const Board: React.FC = () => {
     isCurrent = false
   ) => {
     if (!canvasRef.current) return;
-    
-    const blockSize = canvasRef.current.width / COLS;
-    ctx.fillStyle = COLORS[type];
-    
-    // Draw main block
-    ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
-    
+  
+    const blockSize = 30; // Fixed block size to match our canvas setup
+    const padding = 1; // Padding between blocks for grid effect
+  
+    // Calculate position with padding
+    const posX = x * blockSize + padding;
+    const posY = y * blockSize + padding;
+    const size = blockSize - padding * 2;
+  
+    // Base color
+    ctx.fillStyle = COLORS[type] || '#000000';
+  
+    // Draw main block with rounded corners
+    const radius = 2;
+    ctx.beginPath();
+    ctx.moveTo(posX + radius, posY);
+    ctx.lineTo(posX + size - radius, posY);
+    ctx.quadraticCurveTo(posX + size, posY, posX + size, posY + radius);
+    ctx.lineTo(posX + size, posY + size - radius);
+    ctx.quadraticCurveTo(posX + size, posY + size, posX + size - radius, posY + size);
+    ctx.lineTo(posX + radius, posY + size);
+    ctx.quadraticCurveTo(posX, posY + size, posX, posY + size - radius);
+    ctx.lineTo(posX, posY + radius);
+    ctx.quadraticCurveTo(posX, posY, posX + radius, posY);
+    ctx.closePath();
+    ctx.fill();
+  
     // Add highlight for current piece
     if (isCurrent) {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.lineWidth = 2;
-      ctx.strokeRect(x * blockSize + 1, y * blockSize + 1, blockSize - 2, blockSize - 2);
+      ctx.stroke();
     }
-    
-    // Add 3D effect
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+  
+    // Add 3D effect (darker border on bottom/right)
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(x * blockSize + 1, y * blockSize + 1, blockSize - 2, blockSize - 2);
-    
-    // Add highlight
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.strokeRect(x * blockSize + 2, y * blockSize + 2, blockSize - 4, blockSize - 4);
+    ctx.beginPath();
+    // Bottom line
+    ctx.moveTo(posX + radius, posY + size);
+    ctx.lineTo(posX + size - radius, posY + size);
+    // Right line
+    ctx.moveTo(posX + size, posY + radius);
+    ctx.lineTo(posX + size, posY + size - radius);
+    ctx.stroke();
+  
+    // Add highlight (lighter border on top/left)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.beginPath();
+    // Top line
+    ctx.moveTo(posX + radius, posY);
+    ctx.lineTo(posX + size - radius, posY);
+    // Left line
+    ctx.moveTo(posX, posY + radius);
+    ctx.lineTo(posX, posY + size - radius);
+    ctx.stroke();
   };
 
   const drawGhostBlock = (
@@ -505,9 +579,9 @@ const Controls: React.FC = () => {
 // Shop component
 const Shop: React.FC = () => {
   const { state, buyItem } = useGame();
-  const [activeTab, setActiveTab] = useState<'upgrades' | 'themes'>('upgrades');
+  const [activeTab, setActiveTab] = useState<'upgrade' | 'theme'>('upgrade');
   
-  const availableItems = SHOP_ITEMS.filter((item: ShopItem) => 
+  const availableItems = SHOP_ITEMS.filter(item => 
     item.type === activeTab && 
     (item.maxLevel === undefined || (state.stats.inventory[item.id] || 0) < item.maxLevel)
   );
@@ -518,14 +592,14 @@ const Shop: React.FC = () => {
       
       <div className="flex border-b border-gray-700 mb-4">
         <button
-          className={`px-4 py-2 ${activeTab === 'upgrades' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('upgrades')}
+          className={`px-4 py-2 ${activeTab === 'upgrade' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
+          onClick={() => setActiveTab('upgrade')}
         >
           Upgrades
         </button>
         <button
-          className={`px-4 py-2 ${activeTab === 'themes' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('themes')}
+          className={`px-4 py-2 ${activeTab === 'theme' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'}`}
+          onClick={() => setActiveTab('theme')}
         >
           Themes
         </button>
@@ -533,7 +607,7 @@ const Shop: React.FC = () => {
       
       <div className="space-y-3">
         {availableItems.length > 0 ? (
-          availableItems.map((item: ShopItem) => (
+          availableItems.map((item) => (
             <div 
               key={item.id} 
               className="flex justify-between items-center p-3 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"

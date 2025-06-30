@@ -52,16 +52,23 @@ export interface GameSettings {
   };
 }
 
-export interface ShopItem {
+// Union of all possible effect types
+type ShopItemEffect = 
+  | { ghostPiece: boolean }
+  | { holdPiece: boolean }
+  | { nextPieces: number }
+  | { theme: string };
+
+export type ShopItem = {
   id: string;
   name: string;
   description: string;
   price: number;
   type: 'upgrade' | 'theme' | 'powerup';
   maxLevel?: number;
-  effect: Record<string, any>;
+  effect: ShopItemEffect;
   icon: string;
-}
+};
 
 export interface Achievement {
   id: string;

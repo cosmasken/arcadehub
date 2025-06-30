@@ -41,6 +41,17 @@ const Index = () => {
       prize: "30 NERO",
       status: "beta" as const
     },
+    {
+      id: "pacman",
+      title: "PAC-MAN",
+      description: "Defend Earth from waves of alien invaders in this retro arcade classic. Compete for high scores and earn crypto rewards.",
+      image: "https://gateway.pinata.cloud/ipfs/bafkreif5x7q6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4",
+      category: "ARCADE",
+      players: 10234,
+      rating: 4.5,
+      prize: "30 NERO",
+      status: "beta" as const
+    }
 
   ];
 

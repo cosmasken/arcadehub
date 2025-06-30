@@ -25,7 +25,8 @@ import CreateTournament from "./pages/CreateTournament";
 import SponsorAnalytics from "./components/SponsorAnalytics";
 import RequireWallet from "./components/RequireWallet";
 import ErrorBoundary from "./components/ErrorBoundary";
-import PacMan from "./games/PacMan";
+import SnakeGame from "./games/snake/SnakeGame";
+import Tetris from "./games/tetris";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +64,8 @@ const App = () => {
               <Route path="/collections" element={<Collections />} />
               <Route path="/collections/:id" element={<CollectionDetail />} />
               <Route path="/games/honey-clicker" element={<HoneyClicker />} />
-              <Route path="/games/pacman" element={<PacMan />} />
+              <Route path="/games/snake" element={<SnakeGame />} />
+              <Route path="/games/tetris" element={<Tetris />} />
               <Route path="/games/space-invaders" element={<SpaceInvaders />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

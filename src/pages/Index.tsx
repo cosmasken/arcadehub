@@ -42,8 +42,8 @@ const Index = () => {
       status: "beta" as const
     },
     {
-      id: "pacman",
-      title: "PAC-MAN",
+      id: "tetris",
+      title: "TETRIS",
       description: "Defend Earth from waves of alien invaders in this retro arcade classic. Compete for high scores and earn crypto rewards.",
       image: "https://gateway.pinata.cloud/ipfs/bafkreif5x7q6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4",
       category: "ARCADE",
@@ -51,7 +51,19 @@ const Index = () => {
       rating: 4.5,
       prize: "30 NERO",
       status: "beta" as const
-    }
+    },
+    {
+      id: "snake",
+      title: "SNAKE",
+      description: "Control a snake that grows as you eat more food. Compete for high scores and earn crypto rewards.",
+      image: "https://gateway.pinata.cloud/ipfs/bafkreif5x7q6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4",
+      category: "ARCADE",
+      players: 10234,
+      rating: 4.5,
+      prize: "30 NERO",
+      status: "beta" as const
+    },
+
 
   ];
 
@@ -88,7 +100,7 @@ const Index = () => {
               PLAY_TO_EARN // WIN_CRYPTO_PRIZES // DOMINATE_LEADERBOARDS
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+            {/* <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/games/honey-clicker">
                 <Button className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-sm md:text-lg px-8 py-4 tracking-wider border-2 border-cyan-400 hover:border-green-400">
                   <GamepadIcon className="w-5 h-5" />
@@ -100,7 +112,7 @@ const Index = () => {
                   &gt; VIEW_COLLECTIONS
                 </Button>
               </Link>
-            </div>
+            </div> */}
           </div>
         </section>
 
@@ -124,7 +136,7 @@ const Index = () => {
             </h2>
               {/* <span className="text-cyan-400 font-bold text-lg mb-2 neon-text"></span> */}
               <span className="text-3xl md:text-5xl font-mono text-green-400 mb-1 neon-text"> 
-                1,000,000 ARCARC</span>
+                1,000,000 ARCADE</span>
               <span className="text-xs text-cyan-200 neon-text">Distributed across all games</span>
             </div>
           </div>

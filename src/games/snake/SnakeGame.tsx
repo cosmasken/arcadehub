@@ -7,9 +7,29 @@ import { GameBoard, StatsPanel, Shop, Achievements } from './components';
 const GameUI: React.FC = () => {
   const { state, startGame, pauseGame, resetGame } = useGame();
   const navigate = useNavigate();
+  const [isInitialized, setIsInitialized] = React.useState(false);
+
+  // Initialize game state on first render
+  useEffect(() => {
+    const savedState = localStorage.getItem('snake-save');
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        // If game was in progress, reset it to show the start screen
+        if (parsedState.isStarted && !parsedState.gameOver) {
+          resetGame();
+        }
+      } catch (e) {
+        console.error('Failed to parse saved game state', e);
+      }
+    }
+    setIsInitialized(true);
+  }, [resetGame]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       // Start game with Space or Enter if not started
       if ((e.code === 'Space' || e.code === 'Enter') && !state.isStarted) {
@@ -37,7 +57,7 @@ const GameUI: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame]);
+  }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame, isInitialized]);
   
   const handleBack = () => {
     navigate('/');
@@ -77,7 +97,11 @@ const GameUI: React.FC = () => {
           {/* Main Game Area */}
           <div className="lg:col-span-8 h-full">
             <div className="bg-black/30 rounded-lg shadow-lg overflow-hidden h-full flex items-center justify-center border border-cyan-400/20 relative">
-              {!state.isStarted && (
+              {!isInitialized ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
+                  <div className="animate-pulse text-cyan-400">Loading...</div>
+                </div>
+              ) : !state.isStarted ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
                   <div className="text-center p-6 bg-gray-900/90 rounded-lg border border-cyan-400/30 shadow-xl">
                     <h2 className="text-2xl font-bold text-cyan-400 mb-4">SNAKE GAME</h2>
@@ -93,7 +117,7 @@ const GameUI: React.FC = () => {
                     )}
                   </div>
                 </div>
-              )}
+              ) : null}
               <GameBoard />
             </div>
             

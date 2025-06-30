@@ -106,4 +106,5 @@ export interface GameContextType {
   claimAchievement: (achievementId: string) => void;
   saveGame: () => void;
   loadGame: () => void;
+  isValidMove: (board: number[][], shape: number[][], position: Position) => boolean;
 }

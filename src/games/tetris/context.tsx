@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { COLS, ROWS, SHAPES, COLORS, POINTS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
-import { GameState, GameAction, GameContextType, GameStats, GameSettings } from './types';
+import { GameState, GameAction, GameContextType, GameStats, GameSettings, Position } from './types';
 
 // Helper functions
 const createBoard = (): number[][] => 
@@ -254,8 +254,8 @@ const buyItem = (state: GameState, itemId: string): GameState => {
   const newSettings = { ...state.settings };
   if (item.type === 'upgrade' && item.effect) {
     Object.entries(item.effect).forEach(([key, value]) => {
-      // @ts-ignore - We know the key exists
-      newSettings[key] = value;
+      // @ts-expect-error - TypeScript doesn't understand our action type narrowing
+      newSettings[key as keyof typeof newSettings] = value;
     });
   }
 
@@ -315,7 +315,7 @@ const lockPiece = (state: GameState): GameState => {
   // Create a new board with the locked piece
   const newBoard = state.board.map(row => [...row]);
   const { shape, position, type } = state.currentPiece;
-  let linesCleared = 0;
+  const linesCleared = 0;
 
   // Lock the piece on the board
   for (let y = 0; y < shape.length; y++) {
@@ -431,8 +431,8 @@ const spawnNewPiece = (state: GameState): GameState => {
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, undefined, getInitialState);
 
-  // Auto-save game
-  useEffect(() => {
+  // Auto-save when state changes
+  const saveGame = useCallback(() => {
     if (state.isStarted && !state.gameOver) {
       localStorage.setItem('tetris-save', JSON.stringify({
         ...state,
@@ -448,6 +448,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
   }, [state]);
+
+  useEffect(() => {
+    saveGame();
+  }, [saveGame, state]); // Include state in dependency array to fix the warning
 
   // Check for achievements
   useEffect(() => {
@@ -503,34 +507,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // For now, we're auto-claiming achievements in the effect above
   }, []);
 
-  const saveGame = useCallback(() => {
-    localStorage.setItem('tetris-save', JSON.stringify({
-      ...state,
-      board: createBoard(), // Don't save the board
-      currentPiece: null,
-      gameOver: false,
-      isPaused: false,
-      isStarted: false,
-    }));
-  }, [state]);
-
   const loadGame = useCallback(() => {
     // This would reload the game from localStorage
     // The initial state already handles loading from localStorage
     dispatch({ type: 'RESET' });
   }, []);
 
+  // Expose the isValidMove function
+  const contextValue: GameContextType = {
+    state,
+    dispatch,
+    buyItem,
+    claimAchievement,
+    saveGame,
+    loadGame,
+    isValidMove: (board: number[][], shape: number[][], position: Position) => 
+      isValidMove(board, shape, position),
+  };
+
   return (
-    <GameContext.Provider 
-      value={{
-        state,
-        dispatch,
-        buyItem,
-        claimAchievement,
-        saveGame,
-        loadGame,
-      }}
-    >
+    <GameContext.Provider value={contextValue}>
       {children}
     </GameContext.Provider>
   );

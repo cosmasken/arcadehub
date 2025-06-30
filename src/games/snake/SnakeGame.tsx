@@ -1,326 +1,167 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { GameProvider, useGame } from './context';
+import { GameBoard, StatsPanel, Shop, Achievements } from './components';
 
-type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT';
-type Position = { x: number; y: number };
+// Inner component to handle game UI
+const GameUI: React.FC = () => {
+  const { state, startGame, pauseGame, resetGame } = useGame();
+  const navigate = useNavigate();
 
-const GRID_SIZE = 20;
-const CELL_SIZE = 20;
-const GAME_SPEED = 150; // ms
-
-const SnakeGame: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [gameOver, setGameOver] = useState(false);
-  const [score, setScore] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
-  
-  // Game state
-  const snakeRef = useRef<Position[]>([{ x: 10, y: 10 }]);
-  const directionRef = useRef<Direction>('RIGHT');
-  const foodRef = useRef<Position>({ x: 5, y: 5 });
-  const gameLoopRef = useRef<number>();
-  const nextDirectionRef = useRef<Direction>('RIGHT');
-
-  // Generate random food position
-  const generateFood = useCallback((): Position => {
-    const newFood = {
-      x: Math.floor(Math.random() * GRID_SIZE),
-      y: Math.floor(Math.random() * GRID_SIZE)
-    };
-    
-    // Make sure food doesn't spawn on snake
-    const isOnSnake = snakeRef.current.some(
-      segment => segment.x === newFood.x && segment.y === newFood.y
-    );
-    
-    return isOnSnake ? generateFood() : newFood;
-  }, []);
-
-  // Reset game state
-  const resetGame = useCallback(() => {
-    snakeRef.current = [{ x: 10, y: 10 }];
-    directionRef.current = 'RIGHT';
-    nextDirectionRef.current = 'RIGHT';
-    foodRef.current = generateFood();
-    setScore(0);
-    setGameOver(false);
-  }, [generateFood]);
-
-  // Handle keyboard input
+  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!gameStarted) {
-        setGameStarted(true);
+      // Start game with Space or Enter if not started
+      if ((e.code === 'Space' || e.code === 'Enter') && !state.isStarted) {
+        e.preventDefault();
+        startGame();
         return;
       }
-
-      switch (e.key) {
-        case 'ArrowUp':
-          if (directionRef.current !== 'DOWN') nextDirectionRef.current = 'UP';
-          break;
-        case 'ArrowDown':
-          if (directionRef.current !== 'UP') nextDirectionRef.current = 'DOWN';
-          break;
-        case 'ArrowLeft':
-          if (directionRef.current !== 'RIGHT') nextDirectionRef.current = 'LEFT';
-          break;
-        case 'ArrowRight':
-          if (directionRef.current !== 'LEFT') nextDirectionRef.current = 'RIGHT';
-          break;
-        case ' ':
-          setIsPaused(prev => !prev);
-          break;
-        case 'r':
-        case 'R':
-          resetGame();
-          break;
+      
+      // Pause/Resume with P key
+      if (e.code === 'KeyP') {
+        e.preventDefault();
+        if (state.isStarted && !state.gameOver) {
+          pauseGame();
+        }
+      }
+      
+      // Reset game with R key
+      if (e.code === 'KeyR') {
+        e.preventDefault();
+        resetGame();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameStarted, resetGame]);
-
-  // Memoize the renderGame function to prevent unnecessary re-renders
-  const memoizedRenderGame = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid
-    ctx.strokeStyle = '#2a2a2a';
-    ctx.lineWidth = 0.5;
-    
-    for (let i = 0; i <= GRID_SIZE; i++) {
-      // Vertical lines
-      ctx.beginPath();
-      ctx.moveTo(i * CELL_SIZE, 0);
-      ctx.lineTo(i * CELL_SIZE, GRID_SIZE * CELL_SIZE);
-      ctx.stroke();
-      
-      // Horizontal lines
-      ctx.beginPath();
-      ctx.moveTo(0, i * CELL_SIZE);
-      ctx.lineTo(GRID_SIZE * CELL_SIZE, i * CELL_SIZE);
-      ctx.stroke();
-    }
-
-    // Draw snake
-    ctx.fillStyle = '#4CAF50';
-    snakeRef.current.forEach((segment, index) => {
-      // Make the head a different color
-      if (index === 0) {
-        ctx.fillStyle = '#2E7D32';
-      } else {
-        ctx.fillStyle = '#4CAF50';
-      }
-      
-      ctx.fillRect(
-        segment.x * CELL_SIZE + 1,
-        segment.y * CELL_SIZE + 1,
-        CELL_SIZE - 2,
-        CELL_SIZE - 2
-      );
-    });
-
-    // Draw food
-    ctx.fillStyle = '#FF5252';
-    ctx.beginPath();
-    ctx.arc(
-      foodRef.current.x * CELL_SIZE + CELL_SIZE / 2,
-      foodRef.current.y * CELL_SIZE + CELL_SIZE / 2,
-      CELL_SIZE / 2 - 2,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-
-    // Draw score
-    ctx.fillStyle = '#fff';
-    ctx.font = '16px Arial';
-    ctx.fillText(`Score: ${score}`, 10, 20);
-
-    // Draw game over message
-    if (gameOver) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      ctx.fillStyle = '#fff';
-      ctx.font = '24px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 20);
-      ctx.font = '16px Arial';
-      ctx.fillText(
-        `Final Score: ${score}`,
-        canvas.width / 2,
-        canvas.height / 2 + 10
-      );
-      ctx.fillText(
-        'Press R to restart',
-        canvas.width / 2,
-        canvas.height / 2 + 40
-      );
-    }
-  }, [score, gameOver]);
-
-  // Game loop
-  useEffect(() => {
-    if (!gameStarted || isPaused) return;
-
-    const moveSnake = () => {
-      const snake = [...snakeRef.current];
-      const head = { ...snake[0] };
-      
-      // Update direction
-      directionRef.current = nextDirectionRef.current;
-
-      // Move head
-      switch (directionRef.current) {
-        case 'UP':
-          head.y -= 1;
-          break;
-        case 'DOWN':
-          head.y += 1;
-          break;
-        case 'LEFT':
-          head.x -= 1;
-          break;
-        case 'RIGHT':
-          head.x += 1;
-          break;
-      }
-
-      // Check for collisions with walls
-      if (
-        head.x < 0 ||
-        head.x >= GRID_SIZE ||
-        head.y < 0 ||
-        head.y >= GRID_SIZE
-      ) {
-        setGameOver(true);
-        return;
-      }
-
-      // Check for collisions with self
-      if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-        setGameOver(true);
-        return;
-      }
-
-      // Add new head
-      snake.unshift(head);
-
-      // Check for food collision
-      if (head.x === foodRef.current.x && head.y === foodRef.current.y) {
-        setScore(prev => prev + 10);
-        foodRef.current = generateFood();
-      } else {
-        // Remove tail if no food was eaten
-        snake.pop();
-      }
-
-      snakeRef.current = snake;
-    };
-
-    const gameLoop = setInterval(() => {
-      if (!gameOver) {
-        moveSnake();
-        memoizedRenderGame();
-      } else {
-        clearInterval(gameLoop);
-      }
-    }, GAME_SPEED);
-
-    gameLoopRef.current = gameLoop as unknown as number;
-    return () => clearInterval(gameLoop);
-  }, [gameOver, isPaused, gameStarted, generateFood, memoizedRenderGame]);
-
-
-
-  // Initial render and game state changes
-  useEffect(() => {
-    memoizedRenderGame();
-    
-    // Cleanup function to prevent memory leaks
     return () => {
-      // Any cleanup if needed
+      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [memoizedRenderGame]);
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (gameLoopRef.current) {
-        clearInterval(gameLoopRef.current);
-      }
-    };
-  }, []);
-
-  const startGame = () => {
-    resetGame();
-    setGameStarted(true);
-    setGameOver(false);
+  }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame]);
+  
+  const handleBack = () => {
+    navigate('/');
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 p-4">
-      <h1 className="text-4xl font-bold text-green-500 mb-4">Snake Game</h1>
+    <div className="min-h-screen bg-gray-900 p-2 md:p-4 relative">
+      <div className="absolute top-4 left-4">
+        <button
+          onClick={handleBack}
+          className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+          </svg>
+          Back to Menu
+        </button>
+      </div>
       
-      {!gameStarted ? (
-        <div className="text-center mb-4">
-          <button
-            onClick={startGame}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors mb-4"
-          >
-            Start Game
-          </button>
-          <div className="text-gray-300 text-sm">
-            <p>Use arrow keys to control the snake</p>
-            <p>Eat the red food to grow and earn points</p>
-            <p>Press SPACE to pause/resume</p>
-          </div>
-        </div>
-      ) : (
-        <div className="mb-4 flex justify-between w-full max-w-md">
-          <div className="text-white">Score: {score}</div>
-          <button
-            onClick={() => setIsPaused(!isPaused)}
-            className="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            {isPaused ? 'Resume' : 'Pause'}
-          </button>
-        </div>
-      )}
-      
-      <div className="relative">
-        <canvas
-          ref={canvasRef}
-          width={GRID_SIZE * CELL_SIZE}
-          height={GRID_SIZE * CELL_SIZE}
-          className="border-2 border-gray-700 rounded"
-        />
-        
-        {!gameStarted && !gameOver && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70">
-            <div className="text-center p-4">
-              <h2 className="text-2xl font-bold text-white mb-4">Snake Game</h2>
-              <p className="text-gray-300 mb-4">Use arrow keys to control the snake</p>
-              <p className="text-gray-300">Eat the red food to grow</p>
+      <div className="h-full flex flex-col">
+        <header className="text-center mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-blue-500">
+            SNAKE GAME
+          </h1>
+          <p className="text-sm md:text-base text-gray-400 mt-1">Eat the food and grow your snake!</p>
+        </header>
+          
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 h-[calc(100vh-120px)]">
+          {/* Left Sidebar - Stats & Shop */}
+          <div className="lg:col-span-2 flex flex-col gap-3 h-full">
+            <StatsPanel />
+            <div className="flex-1 overflow-y-auto">
+              <Shop />
             </div>
           </div>
-        )}
+          
+          {/* Main Game Area */}
+          <div className="lg:col-span-8 h-full">
+            <div className="bg-black/30 rounded-lg shadow-lg overflow-hidden h-full flex items-center justify-center border border-cyan-400/20 relative">
+              {!state.isStarted && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
+                  <div className="text-center p-6 bg-gray-900/90 rounded-lg border border-cyan-400/30 shadow-xl">
+                    <h2 className="text-2xl font-bold text-cyan-400 mb-4">SNAKE GAME</h2>
+                    <p className="text-gray-300 mb-6">Use arrow keys to move. Eat the food to grow!</p>
+                    <button
+                      onClick={startGame}
+                      className="px-6 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                      {state.gameOver ? 'PLAY AGAIN' : 'START GAME'}
+                    </button>
+                    {state.highScore > 0 && (
+                      <p className="mt-4 text-sm text-gray-400">High Score: {state.highScore}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              <GameBoard />
+            </div>
+            
+            {/* Mobile Controls */}
+            <div className="lg:hidden mt-3 bg-gray-800/50 p-3 rounded-lg border border-cyan-400/20">
+              <h3 className="text-center font-medium mb-2 text-cyan-400">CONTROLS</h3>
+              <div className="grid grid-cols-3 gap-1 max-w-[180px] mx-auto">
+                <div></div>
+                <button 
+                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-colors"
+                  onClick={() => {}}
+                >
+                  ↑
+                </button>
+                <div></div>
+                <button 
+                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-colors"
+                  onClick={() => {}}
+                >
+                  ←
+                </button>
+                <button 
+                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-colors"
+                  onClick={() => {}}
+                >
+                  ↓
+                </button>
+                <button 
+                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-colors"
+                  onClick={() => {}}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Right Sidebar - Achievements & How to Play */}
+          <div className="lg:col-span-2 flex flex-col gap-3 h-full">
+            <div className="flex-1 overflow-y-auto">
+              <Achievements />
+            </div>
+            <div className="bg-gray-800/50 p-3 rounded-lg border border-cyan-400/20">
+              <h3 className="font-bold text-cyan-400 text-sm md:text-base mb-2">HOW TO PLAY</h3>
+              <ul className="space-y-1 text-xs md:text-sm text-gray-300">
+                <li>• Use arrow keys to move</li>
+                <li>• Eat the food to grow</li>
+                <li>• Avoid hitting walls or yourself</li>
+                <li>• Pause: P</li>
+                <li>• Restart: R</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      <div className="mt-6 text-gray-400 text-sm text-center">
-        <p>Controls: Arrow Keys to move | SPACE to pause | R to restart</p>
-      </div>
+      <footer className="text-center text-xs text-gray-500 mt-2">
+        <p>Snake Game &copy; {new Date().getFullYear()}</p>
+      </footer>
     </div>
+  );
+};
+
+// Main game component
+const SnakeGame: React.FC = () => {
+  return (
+    <GameProvider>
+      <GameUI />
+    </GameProvider>
   );
 };
 

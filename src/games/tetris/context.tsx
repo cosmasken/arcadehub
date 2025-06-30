@@ -3,8 +3,13 @@ import { COLS, ROWS, SHAPES, COLORS, POINTS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } 
 import { GameState, GameAction, GameContextType, GameStats, GameSettings, Position } from './types';
 
 // Helper functions
-const createBoard = (): number[][] => 
-  Array(ROWS).fill(0).map(() => Array(COLS).fill(0));
+const createBoard = (): number[][] => {
+  const board: number[][] = [];
+  for (let i = 0; i < ROWS; i++) {
+    board.push(Array(COLS).fill(0));
+  }
+  return board;
+};
 
 const getRandomPiece = (): number => 
   Math.floor(Math.random() * (SHAPES.length - 1)) + 1;

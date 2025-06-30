@@ -23,7 +23,7 @@ const Index = () => {
       id: "honey-clicker",
       title: "HONEY CLICKER",
       description: "Click to earn sweet honey and build your bee empire. Buy upgrades and unlock achievements in this addictive idle game.",
-      image: "https://gateway.pinata.cloud/ipfs/bafkreieakkvzailupjytuioiwrrm7d37kw2eqxp52lv7svg4b3dimtku2q",
+      image: "/games/honey-clicker.svg",
       category: "IDLE",
       players: 15420,
       rating: 4.8,
@@ -34,37 +34,35 @@ const Index = () => {
       id: "space-invaders",
       title: "SPACE INVADERS",
       description: "Defend Earth from waves of alien invaders in this retro arcade classic. Compete for high scores and earn crypto rewards.",
-      image: "https://gateway.pinata.cloud/ipfs/bafkreif5x7q6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4",
+      image: "/games/space-invaders.svg",
       category: "ARCADE",
       players: 10234,
-      rating: 4.5,
+      rating: 4.7,
       prize: "30 NERO",
       status: "beta" as const
     },
     {
       id: "tetris",
       title: "TETRIS",
-      description: "Defend Earth from waves of alien invaders in this retro arcade classic. Compete for high scores and earn crypto rewards.",
-      image: "https://gateway.pinata.cloud/ipfs/bafkreif5x7q6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4",
-      category: "ARCADE",
-      players: 10234,
-      rating: 4.5,
-      prize: "30 NERO",
+      description: "Arrange falling blocks to complete lines and score points. A timeless puzzle game with a competitive twist.",
+      image: "/games/tetris.svg",
+      category: "PUZZLE",
+      players: 8921,
+      rating: 4.9,
+      prize: "25 NERO",
       status: "beta" as const
     },
     {
       id: "snake",
       title: "SNAKE",
       description: "Control a snake that grows as you eat more food. Compete for high scores and earn crypto rewards.",
-      image: "https://gateway.pinata.cloud/ipfs/bafkreif5x7q6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4",
+      image: "/games/snake.svg",
       category: "ARCADE",
-      players: 10234,
-      rating: 4.5,
-      prize: "30 NERO",
+      players: 11245,
+      rating: 4.6,
+      prize: "20 NERO",
       status: "beta" as const
-    },
-
-
+    }
   ];
 
   const stats = [

@@ -1,13 +1,16 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameProvider, useGame } from './context';
+import { useWalletStore } from '../../stores/useWalletStore';
 import { GameBoard, StatsPanel, Shop, Achievements } from './components';
 
 // Inner component to handle game UI
 const GameUI: React.FC = () => {
   const { state, startGame, pauseGame, resetGame } = useGame();
+  const { isConnected, connectWallet } = useWalletStore();
   const navigate = useNavigate();
   const [isInitialized, setIsInitialized] = React.useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = React.useState(false);
 
   // Initialize game state on first render
   useEffect(() => {
@@ -26,6 +29,15 @@ const GameUI: React.FC = () => {
     setIsInitialized(true);
   }, [resetGame]);
 
+  // Handle game start with auth check
+  const handleStartGame = React.useCallback(async () => {
+    if (!isConnected) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    startGame();
+  }, [isConnected, startGame]);
+
   // Handle keyboard shortcuts
   useEffect(() => {
     if (!isInitialized) return;
@@ -34,7 +46,7 @@ const GameUI: React.FC = () => {
       // Start game with Space or Enter if not started
       if ((e.code === 'Space' || e.code === 'Enter') && !state.isStarted) {
         e.preventDefault();
-        startGame();
+        handleStartGame();
         return;
       }
       
@@ -57,7 +69,7 @@ const GameUI: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame, isInitialized]);
+  }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame, isInitialized, handleStartGame]);
   
   const handleBack = () => {
     navigate('/');
@@ -107,7 +119,7 @@ const GameUI: React.FC = () => {
                     <h2 className="text-2xl font-bold text-cyan-400 mb-4">SNAKE GAME</h2>
                     <p className="text-gray-300 mb-6">Use arrow keys to move. Eat the food to grow!</p>
                     <button
-                      onClick={startGame}
+                      onClick={handleStartGame}
                       className="px-6 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
                     >
                       {state.gameOver ? 'PLAY AGAIN' : 'START GAME'}
@@ -118,6 +130,36 @@ const GameUI: React.FC = () => {
                   </div>
                 </div>
               ) : null}
+              {showLoginPrompt && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
+                  <div className="bg-gray-900/90 p-8 rounded-lg border border-cyan-400/30 max-w-sm w-full mx-4">
+                    <h3 className="text-xl font-bold text-cyan-400 mb-4">SIGN IN REQUIRED</h3>
+                    <p className="text-gray-300 mb-6">Please connect your wallet to start playing and earn rewards!</p>
+                    <div className="flex flex-col space-y-3">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await connectWallet();
+                            setShowLoginPrompt(false);
+                            startGame();
+                          } catch (error) {
+                            console.error('Failed to connect wallet:', error);
+                          }
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-green-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
+                      >
+                        CONNECT WALLET
+                      </button>
+                      <button
+                        onClick={() => setShowLoginPrompt(false)}
+                        className="px-4 py-2 border border-cyan-400 text-cyan-400 rounded-lg hover:bg-cyan-400/10 transition-colors"
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <GameBoard />
             </div>
             

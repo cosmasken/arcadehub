@@ -43,14 +43,18 @@ const Board: React.FC = () => {
       ctx.strokeStyle = '#16213e';
       ctx.lineWidth = 0.5;
       
-      // Draw the board
-      state.board.forEach((row: number[], y: number) => {
-        row.forEach((value: number, x: number) => {
-          if (value !== 0) {
-            drawBlock(ctx, x, y, value);
+      // Draw the board - add null/undefined check and ensure it's a 2D array
+      if (Array.isArray(state.board)) {
+        state.board.forEach((row: number[], y: number) => {
+          if (Array.isArray(row)) {
+            row.forEach((value: number, x: number) => {
+              if (value !== 0 && typeof value === 'number') {
+                drawBlock(ctx, x, y, value);
+              }
+            });
           }
         });
-      });
+      }
   
       // Draw ghost piece if enabled and there's a current piece
       if (state.settings.ghostPiece && state.currentPiece) {

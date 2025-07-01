@@ -1,17 +1,23 @@
-
 import React from 'react';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+
+// Hooks & Stores
+import { useWalletStore } from "./stores/useWalletStore";
+import { supabase } from "./lib/supabase";
+
+// Types
+import type { User } from "./types/supabase";
+
+// UI Components
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-import { useWalletStore } from "./stores/useWalletStore";
+import { toast } from "./components/ui/use-toast";
 import LoadingModal from "./components/LoadingModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
 import OnboardingModal from "./components/OnboardingModal";
-import { useSupabase } from "./hooks/use-supabase";
-import type { User } from "./types/supabase";
 
 // Pages
 import Index from "./pages/Index";
@@ -33,35 +39,66 @@ import CreateTournament from "./pages/CreateTournament";
 import SponsorAnalytics from "./components/SponsorAnalytics";
 import SnakeGame from "./games/snake/SnakeGame";
 import Tetris from "./games/tetris";
+import WalletPage from "./pages/WalletPage";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { isInitialized, isConnected, aaWalletAddress, initializeWeb3Auth } = useWalletStore();
-  const { getUserByWallet } = useSupabase();
+  const { aaWalletAddress, initializeWeb3Auth } = useWalletStore();
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [userProfile, setUserProfile] = React.useState<User | null>(null);
 
   // Initialize Web3Auth and check user status when the app loads or wallet connects
   React.useEffect(() => {
+    let isMounted = true;
+    
     const initAndCheckUser = async () => {
       try {
+        // Initialize Web3Auth
         await initializeWeb3Auth();
-        setIsInitializing(false); // Web3Auth initialization is complete
-
+        
+        if (!isMounted) return;
+        
+        // If wallet is connected, check user profile
         if (aaWalletAddress) {
-          const user = await getUserByWallet(aaWalletAddress);
-          if (user) {
-            setUserProfile(user);
-            setShowOnboarding(false);
-          } else {
-            setShowOnboarding(true);
+          try {
+            const { data: user, error } = await supabase
+              .from('users')
+              .select('*')
+              .eq('wallet_address', aaWalletAddress)
+              .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+              throw error;
+            }
+
+            if (user) {
+              setUserProfile(user);
+              setShowOnboarding(false);
+            } else {
+              setShowOnboarding(true);
+            }
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+            toast({
+              title: 'Error',
+              description: 'Failed to load user profile',
+              variant: 'destructive',
+            });
           }
         }
       } catch (error) {
-        console.error('Failed to initialize Web3Auth or check user:', error);
-        setIsInitializing(false);
+        console.error('Failed to initialize Web3Auth:', error);
+        toast({
+          title: 'Connection Error',
+          description: 'Failed to connect to wallet. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
       }
     };
 
@@ -69,9 +106,9 @@ const App = () => {
 
     // Clean up on unmount
     return () => {
-      // Any cleanup if needed
+      isMounted = false;
     };
-  }, [initializeWeb3Auth, aaWalletAddress, getUserByWallet]);
+  }, [initializeWeb3Auth, aaWalletAddress]);
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -100,21 +137,52 @@ const App = () => {
         )}
         <OnboardingModal
           isOpen={showOnboarding}
-          onComplete={(userData) => {
-            setUserProfile(userData);
-            setShowOnboarding(false);
+          onComplete={async (userData) => {
+            try {
+              if (!aaWalletAddress) {
+                throw new Error('Wallet not connected');
+              }
+              
+              // Call the API to create or update the user
+              const { data: user, error } = await supabase
+                .from('users')
+                .upsert({
+                  wallet_address: aaWalletAddress,
+                  ...userData,
+                  updated_at: new Date().toISOString(),
+                })
+                .select()
+                .single();
+
+              if (error) throw error;
+              
+              // Update the user profile in the app state
+              setUserProfile(user);
+              setShowOnboarding(false);
+              
+              toast({
+                title: 'Profile updated',
+                description: 'Your profile has been saved successfully.',
+              });
+            } catch (error) {
+              console.error('Error saving profile:', error);
+              toast({
+                title: 'Error',
+                description: 'Failed to save profile. Please try again.',
+                variant: 'destructive',
+              });
+            }
           }}
         />
         <ErrorBoundary>
           <BrowserRouter>
             <Routes>
-              {/* Routes that use the Layout */}
               <Route element={
                 <Layout userProfile={userProfile}>
                   <Outlet />
                 </Layout>
               }>
-                <Route path="/" element={<Index />} />
+                <Route index element={<Index />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
                 <Route path="/tournaments" element={<Tournaments />} />
                 <Route path="/profile" element={<Profile />} />
@@ -124,6 +192,7 @@ const App = () => {
                 <Route path="/games/snake" element={<SnakeGame />} />
                 <Route path="/games/tetris" element={<Tetris />} />
                 <Route path="/games/space-invaders" element={<SpaceInvaders />} />
+                <Route path="/wallet" element={<WalletPage />} />
               </Route>
               
               {/* Routes that don't use the Layout */}

@@ -1,10 +1,11 @@
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
 import type { User } from '../types/supabase';
 
 interface LayoutProps {
   children?: React.ReactNode;
-  userProfile?: any; // Adjust type as per your UserProfile structure
+  userProfile?: User | null;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, userProfile }) => {
@@ -12,7 +13,7 @@ const Layout: React.FC<LayoutProps> = ({ children, userProfile }) => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
       <Navigation userProfile={userProfile} />
       <main className="container mx-auto px-4 py-24 md:py-8">
-        {children}
+        {children || <Outlet context={{ userProfile }} />}
       </main>
     </div>
   );

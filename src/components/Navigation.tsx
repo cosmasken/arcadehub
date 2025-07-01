@@ -1,9 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Gamepad2, Trophy, User, Settings, Search, Gift } from 'lucide-react';
+import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet } from 'lucide-react';
 import { Input } from './ui/input';
 import { useWalletStore } from '../stores/useWalletStore';
 
 import type { User } from '../types/supabase';
+
+interface NavLink {
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  exact: boolean;
+}
 
 interface NavigationProps {
   userProfile?: User | null;
@@ -13,20 +20,25 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
   const location = useLocation();
   const { isConnected } = useWalletStore();
 
-  let navLinks = [
-    { to: '/', icon: Home, label: 'Home' },
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+  const navLinks: NavLink[] = [
+    { to: '/', icon: Home, label: 'Home', exact: true },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard', exact: false },
   ];
 
+  // Add Wallet link if user is connected
+  if (isConnected) {
+    navLinks.push({ to: '/wallet', icon: Wallet, label: 'Wallet', exact: false });
+  }
+
   if (userProfile) {
-    navLinks.push({ to: '/profile', icon: User, label: 'Profile' });
+    navLinks.push({ to: '/profile', icon: UserIcon, label: 'Profile', exact: false });
     if (userProfile.user_type === 'developer') {
-      navLinks.push({ to: '/developer', icon: Gamepad2, label: 'Developer' });
+      navLinks.push({ to: '/developer', icon: Gamepad2, label: 'Developer', exact: false });
     } else if (userProfile.user_type === 'sponsor') {
-      navLinks.push({ to: '/sponsor/dashboard', icon: Gift, label: 'Sponsor' });
-      navLinks.push({ to: '/sponsor/create-tournament', icon: Trophy, label: 'Create Tournament' });
+      navLinks.push({ to: '/sponsor/dashboard', icon: Gift, label: 'Sponsor', exact: false });
+      navLinks.push({ to: '/sponsor/create-tournament', icon: Trophy, label: 'Create Tournament', exact: false });
     } else if (userProfile.user_type === 'admin') {
-      navLinks.push({ to: '/admin', icon: Settings, label: 'Admin' });
+      navLinks.push({ to: '/admin', icon: Settings, label: 'Admin', exact: false });
     }
   }
 

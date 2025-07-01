@@ -132,6 +132,48 @@ CREATE TABLE user_achievements (
     earned_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Wallet transactions
+CREATE TABLE wallet_transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL, -- 'DEPOSIT', 'WITHDRAWAL', 'REWARD', 'TOURNAMENT_WIN', 'PURCHASE', 'REFUND'
+    amount NUMERIC(36, 18) NOT NULL,
+    token_address TEXT NOT NULL,
+    token_symbol VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL, -- 'PENDING', 'COMPLETED', 'FAILED'
+    tx_hash TEXT,
+    metadata JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT valid_transaction_type CHECK (type IN ('DEPOSIT', 'WITHDRAWAL', 'REWARD', 'TOURNAMENT_WIN', 'PURCHASE', 'REFUND')),
+    CONSTRAINT valid_status CHECK (status IN ('PENDING', 'COMPLETED', 'FAILED'))
+);
+
+-- User wallet balances
+CREATE TABLE user_wallet_balances (
+    user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    total_balance NUMERIC(36, 18) NOT NULL DEFAULT 0,
+    available_balance NUMERIC(36, 18) NOT NULL DEFAULT 0,
+    locked_balance NUMERIC(36, 18) NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Pending rewards
+CREATE TABLE pending_rewards (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount NUMERIC(36, 18) NOT NULL,
+    token_address TEXT NOT NULL,
+    token_symbol VARCHAR(20) NOT NULL,
+    source_type VARCHAR(50) NOT NULL, -- 'TOURNAMENT', 'REFERRAL', 'AFFILIATE', 'PROMOTION'
+    source_id TEXT, -- ID of the source (e.g., tournament_id)
+    unlock_at TIMESTAMPTZ NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'CLAIMED', 'EXPIRED', 'CANCELLED'
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT valid_status CHECK (status IN ('PENDING', 'CLAIMED', 'EXPIRED', 'CANCELLED'))
+);
+
 -- Add indexes for performance
 CREATE INDEX idx_users_wallet_address ON users(wallet_address);
 CREATE INDEX idx_users_email ON users(email);
@@ -168,6 +210,102 @@ CREATE TRIGGER update_tournaments_modtime
 CREATE TRIGGER update_user_roles_modtime
     BEFORE UPDATE ON user_roles
     FOR EACH ROW EXECUTE FUNCTION update_modified_column();
+
+-- Function to claim a reward
+CREATE OR REPLACE FUNCTION claim_reward(
+    p_reward_id UUID,
+    p_user_id UUID
+) RETURNS JSONB LANGUAGE plpgsql AS $$
+DECLARE
+    v_reward RECORD;
+    v_balance NUMERIC(36, 18);
+    v_result JSONB;
+BEGIN
+    -- Get the reward details
+    SELECT * INTO v_reward
+    FROM pending_rewards
+    WHERE id = p_reward_id
+    AND user_id = p_user_id
+    AND status = 'PENDING'
+    AND unlock_at <= NOW()
+    FOR UPDATE;
+
+    -- Check if reward exists and is claimable
+    IF v_reward IS NULL THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Reward not found, already claimed, or not yet available'
+        );
+    END IF;
+
+    -- Start a transaction
+    BEGIN
+        -- Update the reward status to claimed
+        UPDATE pending_rewards
+        SET status = 'CLAIMED',
+            updated_at = NOW()
+        WHERE id = p_reward_id;
+
+        -- Insert a transaction record
+        INSERT INTO wallet_transactions (
+            user_id,
+            type,
+            amount,
+            token_address,
+            token_symbol,
+            status,
+            metadata
+        ) VALUES (
+            p_user_id,
+            'REWARD',
+            v_reward.amount,
+            v_reward.token_address,
+            v_reward.token_symbol,
+            'COMPLETED',
+            jsonb_build_object(
+                'source_type', v_reward.source_type,
+                'source_id', v_reward.source_id,
+                'original_reward_id', v_reward.id
+            )
+        );
+
+        -- Update the user's wallet balance
+        INSERT INTO user_wallet_balances (
+            user_id,
+            total_balance,
+            available_balance,
+            locked_balance
+        )
+        VALUES (
+            p_user_id,
+            COALESCE((SELECT total_balance FROM user_wallet_balances WHERE user_id = p_user_id), 0) + v_reward.amount,
+            COALESCE((SELECT available_balance FROM user_wallet_balances WHERE user_id = p_user_id), 0) + v_reward.amount,
+            COALESCE((SELECT locked_balance FROM user_wallet_balances WHERE user_id = p_user_id), 0)
+        )
+        ON CONFLICT (user_id) DO UPDATE
+        SET 
+            total_balance = user_wallet_balances.total_balance + v_reward.amount,
+            available_balance = user_wallet_balances.available_balance + v_reward.amount,
+            updated_at = NOW();
+
+        -- Return success
+        v_result := jsonb_build_object(
+            'success', true,
+            'amount', v_reward.amount,
+            'token_symbol', v_reward.token_symbol
+        );
+
+    EXCEPTION WHEN OTHERS THEN
+        -- Rollback the transaction on error
+        v_result := jsonb_build_object(
+            'success', false,
+            'error', SQLERRM
+        );
+    END;
+
+    RETURN v_result;
+END;
+$$;
 
 -- Enable RLS
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

@@ -7,9 +7,9 @@ const Breadcrumbs = () => {
 
   return (
     <nav className="flex items-center text-sm text-gray-400 mb-6">
-      <Link to="/" className="hover:text-white transition-colors">
+      {/* <Link to="/" className="hover:text-white transition-colors">
         Home
-      </Link>
+      </Link> */}
       {pathnames.map((name, index) => {
         const routeTo = `/${pathnames.slice(0, index + 1).join('/')}`;
         const isLast = index === pathnames.length - 1;

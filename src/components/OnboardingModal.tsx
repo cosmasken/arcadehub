@@ -4,17 +4,30 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import { Loader2, CheckCircle, X, Upload, User as UserIcon,User, Gamepad2, Check, Trophy, Gift, Code } from 'lucide-react';
+import { useToast } from '../components/ui/use-toast';
+import { User as SupabaseUser, UserRole as SupabaseUserRole } from '../types/supabase';
+import { supabase } from '../lib/supabase';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
-import { CheckCircle, X, Loader2, User, Gamepad2, Code, Gift, Trophy } from 'lucide-react';
-import { toast } from '../components/ui/use-toast';
-import { usePinata } from '../hooks/use-pinata';
-import { useSupabase } from '../hooks/use-supabase';
 import useWalletStore from '../stores/useWalletStore';
 
-interface UserData {
-  username: string;
-  bio: string;
-  userType: UserType;
+type UserRole = 'player' | 'developer' | 'sponsor';
+
+type SocialLinks = {
+  twitter?: string;
+  discord?: string;
+  website?: string;
+  github?: string;
+  [key: string]: string | undefined;
+};
+
+export interface UserData extends Omit<SupabaseUser, 
+  'id' | 'wallet_address' | 'created_at' | 'updated_at' | 
+  'onchain_id' | 'onchain_tx_hash' | 'onchain_status' | 
+  'is_verified' | 'verification_data' | 'user_type'
+> {
+  user_type: UserRole;
+  social_links?: SocialLinks | null;
 }
 
 interface OnboardingModalProps {
@@ -23,22 +36,36 @@ interface OnboardingModalProps {
 }
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
-type UserType = 'developer' | 'player' | 'admin' | 'sponsor';
+// UserRole type is already defined above
 type OnboardingStep = 'userType' | 'profile' | 'complete';
 
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete }) => {
   const [step, setStep] = useState<OnboardingStep>('userType');
-  const [userType, setUserType] = useState<UserType>('player');
+  const [userType, setUserType] = useState<UserRole>('player');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { uploadFile, error } = usePinata();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
 
-  const { checkUsernameAvailability: checkUsernameExists, createUser } = useSupabase();
   const { aaWalletAddress } = useWalletStore();
+  
+  const checkUsernameExists = async (username: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking username:', error);
+      return false;
+    }
+    
+    return !!data;
+  };
 
   // Real username check
   const checkUsernameAvailability = async (username: string) => {
@@ -52,7 +79,28 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAvatarFile(e.target.files?.[0] || null);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPEG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setAvatarFile(file);
+    }
   };
 
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -110,85 +158,102 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
           variant: "destructive"
         });
         return;
-      // case 'idle':
-      //   await checkUsernameAvailability(username);
-      //   if (usernameStatus === 'taken') {
-      //     toast({
-      //       title: "Error",
-      //       description: "Username is not available",
-      //       variant: "destructive"
-      //     });
-      //     return;
-      //   }
-      //   if (usernameStatus !== 'available') {
-      //     toast({
-      //       title: "Error",
-      //       description: "Please try again after checking username availability.",
-      //       variant: "destructive"
-      //     });
-      //     return;
-      //   }
-      //   break;
+      case 'idle':
       case 'available':
-        // Good to proceed
+        // Proceed with form submission
         break;
       default:
         toast({
           title: "Error",
-          description: "Unknown username status. Please try again.",
+          description: "Please check your username",
           variant: "destructive"
         });
         return;
+    }
+
+    if (!aaWalletAddress) {
+      toast({
+        title: 'Wallet not connected',
+        description: 'Please connect your wallet to continue',
+        variant: 'destructive',
+      });
+      return;
     }
 
     setIsSubmitting(true);
 
-    let avatarHash = null;
-    if (avatarFile) {
-      avatarHash = await uploadFile(avatarFile);
-      if (!avatarHash) {
-        toast({
-          title: "Avatar Upload Failed",
-          description: error || "Could not upload avatar to IPFS.",
-          variant: "destructive"
-        });
-        setIsUploading(false);
-        return;
-      }
-    }
-
     try {
-      const user = await createUser({
-        wallet_address: aaWalletAddress,
-        username: username.trim(),
-        bio: bio.trim() || undefined,
-        user_type: userType,
-        avatar_url: avatarHash || undefined
-      });
+      let avatarUrl: string | null = null;
       
-      if (user) {
-        setStep('complete');
-        setTimeout(() => {
-          onComplete({ 
-            id: user.id,
-            username: user.username, 
-            bio: user.bio || '', 
-            userType: user.user_type as UserType 
-          });
-        }, 2000);
-      } else {
-        throw new Error("User creation failed");
+      // Upload avatar if selected
+      if (avatarFile) {
+        setIsUploading(true);
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${aaWalletAddress}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, avatarFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        avatarUrl = publicUrl;
+        setIsUploading(false);
       }
-    } catch (error: unknown) {
-      console.error("Error in handleComplete:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to create profile. Please try again.";
+
+      // Prepare user data
+      const userData = {
+        username: username.trim(),
+        bio: bio.trim() || null,
+        avatar_url: avatarUrl,
+        user_type: userType,
+        email: null,
+        company_name: null,
+        website: null,
+        industry: null,
+        contact_email: null,
+        contact_phone: null,
+        social_links: {}
+      };
+
+      // Create user profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: aaWalletAddress,
+          ...userData,
+          updated_at: new Date().toISOString()
+        })
+        .select('*')
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profileData) throw new Error('Failed to create user profile');
+
+      // Call onComplete with the user data
+      onComplete({
+        ...profileData,
+        id: aaWalletAddress,
+        created_at: profileData.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        wallet_address: aaWalletAddress
+      });
+
+    } catch (error) {
+      console.error('Error creating profile:', error);
       toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive"
+        title: 'Error creating profile',
+        description: error instanceof Error ? error.message : 'Failed to create user profile',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -222,112 +287,98 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     return username.trim().length >= 3 && usernameStatus === 'available';
   };
 
-  const handleOpenChange = (open: boolean) => {
+  const handleDialogClose = (open: boolean) => {
     if (!open) {
-      // Only allow closing if not in the complete state
-      if (step !== 'complete') {
+      // Only proceed if we're not in the middle of submission
+      if (isSubmitting) return;
+      
+      // If the form is complete and valid, submit it
+      if (step === 'profile' && isFormValid()) {
+        handleComplete();
+      } else {
+        // Otherwise, just close with empty data
         onComplete({
-          username: username.trim(),
-          bio: bio.trim(),
-          userType
+          username: '',
+          bio: null,
+          user_type: 'player',
+          email: null,
+          avatar_url: null,
+          company_name: null,
+          website: null,
+          social_links: null,
+          industry: null,
+          contact_email: null,
+          contact_phone: null
         });
       }
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-2xl text-black font-bold text-center flex items-center justify-center gap-2">
-            {step === 'userType' && 'Welcome to Web3 Portal!'}
-            {step === 'profile' && (
-              <>
-                <User className="h-6 w-6" />
-                Complete Your Profile
-              </>
-            )}
-            {step === 'complete' && 'Welcome to Web3 Portal!'}
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
+      <DialogContent className="sm:max-w-[500px] p-6 bg-gradient-to-b from-black/90 to-black/80 backdrop-blur-sm border border-white/10 rounded-2xl shadow-2xl">
+        <DialogHeader className="mb-6">
+          <DialogTitle className="text-2xl font-bold text-center text-white">
+            Welcome to ArcadeHub
           </DialogTitle>
         </DialogHeader>
 
         {step === 'userType' && (
           <div className="space-y-6 py-4">
-            <p className="text-center text-black font-bold text-sm">
-              Tell us about yourself to get started
+            <p className="text-center text-gray-300 text-sm">
+              Are you a player or a developer?
             </p>
 
-            <div className="space-y-4 text-black">
-              <Label className="text-base font-medium">I am a...</Label>
-              <RadioGroup value={userType} onValueChange={(value: UserType) => setUserType(value)}>
-                <div
-                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
-            ${userType === 'player'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-400'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setUserType('player')}
-                >
-                  <RadioGroupItem value="player" id="player" />
-                  <div className="flex items-center space-x-3">
-                    <Gamepad2 className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <label htmlFor="gamer" className="font-medium cursor-pointer">Gamer</label>
-                      <p className="text-sm text-gray-500">I want to play and discover games</p>
-                    </div>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setUserType('player')}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${
+                  userType === 'player' 
+                    ? 'border-blue-500 bg-blue-500/10' 
+                    : 'border-white/10 hover:border-white/20'
+                }`}
+              >
+                <Gamepad2 className="h-8 w-8 mb-2 text-blue-400" />
+                <span className="font-medium text-white">Player</span>
+                <p className="text-xs text-gray-400 mt-1 text-center">Play games and earn rewards</p>
+              </button>
 
-                <div
-                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
-            ${userType === 'developer'
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/30 ring-2 ring-green-400'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setUserType('developer')}
-                >
-                  <RadioGroupItem value="developer" id="developer" />
-                  <div className="flex items-center space-x-3">
-                    <Code className="h-5 w-5 text-green-500" />
-                    <div>
-                      <label htmlFor="developer" className="font-medium cursor-pointer">Developer</label>
-                      <p className="text-sm text-gray-500">I want to upload and publish games</p>
-                    </div>
-                  </div>
-                </div>
+              <button
+                type="button"
+                onClick={() => setUserType('developer')}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${
+                  userType === 'developer'
+                    ? 'border-purple-500 bg-purple-500/10'
+                    : 'border-white/10 hover:border-white/20'
+                }`}
+              >
+                <Code className="h-8 w-8 mb-2 text-purple-400" />
+                <span className="font-medium text-white">Developer</span>
+                <p className="text-xs text-gray-400 mt-1 text-center">Create and publish games</p>
+              </button>
 
-                <div
-                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
-            ${userType === 'sponsor'
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setUserType('sponsor')}
-                >
-                  <RadioGroupItem value="sponsor" id="sponsor" />
-                  <div className="flex items-center space-x-3">
-                    <Gift className="h-5 w-5 text-purple-500" />
-                    <div>
-                      <label htmlFor="sponsor" className="font-medium cursor-pointer">Sponsor</label>
-                      <p className="text-sm text-gray-500">I want to sponsor tournaments and events</p>
-                    </div>
-                  </div>
-                </div>
+              <button
+                type="button"
+                onClick={() => setUserType('sponsor')}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${
+                  userType === 'sponsor'
+                    ? 'border-green-500 bg-green-500/10'
+                    : 'border-white/10 hover:border-white/20'
+                }`}
+              >
+                <Gift className="h-8 w-8 mb-2 text-green-400" />
+                <span className="font-medium text-white">Sponsor</span>
+                <p className="text-xs text-gray-400 mt-1 text-center">Support games and tournaments</p>
+              </button>
 
-                <div
-                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
-            ${userType === 'admin'
-                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 ring-2 ring-red-400'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setUserType('admin')}
-                >
-                  <RadioGroupItem value="admin" id="admin" />
-                  <div className="flex items-center space-x-3">
-                    <Trophy className="h-5 w-5 text-red-500" />
-                    <div>
-                      <label htmlFor="admin" className="font-medium cursor-pointer">Admin</label>
-                      <p className="text-sm text-gray-500">I manage the platform and its users</p>
-                    </div>
-                  </div>
+              <div className="opacity-50 cursor-not-allowed">
+                <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-white/10">
+                  <Trophy className="h-8 w-8 mb-2 text-yellow-400" />
+                  <span className="font-medium text-white">Admin</span>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Manage platform</p>
                 </div>
-              </RadioGroup>
+              </div>
             </div>
 
             <Button onClick={handleNext} className="w-full">

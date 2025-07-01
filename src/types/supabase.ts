@@ -118,6 +118,53 @@ export interface UserAchievement {
   earned_at: string;
 }
 
+export type TransactionType = 'DEPOSIT' | 'WITHDRAWAL' | 'REWARD' | 'TOURNAMENT_WIN' | 'PURCHASE' | 'REFUND';
+export type TransactionStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
+export type RewardStatus = 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'CANCELLED';
+export type RewardSource = 'TOURNAMENT' | 'REFERRAL' | 'AFFILIATE' | 'PROMOTION';
+
+export interface WalletTransaction {
+  id: string;
+  user_id: string;
+  type: TransactionType;
+  amount: string;
+  token_address: string;
+  token_symbol: string;
+  status: TransactionStatus;
+  tx_hash?: string | null;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WalletBalance {
+  user_id: string;
+  total_balance: string;
+  available_balance: string;
+  locked_balance: string;
+  updated_at: string;
+}
+
+export interface PendingReward {
+  id: string;
+  user_id: string;
+  amount: string;
+  token_address: string;
+  token_symbol: string;
+  source_type: RewardSource;
+  source_id?: string | null;
+  unlock_at: string;
+  status: RewardStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WalletSummary {
+  balance: WalletBalance;
+  pending_rewards: PendingReward[];
+  recent_transactions: WalletTransaction[];
+}
+
 export interface Role {
   id: number;
   name: string;

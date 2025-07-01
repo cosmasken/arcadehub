@@ -98,30 +98,83 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         throw new Error('Failed to initialize Web3Auth');
       }
       
-      await web3auth.initModal();
+      // Check if already initialized or connected
+      if (web3auth.status === 'connected') {
+        console.log('Web3Auth already connected');
+        set({ 
+          web3auth,
+          provider: web3auth.provider,
+          isConnected: true,
+          isInitialized: true,
+          isLoading: false
+        });
+        return web3auth;
+      }
+      
+      if (web3auth.status === 'initialized') {
+        console.log('Web3Auth already initialized');
+        set({ 
+          web3auth,
+          provider: web3auth.provider,
+          isInitialized: true,
+          isLoading: false
+        });
+        return web3auth;
+      }
+      
+      // Only initialize if not already initializing
+      if (web3auth.status !== 'initializing') {
+        console.log('Initializing Web3Auth...');
+        await web3auth.initModal();
+      }
+      
       set({ 
         web3auth,
         provider: web3auth.provider,
-        isLoading: false,
         isInitialized: true,
+        isLoading: false,
       });
+      
+      return web3auth;
     } catch (error) {
       console.error('Failed to initialize Web3Auth:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize Web3Auth';
       set({ 
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to initialize Web3Auth'
+        error: errorMessage
       });
-      throw error;
+      throw new Error(errorMessage);
     }
   },
 
   connectWallet: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Get or create Web3Auth instance
-      const web3auth = getWeb3Auth();
-      if (!web3auth) {
-        throw new Error('Failed to initialize Web3Auth');
+      // First ensure Web3Auth is initialized
+      const web3auth = await get().initializeWeb3Auth();
+      
+      // If already connected, just return the address
+      if (web3auth.status === 'connected' && web3auth.provider) {
+        const provider = new ethers.BrowserProvider(web3auth.provider);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        
+        set({
+          isConnected: true,
+          provider: web3auth.provider,
+          aaProvider: provider,
+          aaSigner: signer,
+          isLoading: false,
+          error: null
+        });
+        
+        // Initialize AA wallet
+        await get().initAAWallet();
+        return address;
+      }
+      // web3auth is already initialized and not connected
+      if (!web3auth.provider) {
+        throw new Error('Web3Auth provider not available');
       }
       
       // Initialize Web3Auth if not already initialized

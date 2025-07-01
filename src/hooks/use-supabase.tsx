@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-import { 
-  User, Game, Tournament, TournamentParticipant, 
+import {
+  User, Game, Tournament, TournamentParticipant,
   TournamentSponsor, UserStats, UserAchievement,
-  UserRole, UserRoleAssignment, CreateUserRequest, 
-  UpdateUserRequest, CreateTournamentRequest, 
+  UserRole, UserRoleAssignment, CreateUserRequest,
+  UpdateUserRequest, CreateTournamentRequest,
   PaginatedResponse, WithRelations
 } from '@/types/supabase';
 
@@ -17,7 +17,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ========== User Operations ==========
-export const createUser = async (userData: CreateUserRequest): Promise<User> => {
+export const createUser = async (userData: CreateUserRequest): Promise<User | null> => {
   const { data, error } = await supabase
     .from('users')
     .insert([{
@@ -28,7 +28,10 @@ export const createUser = async (userData: CreateUserRequest): Promise<User> => 
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error creating user:", error);
+    return null;
+  }
   return data;
 };
 
@@ -130,14 +133,14 @@ export const getTournament = async (tournamentId: number): Promise<Tournament | 
 };
 
 export const joinTournament = async (
-  tournamentId: number, 
-  userId: string, 
+  tournamentId: number,
+  userId: string,
   onchainTxHash?: string
 ): Promise<TournamentParticipant> => {
   const { data, error } = await supabase
     .from('tournament_participants')
-    .insert([{ 
-      tournament_id: tournamentId, 
+    .insert([{
+      tournament_id: tournamentId,
       user_id: userId,
       onchain_tx_hash: onchainTxHash,
       score: 0
@@ -154,8 +157,8 @@ export const joinTournament = async (
 };
 
 export const updateParticipantScore = async (
-  tournamentId: number, 
-  userId: string, 
+  tournamentId: number,
+  userId: string,
   score: number
 ): Promise<TournamentParticipant> => {
   const { data, error } = await supabase
@@ -175,9 +178,9 @@ export const updateParticipantScore = async (
 
 // ========== Sponsor Operations ==========
 export const addTournamentSponsor = async (
-  tournamentId: number, 
-  sponsorId: string, 
-  tokenAddress?: string, 
+  tournamentId: number,
+  sponsorId: string,
+  tokenAddress?: string,
   tokenAmount?: number
 ): Promise<TournamentSponsor> => {
   const { data, error } = await supabase
@@ -229,22 +232,45 @@ export const checkUsernameAvailability = async (username: string): Promise<boole
     .eq('username', username)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error checking username availability:", error);
+    return false; // Assume not available on error
+  }
   return !data; // Available if no user found
 };
 
 export const uploadFile = async (file: File, path: string): Promise<{ path: string }> => {
   const fileName = `${Date.now()}-${file.name}`;
   const filePath = `${path}/${fileName}`;
-  
+
   const { error } = await supabase.storage
     .from('public')
     .upload(filePath, file);
 
   if (error) throw error;
-  
-  return { 
+
+  return {
     path: `${supabaseUrl}/storage/v1/object/public/public/${filePath}`
+  };
+};
+
+export const useSupabase = () => {
+  return {
+    createUser,
+    getUser,
+    getUserByWallet,
+    updateUser,
+    getUserRoles,
+    assignUserRole,
+    createTournament,
+    getTournament,
+    joinTournament,
+    updateParticipantScore,
+    addTournamentSponsor,
+    getUserStats,
+    getUserAchievements,
+    checkUsernameAvailability,
+    uploadFile,
   };
 };
 

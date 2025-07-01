@@ -9,6 +9,9 @@ import { useWalletStore } from "./stores/useWalletStore";
 import LoadingModal from "./components/LoadingModal";
 import ErrorBoundary from "./components/ErrorBoundary";
 import Layout from "./components/Layout";
+import OnboardingModal from "./components/OnboardingModal";
+import { useSupabase } from "./hooks/use-supabase";
+import type { User } from "./types/supabase";
 
 // Pages
 import Index from "./pages/Index";
@@ -34,28 +37,41 @@ import Tetris from "./games/tetris";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { isInitialized, isConnected, initializeWeb3Auth } = useWalletStore();
+  const { isInitialized, isConnected, aaWalletAddress, initializeWeb3Auth } = useWalletStore();
+  const { getUserByWallet } = useSupabase();
   const [isInitializing, setIsInitializing] = React.useState(true);
+  const [showOnboarding, setShowOnboarding] = React.useState(false);
+  const [userProfile, setUserProfile] = React.useState<User | null>(null);
 
-  // Initialize Web3Auth when the app loads
+  // Initialize Web3Auth and check user status when the app loads or wallet connects
   React.useEffect(() => {
-    const init = async () => {
+    const initAndCheckUser = async () => {
       try {
         await initializeWeb3Auth();
+        setIsInitializing(false); // Web3Auth initialization is complete
+
+        if (aaWalletAddress) {
+          const user = await getUserByWallet(aaWalletAddress);
+          if (user) {
+            setUserProfile(user);
+            setShowOnboarding(false);
+          } else {
+            setShowOnboarding(true);
+          }
+        }
       } catch (error) {
-        console.error('Failed to initialize Web3Auth:', error);
-      } finally {
+        console.error('Failed to initialize Web3Auth or check user:', error);
         setIsInitializing(false);
       }
     };
 
-    init();
+    initAndCheckUser();
 
     // Clean up on unmount
     return () => {
       // Any cleanup if needed
     };
-  }, [initializeWeb3Auth]);
+  }, [initializeWeb3Auth, aaWalletAddress, getUserByWallet]);
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -74,18 +90,27 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <LoadingModal
-          isOpen={!isInitialized && isConnected}
-          title="INITIALIZING"
-          description="Please wait while we set up your wallet and connection."
-          transactionText="Setting up your wallet and secure Web3 connection..."
+        {isInitializing && (
+          <LoadingModal
+            isOpen={true}
+            title="INITIALIZING"
+            description="Please wait while we set up your wallet and connection."
+            transactionText="Setting up your wallet and secure Web3 connection..."
+          />
+        )}
+        <OnboardingModal
+          isOpen={showOnboarding}
+          onComplete={(userData) => {
+            setUserProfile(userData);
+            setShowOnboarding(false);
+          }}
         />
         <ErrorBoundary>
           <BrowserRouter>
             <Routes>
               {/* Routes that use the Layout */}
               <Route element={
-                <Layout>
+                <Layout userProfile={userProfile}>
                   <Outlet />
                 </Layout>
               }>

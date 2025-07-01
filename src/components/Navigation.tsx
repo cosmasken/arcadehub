@@ -1,17 +1,34 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Gamepad2, Trophy, User, Settings, Search } from 'lucide-react';
+import { Home, Gamepad2, Trophy, User, Settings, Search, Gift } from 'lucide-react';
 import { Input } from './ui/input';
 import { useWalletStore } from '../stores/useWalletStore';
 
-const Navigation = () => {
+import type { User } from '../types/supabase';
+
+interface NavigationProps {
+  userProfile?: User | null;
+}
+
+const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
   const location = useLocation();
   const { isConnected } = useWalletStore();
 
-  const navLinks = [
+  let navLinks = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { to: '/profile', icon: User, label: 'Profile' },
   ];
+
+  if (userProfile) {
+    navLinks.push({ to: '/profile', icon: User, label: 'Profile' });
+    if (userProfile.user_type === 'developer') {
+      navLinks.push({ to: '/developer', icon: Gamepad2, label: 'Developer' });
+    } else if (userProfile.user_type === 'sponsor') {
+      navLinks.push({ to: '/sponsor/dashboard', icon: Gift, label: 'Sponsor' });
+      navLinks.push({ to: '/sponsor/create-tournament', icon: Trophy, label: 'Create Tournament' });
+    } else if (userProfile.user_type === 'admin') {
+      navLinks.push({ to: '/admin', icon: Settings, label: 'Admin' });
+    }
+  }
 
   const categories = [
     { id: 'all', name: 'All Games' },

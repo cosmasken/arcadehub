@@ -1,16 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
-import { CheckCircle, X, Loader2, User, Gamepad2, Code } from 'lucide-react';
+import { CheckCircle, X, Loader2, User, Gamepad2, Code, Gift, Trophy } from 'lucide-react';
 import { toast } from '../components/ui/use-toast';
-import useProfileStore from '../stores/useProfileStore';
-import useWalletStore from '../stores/useWalletStore';
 import { usePinata } from '../hooks/use-pinata';
+import { useSupabase } from '../hooks/use-supabase';
+import useWalletStore from '../stores/useWalletStore';
 
 interface UserData {
   username: string;
@@ -24,12 +23,12 @@ interface OnboardingModalProps {
 }
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
-type UserType = 'developer' | 'gamer';
+type UserType = 'developer' | 'player' | 'admin' | 'sponsor';
 type OnboardingStep = 'userType' | 'profile' | 'complete';
 
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete }) => {
   const [step, setStep] = useState<OnboardingStep>('userType');
-  const [userType, setUserType] = useState<UserType>('gamer');
+  const [userType, setUserType] = useState<UserType>('player');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
@@ -38,7 +37,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { checkUsernameExists, onboardUser } = useProfileStore();
+  const { checkUsernameAvailability: checkUsernameExists, createUser } = useSupabase();
   const { aaWalletAddress } = useWalletStore();
 
   // Real username check
@@ -56,13 +55,27 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     setAvatarFile(e.target.files?.[0] || null);
   };
 
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    // Cleanup function to clear the timeout when the component unmounts
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleUsernameChange = (value: string) => {
     setUsername(value);
     setUsernameStatus('idle');
     if (value.trim().length >= 3) {
-      // Debounce
-      clearTimeout((handleUsernameChange as any).timeoutId);
-      (handleUsernameChange as any).timeoutId = setTimeout(() => {
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      // Set a new timeout
+      timeoutRef.current = setTimeout(() => {
         checkUsernameAvailability(value);
       }, 500);
     }
@@ -144,11 +157,12 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       }
     }
 
-    const success = await onboardUser(aaWalletAddress, {
+    const success = await createUser({
+      wallet_address: aaWalletAddress,
       username: username.trim(),
       bio: bio.trim() || null,
-      role: userType,
-      avatar: avatarHash
+      user_type: userType,
+      avatar_url: avatarHash
     });
     setIsSubmitting(false);
     if (success) {
@@ -235,12 +249,12 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
               <RadioGroup value={userType} onValueChange={(value: UserType) => setUserType(value)}>
                 <div
                   className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
-            ${userType === 'gamer'
+            ${userType === 'player'
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-400'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setUserType('gamer')}
+                  onClick={() => setUserType('player')}
                 >
-                  <RadioGroupItem value="gamer" id="gamer" />
+                  <RadioGroupItem value="player" id="player" />
                   <div className="flex items-center space-x-3">
                     <Gamepad2 className="h-5 w-5 text-blue-500" />
                     <div>
@@ -263,6 +277,40 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
                     <div>
                       <label htmlFor="developer" className="font-medium cursor-pointer">Developer</label>
                       <p className="text-sm text-gray-500">I want to upload and publish games</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
+            ${userType === 'sponsor'
+                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 ring-2 ring-purple-400'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
+                  onClick={() => setUserType('sponsor')}
+                >
+                  <RadioGroupItem value="sponsor" id="sponsor" />
+                  <div className="flex items-center space-x-3">
+                    <Gift className="h-5 w-5 text-purple-500" />
+                    <div>
+                      <label htmlFor="sponsor" className="font-medium cursor-pointer">Sponsor</label>
+                      <p className="text-sm text-gray-500">I want to sponsor tournaments and events</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
+            ${userType === 'admin'
+                      ? 'border-red-500 bg-red-50 dark:bg-red-900/30 ring-2 ring-red-400'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
+                  onClick={() => setUserType('admin')}
+                >
+                  <RadioGroupItem value="admin" id="admin" />
+                  <div className="flex items-center space-x-3">
+                    <Trophy className="h-5 w-5 text-red-500" />
+                    <div>
+                      <label htmlFor="admin" className="font-medium cursor-pointer">Admin</label>
+                      <p className="text-sm text-gray-500">I manage the platform and its users</p>
                     </div>
                   </div>
                 </div>

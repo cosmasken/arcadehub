@@ -185,3 +185,5 @@ export type PaginatedResponse<T> = {
   pageSize: number;
   totalPages: number;
 };
+
+export const DUMMY_EXPORT = true;

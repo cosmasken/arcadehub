@@ -1279,7 +1279,7 @@ declare module "littlejsengine" {
      *  @param {Boolean} [screenSpace=false]
      *  @param {CanvasRenderingContext2D} [context=mainContext]
      *  @memberof Draw */
-    export function drawPoly(points: any[], color?: Color, lineWidth?: number, lineColor?: Color, screenSpace?: boolean, context?: CanvasRenderingContext2D): void;
+    export function drawPoly(points: Vector2[], color?: Color, lineWidth?: number, lineColor?: Color, screenSpace?: boolean, context?: CanvasRenderingContext2D): void;
     /** Draw colored ellipse using passed in point
      *  @param {Vector2} pos
      *  @param {Number}  [width=1]

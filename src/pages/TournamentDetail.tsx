@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Web3Provider } from '../contexts/Web3Context';
+import { Tournament, Sponsor } from '../types/tournament';
 import { useToast } from '../hooks/use-toast';
 import Header from '../components/Header';
 import SponsorSelectionModal from '../components/SponsorSelectionModal';
@@ -36,7 +37,7 @@ const TournamentDetail = () => {
   const [actionType, setActionType] = useState<'join' | 'register'>('register');
 
   // Extended tournament data with different types
-  const tournaments = [
+  const tournaments: Tournament[] = [
     {
       id: 1,
       title: "CRYPTO CHAMPIONSHIP",
@@ -134,7 +135,7 @@ const TournamentDetail = () => {
     }
   };
 
-  const handleSponsorJoin = async (selectedSponsor: any) => {
+  const handleSponsorJoin = async (selectedSponsor: Sponsor) => {
     setIsSponsorModalOpen(false);
     setIsLoadingModalOpen(true);
 
@@ -147,17 +148,18 @@ const TournamentDetail = () => {
         description: `You've joined ${tournament.title} sponsored by ${selectedSponsor.name}`,
         className: "bg-green-400 text-black border-green-400",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       setIsLoadingModalOpen(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to join the sponsored tournament. Please try again.";
       toast({
         title: "Join Failed",
-        description: "Failed to join the sponsored tournament. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   };
 
-  const handleTokenPayment = async (selectedToken: any) => {
+  const handleTokenPayment = async (selectedToken: unknown) => {
     setIsTokenModalOpen(false);
     setIsLoadingModalOpen(true);
 
@@ -170,11 +172,12 @@ const TournamentDetail = () => {
         description: `You've paid with ${selectedToken.name} and joined ${tournament.title}`,
         className: "bg-green-400 text-black border-green-400",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       setIsLoadingModalOpen(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to process token payment. Please try again.";
       toast({
         title: "Payment Failed",
-        description: "Failed to process token payment. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -193,11 +196,12 @@ const TournamentDetail = () => {
         description: `You have joined ${tournament.title}. Good luck!`,
         className: "bg-green-400 text-black border-green-400",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       setIsLoadingModalOpen(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to join the tournament. Please try again.";
       toast({
         title: "Join Failed",
-        description: "Failed to join the tournament. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }

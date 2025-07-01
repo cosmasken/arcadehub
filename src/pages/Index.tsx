@@ -351,26 +351,6 @@ const Index = () => {
                   </div>
                 </div>
               ))}
-              
-              <div className="ml-auto relative">
-                <Tooltip 
-                  content={isConnected ? "Wallet Connected" : "Connect your wallet to earn rewards"}
-                  position="bottom"
-                  className={showWalletTooltip ? 'block' : 'hidden'}
-                >
-                  <button
-                    onClick={!isConnected ? connectWallet : undefined}
-                    className={`flex items-center px-4 py-2 rounded-lg ${
-                      isConnected 
-                        ? 'bg-green-900/50 text-green-400 border border-green-800' 
-                        : 'bg-purple-900/50 text-purple-400 hover:bg-purple-800/50 border border-purple-800'
-                    }`}
-                  >
-                    <WalletIcon className="w-5 h-5 mr-2" />
-                    {isConnected ? 'Connected' : 'Connect Wallet'}
-                  </button>
-                </Tooltip>
-              </div>
             </div>
           </div>
         </div>

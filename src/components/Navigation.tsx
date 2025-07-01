@@ -48,25 +48,35 @@ const Navigation = () => {
             </div>
 
             {/* Navigation Links */}
-            <div className="hidden md:block">
-              <div className="flex items-center space-x-4">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    className={`px-3 py-2 text-sm font-medium rounded-md ${
-                      location.pathname === link.to
-                        ? 'bg-gray-800 text-white'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <link.icon className="h-5 w-5 mr-2" />
-                      {link.label}
-                    </div>
-                  </Link>
-                ))}
-              </div>
+            <div className="hidden md:flex items-center space-x-4">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${
+                    location.pathname === link.to
+                      ? 'bg-gray-800 text-white'
+                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <link.icon className="h-5 w-5 mr-2" />
+                    {link.label}
+                  </div>
+                </Link>
+              ))}
+              
+              {/* Connect Wallet Button */}
+              <button
+                onClick={() => useWalletStore.getState().connectWallet()}
+                className={`ml-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+                  isConnected
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/20'
+                    : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 hover:shadow-lg hover:shadow-cyan-500/20'
+                }`}
+              >
+                {isConnected ? 'Connected' : 'Connect Wallet'}
+              </button>
             </div>
           </div>
 
@@ -115,6 +125,22 @@ const Navigation = () => {
               <span className="text-xs mt-1">{link.label}</span>
             </Link>
           ))}
+          <button
+            onClick={() => useWalletStore.getState().connectWallet()}
+            className={`flex flex-col items-center justify-center py-3 px-4 ${
+              isConnected ? 'text-green-400' : 'text-amber-400'
+            }`}
+          >
+            <div className="relative">
+              <div className={`absolute -inset-1 rounded-full ${
+                isConnected ? 'bg-green-500/20' : 'bg-amber-500/20'
+              } blur-sm`}></div>
+              <div className="relative">
+                {isConnected ? '✅' : '🔌'}
+              </div>
+            </div>
+            <span className="text-xs mt-1">{isConnected ? 'Connected' : 'Connect'}</span>
+          </button>
         </div>
       </nav>
 

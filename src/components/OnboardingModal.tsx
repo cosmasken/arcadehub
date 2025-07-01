@@ -157,25 +157,38 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       }
     }
 
-    const success = await createUser({
-      wallet_address: aaWalletAddress,
-      username: username.trim(),
-      bio: bio.trim() || null,
-      user_type: userType,
-      avatar_url: avatarHash
-    });
-    setIsSubmitting(false);
-    if (success) {
-      setStep('complete');
-      setTimeout(() => {
-        onComplete({ username, bio, userType });
-      }, 2000);
-    } else {
+    try {
+      const user = await createUser({
+        wallet_address: aaWalletAddress,
+        username: username.trim(),
+        bio: bio.trim() || undefined,
+        user_type: userType,
+        avatar_url: avatarHash || undefined
+      });
+      
+      if (user) {
+        setStep('complete');
+        setTimeout(() => {
+          onComplete({ 
+            id: user.id,
+            username: user.username, 
+            bio: user.bio || '', 
+            userType: user.user_type as UserType 
+          });
+        }, 2000);
+      } else {
+        throw new Error("User creation failed");
+      }
+    } catch (error: unknown) {
+      console.error("Error in handleComplete:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to create profile. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to create profile. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

@@ -65,12 +65,18 @@ interface WalletStore {
   initAAWallet: () => Promise<void>;
 }
 
-const web3auth = new Web3Auth(web3AuthOptions);
+let web3authInstance: Web3Auth | null = null;
 
-const adapters = getDefaultExternalAdapters({ options: web3AuthOptions });
-adapters.forEach((adapter) => {
-  web3auth.configureAdapter(adapter);
-});
+const getWeb3Auth = (): Web3Auth => {
+  if (!web3authInstance) {
+    web3authInstance = new Web3Auth(web3AuthOptions);
+    const adapters = getDefaultExternalAdapters({ options: web3AuthOptions });
+    adapters.forEach((adapter) => {
+      web3authInstance?.configureAdapter(adapter);
+    });
+  }
+  return web3authInstance;
+};
 
 export const useWalletStore = create<WalletStore>((set, get) => ({
   isConnected: false,
@@ -87,7 +93,10 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
   initializeWeb3Auth: async () => {
     set({ isLoading: true, error: null });
     try {
-     
+      const web3auth = getWeb3Auth();
+      if (!web3auth) {
+        throw new Error('Failed to initialize Web3Auth');
+      }
       
       await web3auth.initModal();
       set({ 
@@ -100,7 +109,7 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
       console.error('Failed to initialize Web3Auth:', error);
       set({ 
         isLoading: false,
-        error: 'Failed to initialize Web3Auth'
+        error: error instanceof Error ? error.message : 'Failed to initialize Web3Auth'
       });
       throw error;
     }
@@ -109,8 +118,11 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
   connectWallet: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Ensure we have a fresh Web3Auth instance
-      const web3auth = get().web3auth || new Web3Auth(web3AuthOptions);
+      // Get or create Web3Auth instance
+      const web3auth = getWeb3Auth();
+      if (!web3auth) {
+        throw new Error('Failed to initialize Web3Auth');
+      }
       
       // Initialize Web3Auth if not already initialized
       if (!web3auth.provider) {

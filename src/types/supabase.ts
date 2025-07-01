@@ -141,6 +141,7 @@ export interface CreateUserRequest {
   email?: string;
   avatar_url?: string;
   user_type?: UserRole;
+  bio?: string | null;
   company_name?: string;
   website?: string;
   social_links?: Record<string, string>;

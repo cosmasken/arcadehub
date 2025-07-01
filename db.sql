@@ -201,3 +201,30 @@ CREATE POLICY "Enable read access for all users"
     ON tournaments
     FOR SELECT
     USING (true);
+
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated;
+
+-- Make sure the anon role has minimal permissions
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON public.users;
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.users;
+
+-- Create new policies
+CREATE POLICY "Enable all access for authenticated users" 
+ON public.users 
+FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
+
+-- Allow public to see user profiles (adjust if you need more privacy)
+CREATE POLICY "Enable read access for all users"
+ON public.users
+FOR SELECT
+TO public
+USING (true);

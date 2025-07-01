@@ -18,21 +18,26 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ========== User Operations ==========
 export const createUser = async (userData: CreateUserRequest): Promise<User | null> => {
-  const { data, error } = await supabase
-    .from('users')
-    .insert([{
-      ...userData,
-      user_type: userData.user_type || 'player',
-      is_verified: false
-    }])
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([{
+        ...userData,
+        user_type: userData.user_type || 'player',
+        is_verified: false
+      }])
+      .select()
+      .single();
 
-  if (error) {
-    console.error("Error creating user:", error);
-    return null;
+    if (error) {
+      console.error("Error creating user:", error);
+      throw error; // Re-throw to be caught by the caller
+    }
+    return data;
+  } catch (error) {
+    console.error("Failed to create user:", error);
+    throw error; // Re-throw to be caught by the caller
   }
-  return data;
 };
 
 export const getUser = async (userId: string): Promise<User | null> => {

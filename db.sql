@@ -21,3 +21,8 @@ CREATE TABLE public.tournament_participants (
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     UNIQUE (tournament_id, player_wallet)
 );
+
+CREATE INDEX idx_tournaments_game_id ON tournaments(game_id);
+CREATE INDEX idx_tournaments_status ON tournaments(status);
+CREATE INDEX idx_tournament_participants_user_id ON tournament_participants(user_id);
+CREATE INDEX idx_tournament_participants_tournament_id ON tournament_participants(tournament_id);

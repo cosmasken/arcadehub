@@ -1,9 +1,11 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Play, Users, Trophy, Star } from 'lucide-react';
+import { Play, Users, Trophy, Star, Wallet } from 'lucide-react';
+import { useWalletStore } from '../stores/useWalletStore';
 
 interface GameCardProps {
   game: {
@@ -20,6 +22,17 @@ interface GameCardProps {
 }
 
 const GameCard: React.FC<GameCardProps> = ({ game }) => {
+  const navigate = useNavigate();
+  const { isConnected, connectWallet } = useWalletStore();
+  
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isConnected) {
+      navigate(`/games/${game.id}`);
+    } else {
+      connectWallet();
+    }
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'live':
@@ -52,9 +65,21 @@ const GameCard: React.FC<GameCardProps> = ({ game }) => {
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Button className="w-full bg-purple-600 hover:bg-purple-700">
-            <Play className="w-4 h-4 mr-2" />
-            Play Now
+          <Button 
+            className={`w-full ${isConnected ? 'bg-purple-600 hover:bg-purple-700' : 'bg-yellow-600 hover:bg-yellow-700'}`}
+            onClick={handlePlayClick}
+          >
+            {isConnected ? (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Play Now
+              </>
+            ) : (
+              <>
+                <Wallet className="w-4 h-4 mr-2" />
+                Connect Wallet to Play
+              </>
+            )}
           </Button>
         </div>
       </div>

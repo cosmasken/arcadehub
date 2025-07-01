@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { WalletSummary, WalletBalance, PendingReward, WalletTransaction } from '../types/supabase';
 import useUserStore from './useUserStore';
+import useWalletStore from './useWalletStore';
 
 interface WalletRewardsStore {
   // State
@@ -11,9 +12,9 @@ interface WalletRewardsStore {
   
   // Actions
   fetchWalletSummary: () => Promise<void>;
-  getWalletBalance: () => Promise<WalletBalance | null>;
-  getPendingRewards: () => Promise<PendingReward[]>;
-  getTransactionHistory: (limit?: number) => Promise<WalletTransaction[]>;
+  getWalletBalance: (userId?: string) => Promise<WalletBalance | null>;
+  getPendingRewards: (userId?: string) => Promise<PendingReward[]>;
+  getTransactionHistory: (limit?: number, userId?: string) => Promise<WalletTransaction[]>;
   claimReward: (rewardId: string) => Promise<{ success: boolean; error?: string }>;
   refreshData: () => Promise<void>;
   clearError: () => void;
@@ -29,17 +30,65 @@ export const useWalletRewardsStore = create<WalletRewardsStore>((set, get) => ({
   fetchWalletSummary: async () => {
     set({ isLoading: true, error: null });
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
+      // First check if user is authenticated with Supabase
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.log('User not authenticated with Supabase, checking Web3Auth...');
+        const walletStore = useWalletStore.getState();
+        if (!walletStore.isConnected || !walletStore.aaWalletAddress) {
+          throw new Error('Please connect your wallet first');
+        }
+        
+        // If we have a wallet connection but no Supabase session,
+        // we'll continue with the wallet address as the user ID
+        const walletAddress = walletStore.aaWalletAddress;
+        
+        // Fetch data using wallet address instead of user ID
+        const [balance, rewards, transactions] = await Promise.all([
+          get().getWalletBalance(walletAddress),
+          get().getPendingRewards(walletAddress),
+          get().getTransactionHistory(10, walletAddress)
+        ]);
+        
+        set({
+          walletSummary: {
+            balance: balance || {
+              user_id: walletAddress,
+              total_balance: '0',
+              available_balance: '0',
+              locked_balance: '0',
+              updated_at: new Date().toISOString()
+            },
+            pending_rewards: rewards,
+            recent_transactions: transactions
+          },
+          isLoading: false
+        });
+        return;
       }
-
-      // Fetch all data in parallel
+      
+      // If user is authenticated with Supabase, fetch data normally
       const [balance, rewards, transactions] = await Promise.all([
-        get().getWalletBalance(),
-        get().getPendingRewards(),
-        get().getTransactionHistory(10)
+        get().getWalletBalance(user.id),
+        get().getPendingRewards(user.id),
+        get().getTransactionHistory(10, user.id)
       ]);
+      
+      set({
+        walletSummary: {
+          balance: balance || {
+            user_id: user.id,
+            total_balance: '0',
+            available_balance: '0',
+            locked_balance: '0',
+            updated_at: new Date().toISOString()
+          },
+          pending_rewards: rewards,
+          recent_transactions: transactions
+        },
+        isLoading: false
+      });
 
       set({
         walletSummary: {
@@ -65,24 +114,24 @@ export const useWalletRewardsStore = create<WalletRewardsStore>((set, get) => ({
   },
 
   // Get wallet balance
-  getWalletBalance: async (): Promise<WalletBalance | null> => {
+  getWalletBalance: async (userId?: string): Promise<WalletBalance | null> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
+      let targetUserId = userId;
+      
+      if (!targetUserId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+        targetUserId = user.id;
       }
 
       const { data, error } = await supabase
-        .from('user_wallet_balances')
+        .from('wallet_balances')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
-        throw error;
-      }
-
-      return data || null;
+      if (error) throw error;
+      return data;
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
       return null;
@@ -90,19 +139,21 @@ export const useWalletRewardsStore = create<WalletRewardsStore>((set, get) => ({
   },
 
   // Get pending rewards
-  getPendingRewards: async (): Promise<PendingReward[]> => {
+  getPendingRewards: async (userId?: string): Promise<PendingReward[]> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
+      let targetUserId = userId;
+      
+      if (!targetUserId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+        targetUserId = user.id;
       }
 
       const { data, error } = await supabase
         .from('pending_rewards')
         .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'PENDING')
-        .order('unlock_at', { ascending: true });
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -113,17 +164,20 @@ export const useWalletRewardsStore = create<WalletRewardsStore>((set, get) => ({
   },
 
   // Get transaction history
-  getTransactionHistory: async (limit = 10): Promise<WalletTransaction[]> => {
+  getTransactionHistory: async (limit = 10, userId?: string): Promise<WalletTransaction[]> => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
+      let targetUserId = userId;
+      
+      if (!targetUserId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return [];
+        targetUserId = user.id;
       }
 
       const { data, error } = await supabase
         .from('wallet_transactions')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', targetUserId)
         .order('created_at', { ascending: false })
         .limit(limit);
 

@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import GameCard from '../components/GameCard';
-import StatsCard from '../components/StatsCard';
+import WelcomeModal from '../components/WelcomeModal';
+import Tooltip from '../components/Tooltip';
 import { Badge } from '../components/ui/badge';
 import { Card } from '../components/ui/card';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { GamepadIcon, Users } from 'lucide-react';
+import { GamepadIcon, Users, Wallet as WalletIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useWalletStore } from '../stores/useWalletStore';
 import { getProvider } from '../lib/aaUtils';
 import { ethers } from 'ethers';
 import { TESTNET_CONFIG } from '@/config';
@@ -16,8 +18,23 @@ import { TESTNET_CONFIG } from '@/config';
 const TOKEN_ABI = "../abi/ArcadeToken.json";
 
 const Index = () => {
-
   const navigate = useNavigate();
+  const { isConnected, connectWallet } = useWalletStore();
+  const [showWalletTooltip, setShowWalletTooltip] = useState(false);
+
+  // Show wallet tooltip on first visit after welcome modal
+  useEffect(() => {
+    const hasSeenWalletTooltip = localStorage.getItem('hasSeenWalletTooltip');
+    if (!hasSeenWalletTooltip && isConnected === false) {
+      const timer = setTimeout(() => {
+        setShowWalletTooltip(true);
+        // Hide after 5 seconds
+        setTimeout(() => setShowWalletTooltip(false), 5000);
+        localStorage.setItem('hasSeenWalletTooltip', 'true');
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected]);
   const featuredGames = [
     {
       id: "honey-clicker",
@@ -78,11 +95,12 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-black text-green-400 font-mono">
       <Header />
+      <WelcomeModal />
 
       {/* Stats Banner - Moved to top */}
       <div className="bg-gray-900/50 border-b border-gray-800">
         <div className="container mx-auto px-6 py-3">
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center">
             {stats.map((stat, index) => (
               <div key={index} className="flex items-center mx-4">
                 <stat.icon className="w-5 h-5 text-purple-400 mr-2" />
@@ -92,6 +110,26 @@ const Index = () => {
                 </div>
               </div>
             ))}
+            
+            <div className="ml-auto relative">
+              <Tooltip 
+                content={isConnected ? "Wallet Connected" : "Connect your wallet to earn rewards"}
+                position="bottom"
+                className={showWalletTooltip ? 'block' : 'hidden'}
+              >
+                <button
+                  onClick={!isConnected ? connectWallet : undefined}
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    isConnected 
+                      ? 'bg-green-900/50 text-green-400 border border-green-800' 
+                      : 'bg-purple-900/50 text-purple-400 hover:bg-purple-800/50 border border-purple-800'
+                  }`}
+                >
+                  <WalletIcon className="w-5 h-5 mr-2" />
+                  {isConnected ? 'Connected' : 'Connect Wallet'}
+                </button>
+              </Tooltip>
+            </div>
           </div>
         </div>
       </div>

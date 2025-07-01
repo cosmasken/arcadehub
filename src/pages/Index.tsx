@@ -221,7 +221,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
       <Navigation />
       <WelcomeModal />
       <HowToPlay />
@@ -232,13 +232,13 @@ const Index = () => {
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div className="relative flex-1 max-w-2xl">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-300" />
               <Input
                 type="text"
                 placeholder="Search games..."
                 value={searchQuery}
                 onChange={handleSearchChange}
-                className="pl-10 w-full"
+                className="pl-10 w-full bg-gray-800 border-purple-700 text-white placeholder-purple-400 focus:ring-2 focus:ring-purple-500"
               />
               {searchQuery && (
                 <button
@@ -253,7 +253,7 @@ const Index = () => {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+              className="px-4 py-2 rounded-md border border-purple-700 bg-gray-800 text-purple-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="popularity">Sort by: Most Popular</option>
               <option value="rating">Sort by: Highest Rated</option>
@@ -265,10 +265,10 @@ const Index = () => {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleCategoryFilter('all')}
-              className={`px-4 py-2 rounded-full text-sm font-medium ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 !searchParams.get('category')
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
               }`}
             >
               All Games
@@ -278,10 +278,10 @@ const Index = () => {
               <button
                 key={category}
                 onClick={() => handleCategoryFilter(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium ${
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                   searchParams.get('category') === category
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                    : 'bg-gray-800 text-red-200 hover:bg-gray-700 hover:text-white border border-red-700/50 hover:border-red-500'
                 }`}
               >
                 {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -289,33 +289,33 @@ const Index = () => {
             ))}
             
             <div className="ml-2 flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+              <span className="text-sm font-medium text-purple-200">Status:</span>
               <button
                 onClick={() => handleStatusFilter('all')}
-                className={`px-3 py-1 text-sm rounded-full ${
+                className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
                   !searchParams.get('status')
-                    ? 'bg-purple-600 text-white font-medium'
-                    : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-purple-600 text-white font-medium shadow-lg shadow-purple-500/30'
+                    : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
                 }`}
               >
                 All
               </button>
               <button
                 onClick={() => handleStatusFilter('live')}
-                className={`px-3 py-1 text-sm rounded-full ${
+                className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
                   searchParams.get('status') === 'live'
-                    ? 'bg-green-500 text-black font-medium'
-                    : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-green-500 text-black font-medium shadow-lg shadow-green-500/30'
+                    : 'bg-gray-800 text-green-300 hover:bg-gray-700 hover:text-white border border-green-700/50 hover:border-green-500'
                 }`}
               >
                 Live
               </button>
               <button
                 onClick={() => handleStatusFilter('upcoming')}
-                className={`px-3 py-1 text-sm rounded-full ${
+                className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
                   searchParams.get('status') === 'upcoming'
-                    ? 'bg-yellow-500 text-black font-medium'
-                    : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-yellow-500 text-black font-medium shadow-lg shadow-yellow-500/30'
+                    : 'bg-gray-800 text-yellow-300 hover:bg-gray-700 hover:text-white border border-yellow-700/50 hover:border-yellow-500'
                 }`}
               >
                 Coming Soon
@@ -325,7 +325,7 @@ const Index = () => {
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="ml-auto flex items-center text-sm text-gray-400 hover:text-white"
+                className="ml-auto flex items-center text-sm text-purple-300 hover:text-white bg-gray-800/50 hover:bg-gray-800 px-3 py-1.5 rounded-full border border-purple-700/50 hover:border-purple-500 transition-all duration-200"
               >
                 <X size={16} className="mr-1" />
                 Clear all filters
@@ -335,16 +335,19 @@ const Index = () => {
         </div>
 
         {/* Stats Banner */}
-        <div className="bg-gray-900/50 border-b border-gray-800 mb-8">
-          <div className="container mx-auto px-6 py-3">
-            <div className="flex flex-wrap justify-center items-center gap-6">
+        <div className="bg-gradient-to-r from-purple-900/80 to-blue-900/80 border-b-2 border-purple-500/30 mb-8 shadow-lg">
+          <div className="container mx-auto px-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {stats.map((stat, index) => (
-                <div key={index} className="flex items-center">
-                  <stat.icon className="w-5 h-5 text-purple-400 mr-2" />
+                <div key={index} className="flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm rounded-lg border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300">
+                  <div className="relative">
+                    <div className="absolute -inset-1 bg-purple-500/20 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
+                    {/* {stat.icon} */}
+                  </div>
                   <div>
-                    <div className="text-sm text-gray-400">{stat.title}</div>
-                    <div className="font-bold text-lg text-white">{stat.value}</div>
-                    <div className="text-xs text-gray-500">{stat.change}</div>
+                    <p className="text-sm text-purple-200 font-mono">{stat.title}</p>
+                    <p className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-white bg-clip-text text-transparent">{stat.value}</p>
+                    <p className="text-xs text-gray-500">{stat.change}</p>
                   </div>
                 </div>
               ))}
@@ -374,19 +377,31 @@ const Index = () => {
 
         {/* Games Grid */}
         {sortedGames.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {sortedGames.map((game) => (
-              <GameCard key={game.id} game={game} />
+              <div 
+                key={game.id}
+                className="transform transition-all duration-300 hover:scale-105 hover:z-10"
+                style={{
+                  perspective: '1000px',
+                  transformStyle: 'preserve-3d',
+                }}
+              >
+                <GameCard game={game} />
+              </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No games found</h3>
-            <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filters</p>
+          <div className="col-span-full text-center py-16 bg-gray-900/50 rounded-xl border-2 border-dashed border-purple-900/50">
+            <div className="inline-block p-4 bg-gray-800/80 rounded-full mb-4">
+              <Search className="h-8 w-8 text-purple-400" />
+            </div>
+            <h3 className="text-xl font-bold text-purple-100 mb-2">No Games Found</h3>
+            <p className="text-purple-300 mb-4 max-w-md mx-auto">We couldn't find any games matching your search criteria.</p>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-medium hover:from-purple-500 hover:to-blue-500 transition-all duration-300 shadow-lg hover:shadow-purple-500/30"
               >
                 Clear all filters
               </button>
@@ -395,31 +410,57 @@ const Index = () => {
         )}
 
         {/* CTA Section */}
-        <Card className="mt-16 p-8 bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border-0 text-center">
-          <h3 className="text-2xl font-bold text-white mb-4">
-            READY TO DOMINATE?
-          </h3>
-          <p className="text-green-400 mb-6">
-            Join thousands of players competing for glory and rewards
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Badge 
-              onClick={() => navigate('/tournaments')}
-              className="bg-green-400 text-black px-4 py-2 cursor-pointer hover:bg-green-300 transition-colors"
-            >
-              🏆 Tournaments
-            </Badge>
-            <Badge 
-              className="bg-cyan-400 text-black px-4 py-2 cursor-pointer hover:bg-cyan-300 transition-colors"
-            >
-              💰 Rewards
-            </Badge>
-            <Badge
-              onClick={() => navigate('/leaderboard')}
-              className="bg-yellow-400 text-black px-4 py-2 cursor-pointer hover:bg-yellow-300 transition-colors"
-            >
-              📈 Leaderboards
-            </Badge>
+        <Card className="relative mt-16 p-8 md:p-12 bg-gradient-to-r from-purple-900/30 via-black/50 to-blue-900/30 border-2 border-purple-500/20 rounded-xl overflow-hidden text-center">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 overflow-hidden opacity-30">
+            <div className="absolute -top-20 -left-20 w-40 h-40 bg-purple-500 rounded-full filter blur-3xl opacity-40"></div>
+            <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-blue-500 rounded-full filter blur-3xl opacity-40"></div>
+          </div>
+          
+          <div className="relative z-10">
+            <h3 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-blue-300 mb-4 tracking-tight">
+              READY TO DOMINATE?
+            </h3>
+            <p className="text-purple-200 text-lg mb-8 max-w-2xl mx-auto leading-relaxed">
+              Join thousands of players competing for glory, rewards, and eternal fame in the ultimate gaming arena.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <button 
+                onClick={() => navigate('/tournaments')}
+                className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-green-400 to-emerald-300 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 hover:scale-105"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span className="text-xl">🏆</span>
+                  <span>Tournaments</span>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </button>
+              
+              <button 
+                className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-cyan-300 to-blue-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span className="text-xl">💰</span>
+                  <span>Rewards</span>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </button>
+              
+              <button
+                onClick={() => navigate('/leaderboard')}
+                className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-yellow-300 to-amber-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/30 hover:scale-105"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span className="text-xl">📈</span>
+                  <span>Leaderboards</span>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </button>
+            </div>
+            
+            <p className="mt-6 text-sm text-purple-400/80">
+              New tournaments starting daily • No entry fees • Play to earn
+            </p>
           </div>
         </Card>
       </main>

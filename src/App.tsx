@@ -4,7 +4,13 @@ import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { useWalletStore } from "./stores/useWalletStore";
+import LoadingModal from "./components/LoadingModal";
+import ErrorBoundary from "./components/ErrorBoundary";
+import Layout from "./components/Layout";
+
+// Pages
 import Index from "./pages/Index";
 import Leaderboard from "./pages/Leaderboard";
 import Tournaments from "./pages/Tournaments";
@@ -15,8 +21,6 @@ import CollectionDetail from "./pages/CollectionDetail";
 import DeveloperProfile from "./pages/DeveloperProfile";
 import HoneyClicker from "./pages/HoneyClicker";
 import NotFound from "./pages/NotFound";
-import { useWalletStore } from "./stores/useWalletStore";
-import LoadingModal from "./components/LoadingModal";
 import SpaceInvaders from "./pages/SpaceInvaders";
 import Admin from "./pages/Admin";
 import Sponsors from "./pages/Sponsors";
@@ -24,8 +28,6 @@ import SponsorLogin from "./pages/SponsorLogin";
 import SponsorDashboard from "./pages/SponsorDashboard";
 import CreateTournament from "./pages/CreateTournament";
 import SponsorAnalytics from "./components/SponsorAnalytics";
-import RequireWallet from "./components/RequireWallet";
-import ErrorBoundary from "./components/ErrorBoundary";
 import SnakeGame from "./games/snake/SnakeGame";
 import Tetris from "./games/tetris";
 
@@ -81,24 +83,33 @@ const App = () => {
         <ErrorBoundary>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              {/* Routes that use the Layout */}
+              <Route element={
+                <Layout>
+                  <Outlet />
+                </Layout>
+              }>
+                <Route path="/" element={<Index />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/tournaments" element={<Tournaments />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/collections" element={<Collections />} />
+                <Route path="/collections/:id" element={<CollectionDetail />} />
+                <Route path="/games/honey-clicker" element={<HoneyClicker />} />
+                <Route path="/games/snake" element={<SnakeGame />} />
+                <Route path="/games/tetris" element={<Tetris />} />
+                <Route path="/games/space-invaders" element={<SpaceInvaders />} />
+              </Route>
+              
+              {/* Routes that don't use the Layout */}
               <Route path="/admin" element={<Admin />} />
               <Route path="/sponsors" element={<Sponsors />} />
               <Route path="/sponsor/login" element={<SponsorLogin />} />
               <Route path="/sponsor/dashboard" element={<SponsorDashboard />} />
               <Route path="/sponsor/create-tournament" element={<CreateTournament />} />
               <Route path="/sponsor/analytics" element={<SponsorAnalytics />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/tournaments" element={<Tournaments />} />
-              <Route path="/profile" element={<Profile />} />
               <Route path="/developer" element={<DeveloperUpload />} />
               <Route path="/developer/profile/:id" element={<DeveloperProfile />} />
-              <Route path="/collections" element={<Collections />} />
-              <Route path="/collections/:id" element={<CollectionDetail />} />
-              <Route path="/games/honey-clicker" element={<HoneyClicker />} />
-              <Route path="/games/snake" element={<SnakeGame />} />
-              <Route path="/games/tetris" element={<Tetris />} />
-              <Route path="/games/space-invaders" element={<SpaceInvaders />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

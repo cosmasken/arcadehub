@@ -9,7 +9,6 @@ const Navigation = () => {
 
   const navLinks = [
     { to: '/', icon: Home, label: 'Home' },
-    { to: '/games', icon: Gamepad2, label: 'All Games' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/profile', icon: User, label: 'Profile' },
   ];

@@ -46,15 +46,15 @@ const DeveloperUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-  const fetchDevelopers = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, wallet_address, username, bio")
-      .eq("user_type", "developer");
-    if (!error) setDevelopers(data || []);
-  };
-  fetchDevelopers();
-}, []);
+    const fetchDevelopers = async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, wallet_address, username, bio")
+        .eq("user_type", "developer");
+      if (!error) setDevelopers(data || []);
+    };
+    fetchDevelopers();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;

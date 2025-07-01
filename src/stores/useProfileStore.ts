@@ -95,9 +95,9 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   fetchProfile: async (walletAddress: string) => {
     set({ loading: true, error: null });
     try {
-      // 1. Fetch profile
+      // 1. Fetch profile from users table
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('wallet_address', walletAddress)
         .single();
@@ -196,7 +196,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
 
   checkUsernameExists: async (username: string) => {
     const { data } = await supabase
-      .from('profiles')
+      .from('users')
       .select('id')
       .eq('username', username)
       .maybeSingle();
@@ -206,10 +206,12 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   onboardUser: async (walletAddress: string, userData: any) => {
     set({ loading: true, error: null });
     try {
-      const { error } = await supabase.from('profiles').upsert([
+      const { error } = await supabase.from('users').upsert([
         {
           wallet_address: walletAddress,
           ...userData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       ]);
       if (error) {

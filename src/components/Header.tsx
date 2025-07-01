@@ -15,7 +15,7 @@ import { LogOut, Wallet, User, Settings, ChevronDown, Copy, Check } from 'lucide
 import { useWalletStore } from '../stores/useWalletStore';
 import supabase from '../hooks/use-supabase';
 import useProfileStore from '../stores/useProfileStore';
-import OnboardingModal from './OnboardingModal';
+import OnboardingModal, { UserData } from './OnboardingModal';
 
 
 
@@ -49,7 +49,7 @@ const Header = () => {
       // Check if user profile exists in Supabase
       const checkProfile = async () => {
         const { data } = await supabase
-          .from('profiles')
+          .from('users')
           .select('id')
           .eq('wallet_address', aaWalletAddress)
           .single();
@@ -59,16 +59,16 @@ const Header = () => {
     }
   }, [isConnected, aaWalletAddress]);
 
-  const handleOnboardingComplete = async (userData: { username: string; bio: string; userType: 'developer' | 'gamer' }) => {
+  const handleOnboardingComplete = async (userData: UserData) => {
     if (!aaWalletAddress) return;
     
-    // Save onboarding data to Supabase
-    await supabase.from('profiles').insert([
+    // Save onboarding data to users table
+    await supabase.from('users').upsert([
       {
         wallet_address: aaWalletAddress,
         username: userData.username,
         bio: userData.bio,
-        role: userData.userType,
+        user_type: userData.user_type,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       },
@@ -91,13 +91,13 @@ const Header = () => {
       }
     };
     init();
-  }, []);
+  }, [initializeWeb3Auth, isInitialized]);
 
   useEffect(() => {
     if (isConnected && !aaWalletAddress) {
       connectWallet();
     }
-  }, [isConnected]);
+  }, [isConnected, aaWalletAddress, connectWallet]);
 
 
   const handleConnect = async () => {

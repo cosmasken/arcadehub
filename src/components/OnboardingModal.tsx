@@ -54,8 +54,8 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   
   const checkUsernameExists = async (username: string): Promise<boolean> => {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('username')
+      .from('users')
+      .select('id')
       .eq('username', username)
       .single();
     

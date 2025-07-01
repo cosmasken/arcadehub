@@ -96,6 +96,7 @@ export type GameAction =
   | { type: 'HOLD' }
   | { type: 'PAUSE' }
   | { type: 'RESET' }
+  | { type: 'START' }
   | { type: 'TICK' }
   | { type: 'BUY_ITEM'; itemId: string };
 

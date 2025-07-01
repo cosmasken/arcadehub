@@ -32,11 +32,14 @@ export const SHAPES = [
 
 // Game levels configuration
 export const LEVELS = [
-  { level: 1, linesToClear: 10, speed: 1000, color: '#4CAF50', name: 'Beginner' },
-  { level: 2, linesToClear: 25, speed: 800, color: '#2196F3', name: 'Apprentice' },
-  { level: 3, linesToClear: 50, speed: 600, color: '#9C27B0', name: 'Adept' },
-  { level: 4, linesToClear: 100, speed: 400, color: '#FF9800', name: 'Expert' },
-  { level: 5, linesToClear: 200, speed: 200, color: '#F44336', name: 'Master' },
+  { level: 1, linesToClear: 10, speed: 2000, color: '#4CAF50', name: 'Beginner' },     // 2 seconds
+  { level: 2, linesToClear: 30, speed: 1750, color: '#2196F3', name: 'Apprentice' },  // 1.75s
+  { level: 3, linesToClear: 60, speed: 1500, color: '#9C27B0', name: 'Adept' },       // 1.5s
+  { level: 4, linesToClear: 100, speed: 1300, color: '#FF9800', name: 'Expert' },     // 1.3s
+  { level: 5, linesToClear: 150, speed: 1100, color: '#F44336', name: 'Master' },     // 1.1s
+  { level: 6, linesToClear: 200, speed: 900, color: '#E91E63', name: 'Grand Master' }, // 0.9s
+  { level: 7, linesToClear: 300, speed: 750, color: '#9C27B0', name: 'Legend' },      // 0.75s
+  { level: 8, linesToClear: 500, speed: 600, color: '#FF5722', name: 'Mythic' },      // 0.6s
 ];
 
 // Points system

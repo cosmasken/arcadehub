@@ -105,6 +105,8 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, isPaused: !state.isPaused };
     case 'RESET':
       return getInitialState();
+    case 'START':
+      return { ...state, isStarted: true, isPaused: false };
     case 'TICK':
       return gameTick(state);
     case 'BUY_ITEM':

@@ -21,19 +21,31 @@ const NextPieces: React.FC = () => {
     const pieceHeight = 4 * blockSize;
     const padding = 10;
     
-    // Draw next pieces
-    state.nextPieces.forEach((pieceType, index) => {
+    // Ensure nextPieces is an array and draw each piece
+    const nextPieces = Array.isArray(state.nextPieces) ? state.nextPieces : [];
+    nextPieces.forEach((pieceType, index) => {
+      // Skip if pieceType is invalid or shape doesn't exist
+      if (typeof pieceType !== 'number' || !SHAPES[pieceType] || !SHAPES[pieceType][0]) {
+        return;
+      }
+      
       const shape = SHAPES[pieceType][0]; // Get the first rotation
-      const offsetX = Math.floor((COLS * blockSize - shape[0].length * blockSize) / 2);
+      if (!Array.isArray(shape) || shape.length === 0) return;
+      
+      const shapeRow = shape[0];
+      const rowLength = Array.isArray(shapeRow) ? shapeRow.length : 0;
+      const offsetX = Math.floor((COLS * blockSize - rowLength * blockSize) / 2);
       const offsetY = index * (pieceHeight + padding) + padding;
       
-      // Draw the piece
+      // Draw the piece with null checks
       shape.forEach((row, y) => {
-        row.forEach((value, x) => {
-          if (value) {
-            drawBlock(ctx, x * blockSize + offsetX, y * blockSize + offsetY, pieceType, blockSize);
-          }
-        });
+        if (Array.isArray(row)) {
+          row.forEach((value, x) => {
+            if (value) {
+              drawBlock(ctx, x * blockSize + offsetX, y * blockSize + offsetY, pieceType, blockSize);
+            }
+          });
+        }
       });
     });
   }, [state.nextPieces]);

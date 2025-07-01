@@ -43,53 +43,115 @@ const Board: React.FC = () => {
       ctx.strokeStyle = '#16213e';
       ctx.lineWidth = 0.5;
       
-      // Draw the board - add null/undefined check and ensure it's a 2D array
-      if (Array.isArray(state.board)) {
-        state.board.forEach((row: number[], y: number) => {
-          if (Array.isArray(row)) {
-            row.forEach((value: number, x: number) => {
-              if (value !== 0 && typeof value === 'number') {
-                drawBlock(ctx, x, y, value);
-              }
-            });
+      // Draw the board - ensure it's a valid 2D array before rendering
+      const board = Array.isArray(state.board) ? state.board : [];
+      for (let y = 0; y < ROWS; y++) {
+        const row = Array.isArray(board[y]) ? board[y] : [];
+        for (let x = 0; x < COLS; x++) {
+          const value = typeof row[x] === 'number' ? row[x] : 0;
+          if (value !== 0) {
+            drawBlock(ctx, x, y, value);
           }
-        });
+        }
       }
   
-      // Draw ghost piece if enabled and there's a current piece
-      if (state.settings.ghostPiece && state.currentPiece) {
-        let ghostY = state.currentPiece.position.y;
+      // Draw ghost piece if enabled and there's a valid current piece
+      if (state.settings.ghostPiece && state.currentPiece?.shape && state.currentPiece?.position) {
+        const { shape, position, type } = state.currentPiece;
+        let ghostY = position.y;
+        
+        // Find the lowest valid position for the ghost piece
         while (isValidMove(
           state.board, 
-          state.currentPiece.shape, 
-          { x: state.currentPiece.position.x, y: ghostY + 1 }
+          shape, 
+          { x: position.x, y: ghostY + 1 }
         )) {
           ghostY++;
         }
         
-        if (ghostY > state.currentPiece.position.y) {
-          state.currentPiece.shape.forEach((row: number[], y: number) => {
-            row.forEach((value: number, x: number) => {
-              if (value !== 0) {
-                drawGhostBlock(ctx, state.currentPiece.position.x + x, ghostY + y, state.currentPiece.type);
+        // Only draw the ghost piece if it's below the current piece
+        if (ghostY > position.y && Array.isArray(shape)) {
+          for (let y = 0; y < shape.length; y++) {
+            const row = Array.isArray(shape[y]) ? shape[y] : [];
+            for (let x = 0; x < row.length; x++) {
+              if (row[x] !== 0) {
+                drawGhostBlock(ctx, (position?.x || 0) + x, ghostY + y, type || 1);
               }
-            });
-          });
+            }
+          }
         }
       }
   
-      // Draw current piece
-      if (state.currentPiece) {
-        state.currentPiece.shape.forEach((row: number[], y: number) => {
-          row.forEach((value: number, x: number) => {
-            if (value !== 0) {
-              drawBlock(ctx, state.currentPiece.position.x + x, state.currentPiece.position.y + y, state.currentPiece.type);
+      // Draw current piece with null/undefined checks
+      if (state.currentPiece && state.currentPiece.shape && state.currentPiece.position) {
+        const { shape, position, type } = state.currentPiece;
+        if (Array.isArray(shape)) {
+          for (let y = 0; y < shape.length; y++) {
+            const row = Array.isArray(shape[y]) ? shape[y] : [];
+            for (let x = 0; x < row.length; x++) {
+              if (row[x] !== 0) {
+                const posX = (position?.x || 0) + x;
+                const posY = (position?.y || 0) + y;
+                drawBlock(ctx, posX, posY, type || 1);
+              }
             }
-          });
-        });
+          }
+        }
       }
     }, [state.board, state.currentPiece, state.settings.ghostPiece]);
   
+    // Keyboard event handler
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+      if (!state.isStarted || state.gameOver) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          dispatch({ type: 'MOVE_LEFT' });
+          break;
+        case 'ArrowRight':
+          dispatch({ type: 'MOVE_RIGHT' });
+          break;
+        case 'ArrowUp':
+          dispatch({ type: 'ROTATE' });
+          break;
+        case 'ArrowDown':
+          dispatch({ type: 'SOFT_DROP' });
+          break;
+        case ' ':
+          dispatch({ type: 'HARD_DROP' });
+          break;
+        case 'p':
+        case 'P':
+          dispatch({ type: 'PAUSE' });
+          break;
+        case 'c':
+        case 'C':
+          dispatch({ type: 'HOLD' });
+          break;
+        default:
+          return;
+      }
+      
+      // Prevent default for game controls to avoid page scrolling
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'p', 'P', 'c', 'C'].includes(e.key)) {
+        e.preventDefault();
+      }
+    }, [dispatch, state.isStarted, state.gameOver]);
+
+    // Set up keyboard event listeners
+    useEffect(() => {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [handleKeyDown]);
+
+    // Start the game automatically when the component mounts
+    useEffect(() => {
+      dispatch({ type: 'RESET' });
+      dispatch({ type: 'START' });
+    }, [dispatch]);
+
     // Game loop
     useEffect(() => {
       if (state.gameOver || state.isPaused || !state.isStarted) {
@@ -99,7 +161,7 @@ const Board: React.FC = () => {
         }
         return;
       }
-  
+
       let lastTime = performance.now();
       
       const gameLoop = (currentTime: number) => {
@@ -107,15 +169,16 @@ const Board: React.FC = () => {
         lastTime = currentTime;
         
         // Update game state at a fixed rate
-        if (!state.isPaused && !state.gameOver) {
+        if (state.isStarted && !state.isPaused && !state.gameOver) {
           const currentLevel = LEVELS.find(lvl => lvl.level === state.stats.level) || LEVELS[0];
-          const speed = Math.max(50, currentLevel.speed); // Ensure speed is never too fast
+          const speed = Math.max(500, currentLevel.speed);
           
           accumulatedTime.current += deltaTime;
           
-          while (accumulatedTime.current >= speed) {
+          // Only process a tick if enough time has passed
+          if (accumulatedTime.current >= speed) {
             dispatch({ type: 'TICK' });
-            accumulatedTime.current -= speed;
+            accumulatedTime.current = 0;
           }
         }
   

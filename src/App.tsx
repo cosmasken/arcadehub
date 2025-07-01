@@ -143,18 +143,36 @@ const App = () => {
                 throw new Error('Wallet not connected');
               }
               
+              // Prepare user data for Supabase
+              const userProfileData = {
+                ...userData,
+                wallet_address: aaWalletAddress,
+                updated_at: new Date().toISOString(),
+              };
+              
+              // Remove any undefined values
+              Object.keys(userProfileData).forEach(key => 
+                userProfileData[key] === undefined && delete userProfileData[key]
+              );
+              
               // Call the API to create or update the user
               const { data: user, error } = await supabase
                 .from('users')
-                .upsert({
-                  wallet_address: aaWalletAddress,
-                  ...userData,
-                  updated_at: new Date().toISOString(),
+                .upsert(userProfileData, {
+                  onConflict: 'wallet_address',
+                  ignoreDuplicates: false
                 })
                 .select()
                 .single();
 
-              if (error) throw error;
+              if (error) {
+                console.error('Supabase error:', error);
+                throw new Error(error.message || 'Failed to save user profile');
+              }
+              
+              if (!user) {
+                throw new Error('No user data returned from database');
+              }
               
               // Update the user profile in the app state
               setUserProfile(user);
@@ -164,11 +182,15 @@ const App = () => {
                 title: 'Profile updated',
                 description: 'Your profile has been saved successfully.',
               });
+              
+              // Refresh the page to ensure all components have the latest user data
+              window.location.reload();
+              
             } catch (error) {
-              console.error('Error saving profile:', error);
+              console.error('Error in onComplete:', error);
               toast({
                 title: 'Error',
-                description: 'Failed to save profile. Please try again.',
+                description: error instanceof Error ? error.message : 'Failed to save profile',
                 variant: 'destructive',
               });
             }

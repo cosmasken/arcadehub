@@ -134,114 +134,96 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   };
 
   const handleComplete = async () => {
+    // Validate username
     if (!username.trim()) {
       toast({
-        title: "Error",
-        description: "Username is required",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    switch (usernameStatus) {
-      case 'checking':
-        toast({
-          title: "Please wait",
-          description: "Checking username availability...",
-          variant: "default"
-        });
-        return;
-      case 'taken':
-        toast({
-          title: "Error",
-          description: "Please choose a different username",
-          variant: "destructive"
-        });
-        return;
-      case 'idle':
-      case 'available':
-        // Proceed with form submission
-        break;
-      default:
-        toast({
-          title: "Error",
-          description: "Please check your username",
-          variant: "destructive"
-        });
-        return;
-    }
-
-    if (!aaWalletAddress) {
-      toast({
-        title: 'Wallet not connected',
-        description: 'Please connect your wallet to continue',
+        title: 'Error',
+        description: 'Username is required',
         variant: 'destructive',
       });
       return;
     }
 
+    // Check username availability
+    if (usernameStatus === 'taken') {
+      toast({
+        title: 'Username not available',
+        description: 'Please choose a different username',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (usernameStatus === 'checking') {
+      toast({
+        title: 'Please wait',
+        description: 'Checking username availability...',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
+    setIsUploading(true);
 
     try {
-      let avatarUrl: string | null = null;
+      // Get wallet address from store
+      const walletStore = useWalletStore.getState();
+      const walletAddress = walletStore.aaWalletAddress;
       
-      // Upload avatar if selected
+      if (!walletAddress) {
+        throw new Error('Wallet not connected');
+      }
+
+      // Handle avatar upload if file is selected
+      let avatarUrl = null;
       if (avatarFile) {
-        setIsUploading(true);
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${aaWalletAddress}/${fileName}`;
+        const fileName = `${walletAddress}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
         
+        // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
           .from('avatars')
           .upload(filePath, avatarFile);
         
         if (uploadError) throw uploadError;
         
+        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('avatars')
           .getPublicUrl(filePath);
           
         avatarUrl = publicUrl;
-        setIsUploading(false);
       }
 
-      // Prepare user data
+      // Prepare user data for Supabase
       const userData = {
+        id: walletAddress,
         username: username.trim(),
         bio: bio.trim() || null,
         avatar_url: avatarUrl,
         user_type: userType,
-        email: null,
+        wallet_address: walletAddress,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Call onComplete with the user data
+      // The parent component (App.tsx) will handle the actual database operation
+      onComplete({
+        ...userData,
+        // Ensure we're only including fields that match the UserData type
+        username: userData.username,
+        bio: userData.bio,
+        avatar_url: userData.avatar_url,
+        user_type: userData.user_type,
+        email: null, // These fields are required by the UserData type
         company_name: null,
         website: null,
         industry: null,
         contact_email: null,
         contact_phone: null,
         social_links: {}
-      };
-
-      // Create user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: aaWalletAddress,
-          ...userData,
-          updated_at: new Date().toISOString()
-        })
-        .select('*')
-        .single();
-
-      if (profileError) throw profileError;
-      if (!profileData) throw new Error('Failed to create user profile');
-
-      // Call onComplete with the user data
-      onComplete({
-        ...profileData,
-        id: aaWalletAddress,
-        created_at: profileData.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        wallet_address: aaWalletAddress
       });
 
     } catch (error) {

@@ -1,20 +1,49 @@
+import Layout from "../components/Layout";
 import React, { useState, useEffect, useCallback } from "react";
-import Header from '../components/Header';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { useWalletStore } from "../stores/useWalletStore";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
+import { DialogFooter } from "../components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import { Slider } from '../components/ui/slider';
 import { Wallet, Gift, Loader2 } from 'lucide-react';
 import LoadingModal from '../components/LoadingModal';
 import { TESTNET_CONFIG } from '../config';
 import { NFT } from '../types/nft';
+
+// Define the shape of the NFT data returned from the API
+interface RawNFT {
+  id?: string | number;
+  tokenId: number;
+  name: string;
+  description: string;
+  image: string;
+  rarity?: string;
+  game?: string;
+}
+
+// Type guard to check if an object matches the RawNFT interface
+function isRawNFT(obj: unknown): obj is RawNFT {
+  return (
+    obj &&
+    'tokenId' in obj &&
+    'name' in obj &&
+    'description' in obj &&
+    'image' in obj
+  );
+}
 import { useToast } from '../components/ui/use-toast';
 import { ethers } from 'ethers';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import {
   getNFTs,
   getProvider,
@@ -64,8 +93,25 @@ const Collections: React.FC = () => {
     setIsLoading(true);
     setError("");
     try {
-      const fetchedNFTs = await getNFTs(aaWalletAddress);
-      setNfts(fetchedNFTs);
+      const response = await getNFTs(aaWalletAddress);
+      
+      // Ensure response is an array
+      const fetchedNFTs = Array.isArray(response) ? response : [];
+      
+      // Map the fetched NFTs to match the NFT interface with proper type safety
+      const formattedNFTs: NFT[] = fetchedNFTs
+        .filter(isRawNFT) // Filter out any malformed NFT data
+        .map((nft): NFT => ({
+          id: nft.id?.toString() ?? nft.tokenId.toString(),
+          tokenId: nft.tokenId.toString(),
+          name: nft.name,
+          description: nft.description,
+          image: nft.image,
+          rarity: 'Common',
+          game: 'Unknown Game'
+        }));
+        
+      setNfts(formattedNFTs);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load NFTs. Please try again later.";
       setError(errorMessage);
@@ -239,8 +285,10 @@ const Collections: React.FC = () => {
   };
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400 font-mono">
-      <Header />
+      
       <LoadingModal
         isOpen={isLoadingModalOpen}
         title="SENDING NFT"
@@ -414,6 +462,8 @@ const Collections: React.FC = () => {
         </DialogContent>
       </Dialog>
     </div>
+
+    </Layout>
   );
 };
 

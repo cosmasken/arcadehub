@@ -1,6 +1,6 @@
+import Layout from "../components/Layout";
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Header from '../components/Header';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -32,9 +32,9 @@ function useDeveloperProfile(walletAddress: string | undefined) {
     setLoading(true);
 
     const fetchData = async () => {
-      // Fetch developer profile (from profiles and developer_applications)
+      // Fetch developer profile from users table
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
         .eq('wallet_address', walletAddress)
         .single();
@@ -62,24 +62,32 @@ const DeveloperProfile = () => {
 
   if (loading) {
     return (
+    <Layout>
+      
         <div className="min-h-screen bg-black text-green-400 font-mono">
-          <Header />
+          
           <div className="flex justify-center items-center h-screen">
             <span className="text-cyan-400 text-xl">Loading developer profile...</span>
           </div>
         </div>
-    );
+  
+    </Layout>
+  );
   }
 
   if (!profile) {
     return (
+    <Layout>
+      
         <div className="min-h-screen bg-black text-green-400 font-mono">
-          <Header />
+          
           <div className="flex justify-center items-center h-screen">
             <span className="text-red-400 text-xl">Developer not found.</span>
           </div>
         </div>
-    );
+  
+    </Layout>
+  );
   }
 
   // Example stats
@@ -89,8 +97,10 @@ const DeveloperProfile = () => {
     : 'N/A';
 
   return (
+    <Layout>
+      
       <div className="min-h-screen bg-black text-green-400 font-mono">
-        <Header />
+        
         
         <div className="pt-24 pb-16 px-6">
           <div className="container mx-auto max-w-7xl">
@@ -107,13 +117,31 @@ const DeveloperProfile = () => {
               <div className="absolute inset-0 bg-black/50 rounded-lg" />
               <div className="absolute bottom-6 left-6 flex items-end space-x-6">
                 {/* No avatar in schema, so use a placeholder */}
-                <div className="w-24 h-24 rounded-lg border-2 border-cyan-400 bg-gray-900 flex items-center justify-center text-3xl">
-                  <Users className="w-12 h-12 text-cyan-400" />
+                <div className="w-24 h-24 rounded-lg border-2 border-cyan-400 bg-gray-900 flex items-center justify-center text-3xl overflow-hidden">
+                  {profile.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt={profile.username || 'Developer'} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <Users className={`w-12 h-12 text-cyan-400 ${profile.avatar_url ? 'hidden' : ''}`} />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold text-cyan-400 mb-1 neon-text">
-                    {profile.username || profile.wallet_address}
-                  </h1>
+                  <div className="flex items-center space-x-2">
+                    <h1 className="text-3xl font-bold text-cyan-400 mb-1 neon-text">
+                      {profile.username || profile.wallet_address}
+                    </h1>
+                    {profile.is_verified && (
+                      <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                      </svg>
+                    )}
+                  </div>
                   <p className="text-green-400 mb-2">{profile.bio || "No bio provided."}</p>
                   <div className="flex items-center space-x-4 text-sm">
                     <div className="flex items-center space-x-1">
@@ -169,27 +197,30 @@ const DeveloperProfile = () => {
                   <div className="space-y-3">
                     {profile.website && (
                       <Button asChild variant="outline" className="w-full justify-start border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono">
-                        <a href={profile.website} target="_blank" rel="noopener noreferrer">
+                        <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noopener noreferrer">
                           <Globe className="w-4 h-4 mr-2" />
                           WEBSITE
                         </a>
                       </Button>
                     )}
-                    {profile.twitter && (
+                    {profile.social_links?.twitter && (
                       <Button asChild variant="outline" className="w-full justify-start border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono">
-                        <a href={`https://twitter.com/${profile.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer">
+                        <a href={`https://twitter.com/${profile.social_links.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer">
                           <Twitter className="w-4 h-4 mr-2" />
                           TWITTER
                         </a>
                       </Button>
                     )}
-                    {profile.github && (
+                    {profile.social_links?.github && (
                       <Button asChild variant="outline" className="w-full justify-start border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono">
-                        <a href={`https://github.com/${profile.github}`} target="_blank" rel="noopener noreferrer">
+                        <a href={`https://github.com/${profile.social_links.github}`} target="_blank" rel="noopener noreferrer">
                           <Github className="w-4 h-4 mr-2" />
                           GITHUB
                         </a>
                       </Button>
+                    )}
+                    {!profile.website && !profile.social_links?.twitter && !profile.social_links?.github && (
+                      <p className="text-center text-gray-400 text-sm py-2">No links available</p>
                     )}
                   </div>
                 </Card>
@@ -205,15 +236,26 @@ const DeveloperProfile = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {games.length === 0 && (
-                    <div className="text-gray-400">No games published yet.</div>
-                  )}
+                  {games.length === 0 ? (
+                    <div className="col-span-2 flex flex-col items-center justify-center py-12 px-6 text-center">
+                      <GamepadIcon className="w-16 h-16 text-cyan-400 mb-4 opacity-50" />
+                      <h3 className="text-xl font-bold text-cyan-400 mb-2">No Games Published Yet</h3>
+                      <p className="text-green-400 max-w-md">This developer hasn't published any games yet. Check back later!</p>
+                    </div>
+                  ) : null}
                   {games.map((game) => (
                     <Card key={game.game_id} className="bg-black border-cyan-400 border-2 overflow-hidden hover:border-green-400 transition-colors group">
                       <div className="relative">
                         {/* No image in schema, so use a placeholder */}
-                        <div className="w-full h-32 bg-gray-800 flex items-center justify-center text-cyan-400 text-xl">
-                          <GamepadIcon className="w-8 h-8" />
+                        <div className="w-full h-32 bg-gradient-to-br from-cyan-900/50 to-black flex items-center justify-center text-cyan-400 text-xl relative overflow-hidden">
+                          <GamepadIcon className="w-12 h-12 opacity-30" />
+                          {game.thumbnail_url ? (
+                            <img 
+                              src={game.thumbnail_url} 
+                              alt={game.title} 
+                              className="absolute inset-0 w-full h-full object-cover"
+                            />
+                          ) : null}
                         </div>
                         <div className="absolute top-3 right-3">
                           <Badge className="bg-purple-500 text-white font-mono">
@@ -223,7 +265,7 @@ const DeveloperProfile = () => {
                       </div>
 
                       <div className="p-4">
-                        <h3 className="text-lg font-bold text-cyan-400 mb-2 tracking-wider">
+                        <h3 className="text-lg font-bold text-cyan-400 mb-2 tracking-wider truncate" title={game.title}>
                           {game.title}
                         </h3>
                         
@@ -255,6 +297,8 @@ const DeveloperProfile = () => {
           </div>
         </div>
       </div>
+
+    </Layout>
   );
 };
 

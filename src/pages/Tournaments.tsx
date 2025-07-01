@@ -1,3 +1,4 @@
+import Layout from "../components/Layout";
 import React, { useState } from 'react';
 import { useToast } from '../hooks/use-toast';
 import Navigation from '../components/Navigation';
@@ -46,7 +47,9 @@ const Tournaments: React.FC = () => {
           TESTNET_CONFIG.smartContracts.tournamentHub,
           TournamentHubABI,
           provider
-        );
+      
+    </Layout>
+  );
         const ids: number[] = await contract.getActiveTournamentIds();
         const tournaments = await Promise.all(
           ids.map(async (id) => {
@@ -62,7 +65,9 @@ const Tournaments: React.FC = () => {
               isParticipant: !!info.isParticipant,
             } as Tournament;
           })
-        );
+      
+    </Layout>
+  );
         setActiveTournaments(tournaments);
       } catch (error) {
         console.error('Error fetching tournaments:', error);
@@ -96,7 +101,9 @@ const Tournaments: React.FC = () => {
         selectedTournament.id,
         0, // paymentType: sponsored gas
         { gasMultiplier: 1.5 }
-      );
+    
+    </Layout>
+  );
 
       await tx.wait();
 
@@ -113,7 +120,9 @@ const Tournaments: React.FC = () => {
         TESTNET_CONFIG.smartContracts.tournamentHub,
         TournamentHubABI,
         provider
-      );
+    
+    </Layout>
+  );
       const info = await contract.getTournamentInfo(selectedTournament.id, aaWalletAddress || ethers.ZeroAddress);
       
       setActiveTournaments(prev => 
@@ -126,7 +135,9 @@ const Tournaments: React.FC = () => {
               }
             : t
         )
-      );
+    
+    </Layout>
+  );
 
     } catch (error: unknown) {
       console.error('Error joining tournament:', error);
@@ -156,6 +167,8 @@ const Tournaments: React.FC = () => {
   };
 
   return (
+    <Layout>
+      
     <div className="container mx-auto max-w-6xl">
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-6xl font-bold mb-4 text-cyan-400">
@@ -272,6 +285,8 @@ const Tournaments: React.FC = () => {
         description="Joining tournament..."
       />
     </div>
+
+    </Layout>
   );
 };
 

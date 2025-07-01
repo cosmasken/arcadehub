@@ -1,11 +1,10 @@
+import Layout from "../components/Layout";
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
-import Header from '../components/Header';
 import LoadingModal from '../components/LoadingModal';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { 
   Wallet, 
   Shield, 
@@ -15,7 +14,7 @@ import {
   Trophy,
   ArrowRight
 } from 'lucide-react';
-
+import {Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 const SponsorLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -101,8 +100,10 @@ const SponsorLogin = () => {
   // }, [user, navigate]);
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
+      
       
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-4xl">
@@ -213,6 +214,8 @@ const SponsorLogin = () => {
         description="Please confirm the connection in your wallet..."
       />
     </div>
+
+    </Layout>
   );
 };
 

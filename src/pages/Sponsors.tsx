@@ -1,8 +1,7 @@
+import Layout from "../components/Layout";
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { 
   Trophy, 
@@ -19,7 +18,7 @@ import {
   Github,
   ArrowRight
 } from 'lucide-react';
-
+import {Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 const Sponsors = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -85,8 +84,10 @@ const Sponsors = () => {
   ];
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
+      
       
       <main className="pt-20 pb-12">
         <div className="container mx-auto px-6">
@@ -400,6 +401,8 @@ const Sponsors = () => {
         </div>
       </main>
     </div>
+
+    </Layout>
   );
 };
 

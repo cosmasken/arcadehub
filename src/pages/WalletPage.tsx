@@ -1,3 +1,4 @@
+import Layout from "../components/Layout";
 import { useEffect } from 'react';
 import { useWalletRewardsStore } from '../stores/useWalletRewardsStore';
 import { WalletBalanceCard } from '../components/wallet/WalletBalanceCard';
@@ -45,6 +46,8 @@ export default function WalletPage() {
   };
 
   return (
+    <Layout>
+      
     <div className="container mx-auto py-6 space-y-6 max-w-4xl">
       <div className="flex flex-col space-y-4">
         <h1 className="text-3xl font-bold tracking-tight">Wallet & Rewards</h1>
@@ -79,5 +82,7 @@ export default function WalletPage() {
         </div>
       </div>
     </div>
+
+    </Layout>
   );
 }

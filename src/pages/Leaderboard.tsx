@@ -1,3 +1,4 @@
+import Layout from "../components/Layout";
 import React, { useEffect, useState, useRef } from "react";
 import Navigation from '../components/Navigation';
 import { Card } from '../components/ui/card';
@@ -41,30 +42,39 @@ const Leaderboard = () => {
         TournamentHubABI,
         provider
       );
+
       //TODO: Replace with actual tournament ID if needed
       // For now, we assume tournament ID is 0 for simplicity
       const filter = contract.filters.TournamentScoreSubmitted(0, null, null);
       const events = await contract.queryFilter(filter);
 
-      const totals = {};
+      const totals: Record<string, number> = {};
       events.forEach(e => {
-        if ("args" in e && Array.isArray(e.args)) {
+        if (e.args && Array.isArray(e.args) && e.args.length >= 3) {
           const player = e.args[1];
           const score = Number(e.args[2]);
-          totals[player] = (totals[player] || 0) + score;
+          if (player && !isNaN(score)) {
+            totals[player] = (totals[player] || 0) + score;
+          }
         }
       });
 
       const sorted = Object.entries(totals)
-        .map(([player, score]) => ({ player, score: Number(score) }))
+        .map(([player, score]) => ({
+          player,
+          score: Number(score),
+          // Generate a random avatar for demo purposes
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${player}`
+        }))
         .sort((a, b) => b.score - a.score);
 
       setLeaderboard(sorted);
     } catch (err) {
       console.error("Failed to fetch leaderboard:", err);
       setLeaderboard([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   // Manual refresh handler
@@ -76,7 +86,13 @@ const Leaderboard = () => {
   useEffect(() => {
     fetchLeaderboard(); // Initial fetch
     intervalRef.current = setInterval(fetchLeaderboard, POLL_INTERVAL);
-    return () => clearInterval(intervalRef.current);
+    
+    // Cleanup interval on component unmount
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []);
 
   return (
@@ -138,7 +154,22 @@ const Leaderboard = () => {
             </div>
             
             <div className="space-y-4">
-              {leaderboard.map((player, index) => (
+              {loading ? (
+                <div className="flex justify-center p-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan-400"></div>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-cyan-400 text-lg">No leaderboard data available</p>
+                  <Button 
+                    onClick={handleRefresh}
+                    className="mt-4 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : (
+                leaderboard.map((player, index) => (
                 <div key={player.player} className="cursor-pointer flex items-center p-4 border border-green-400 bg-gray-900/50 hover:bg-gray-900/80 transition-colors">
                   <div className="flex items-center space-x-4 flex-1">
                     <div className="flex items-center space-x-3">
@@ -167,13 +198,12 @@ const Leaderboard = () => {
                     
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </Card>
         </div>
       </main>
     </div>
-
   );
 };
 

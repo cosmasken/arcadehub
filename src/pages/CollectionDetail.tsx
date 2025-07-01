@@ -1,7 +1,7 @@
+import Layout from "../components/Layout";
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Header from '../components/Header';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -80,8 +80,10 @@ const CollectionDetail = () => {
   };
 
   return (
+    <Layout>
+      
       <div className="min-h-screen bg-black text-green-400 font-mono">
-        <Header />
+        
         
         <div className="pt-24 pb-16 px-6">
           <div className="container mx-auto max-w-7xl">
@@ -214,6 +216,8 @@ const CollectionDetail = () => {
           </div>
         </div>
       </div>
+
+    </Layout>
   );
 };
 

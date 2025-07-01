@@ -1,15 +1,15 @@
+import Layout from "../components/Layout";
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
-import Header from '../components/Header';
 import PrizePoolDepositModal from '../components/PrizePoolDepositModal';
 import LoadingModal from '../components/LoadingModal';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
   ArrowLeft,
   Trophy,
@@ -83,6 +83,7 @@ const CreateTournament = () => {
           prizePool,
           TESTNET_CONFIG.smartContracts.tournamentHub
         );
+        
         if (!approvalResult || approvalResult.error) {
           throw new Error(`Token approval failed: ${approvalResult?.error || 'Unknown error'}`);
         }
@@ -199,8 +200,10 @@ const CreateTournament = () => {
   };
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
+      
 
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-4xl">
@@ -441,9 +444,13 @@ const CreateTournament = () => {
         isOpen={isDepositModalOpen}
         onClose={() => setIsDepositModalOpen(false)}
         onDeposit={handlePrizePoolDeposit}
-        tournament={formData}
-        prizePool={formData.prizePool}
-        token={formData.token}
+        tournament={{
+          title: formData.title,
+          game: formData.game,
+          maxParticipants: formData.maxParticipants,
+          prizePool: formData.prizePool,
+          token: formData.token
+        }}
       />
 
       <LoadingModal
@@ -452,6 +459,8 @@ const CreateTournament = () => {
         description="Setting up your tournament and depositing prize pool..."
       />
     </div>
+
+    </Layout>
   );
 };
 

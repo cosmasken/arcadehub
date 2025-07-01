@@ -41,6 +41,11 @@ interface Tournament {
   title: string;
   game: string;
   maxParticipants: number;
+  prizePool?: string;
+  token?: string;
+  description?: string;
+  entryFee?: string;
+  rules?: string;
 }
 
 const ARC_TOKEN_ADDRESS = TESTNET_CONFIG.smartContracts.arcadeToken;

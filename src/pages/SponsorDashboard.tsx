@@ -1,10 +1,9 @@
+import Layout from "../components/Layout";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
-import Header from '../components/Header';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Plus, Trophy, Coins, Users, Eye, Calendar, BarChart3, Settings, Target } from 'lucide-react';
 import { ethers } from 'ethers';
@@ -71,7 +70,9 @@ const SponsorDashboard = () => {
           TESTNET_CONFIG.smartContracts.tournamentHub,
           TournamentHubABI,
           provider
-        );
+      
+    </Layout>
+  );
         // 1. Get tournament IDs created by this user
         const ids: number[] = await contract.getUserCreatedTournaments(aaWalletAddress);
         // 2. Fetch info for each tournament
@@ -89,7 +90,9 @@ const SponsorDashboard = () => {
               yourContribution: ethers.formatEther(info.prizePool),
             };
           })
-        );
+      
+    </Layout>
+  );
         setActiveTournaments(tournaments);
       };
       fetchTournaments();
@@ -126,7 +129,9 @@ const SponsorDashboard = () => {
   //           // distributionTime: info.distributionTime
   //         };
   //       })
-  //     );
+  //   
+    </Layout>
+  );
   //     setActiveTournaments(tournaments);
       // setSponsorStats(prev => ({
       //   ...prev,
@@ -154,7 +159,9 @@ const SponsorDashboard = () => {
   //         prev.map(t =>
   //           t.id === event.data.tournamentId ? { ...t, status: 'completed' } : t
   //         )
-  //       );
+  //     
+    </Layout>
+  );
   //     } else if (event.event === 'TournamentJoined') {
   //       setActiveTournaments(prev =>
   //         prev.map(t =>
@@ -162,7 +169,9 @@ const SponsorDashboard = () => {
   //             ? { ...t, participants: t.participants + 1 }
   //             : t
   //         )
-  //       );
+  //     
+    </Layout>
+  );
   //     } else if (event.event === 'TournamentEnded') {
   //       setActiveTournaments(prev =>
   //         prev.map(t =>
@@ -170,11 +179,15 @@ const SponsorDashboard = () => {
   //             ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 }
   //             : t
   //         )
-  //       );
+  //     
+    </Layout>
+  );
   //     }
   //   };
   //   // listenForTournamentEvents(handleEvent);
-  //   return () => {
+  //   return (
+    <Layout>
+      ) => {
   //     // Cleanup event listeners (implement in listenForTournamentEvents)
   //   };
   // }, [aaWalletAddress]);
@@ -218,7 +231,9 @@ const SponsorDashboard = () => {
         prev.map(t =>
           t.id === tournament.id ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 } : t
         )
-      );
+    
+    </Layout>
+  );
     } catch (error) {
       toast({
         title: "End Failed",
@@ -258,7 +273,9 @@ const SponsorDashboard = () => {
         prev.map(t =>
           t.id === tournament.id ? { ...t, status: 'completed' } : t
         )
-      );
+    
+    </Layout>
+  );
     } catch (error) {
       toast({
         title: "Finalize Failed",
@@ -274,8 +291,10 @@ const SponsorDashboard = () => {
   };
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
+      
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between mb-8">
@@ -498,6 +517,8 @@ const SponsorDashboard = () => {
         tournament={selectedTournament}
       />
     </div>
+
+    </Layout>
   );
 };
 

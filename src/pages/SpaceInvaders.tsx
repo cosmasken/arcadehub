@@ -1,5 +1,5 @@
+import Layout from "../components/Layout";
 import React, { useState, useEffect, useCallback } from 'react';
-import Header from '../components/Header';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card } from '../components/ui/card';
@@ -117,7 +117,9 @@ const SpaceInvaders = () => {
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    return (
+    <Layout>
+      ) => window.removeEventListener('keydown', handleKeyPress);
   }, [isPlaying, gameOver, playerX]);
 
   // Game loop
@@ -129,7 +131,9 @@ const SpaceInvaders = () => {
       setBullets(prev => prev
         .map(bullet => ({ ...bullet, y: bullet.y - 5 }))
         .filter(bullet => bullet.y > 0)
-      );
+    
+    </Layout>
+  );
 
       // Move enemies
       setEnemies(prev => prev.map(enemy => ({
@@ -208,12 +212,16 @@ const SpaceInvaders = () => {
       });
     }, 50);
 
-    return () => clearInterval(gameLoop);
+    return (
+    <Layout>
+      ) => clearInterval(gameLoop);
   }, [isPlaying, gameOver, level, score, highScore, initializeEnemies, toast]);
 
   return (
+    <Layout>
+      
       <div className="min-h-screen bg-black text-green-400 font-mono">
-        <Header />
+        
         
         <div className="pt-24 pb-16 px-6">
           <div className="container mx-auto max-w-6xl">
@@ -403,6 +411,8 @@ const SpaceInvaders = () => {
           </div>
         </div>
       </div>
+
+    </Layout>
   );
 };
 

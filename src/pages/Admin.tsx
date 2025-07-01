@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import AdminLogin from '../components/AdminLogin';
 import AdminDashboard from '../components/AdminDashboard';
-import Header from '../components/Header';
+import Layout from '../components/Layout';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,11 +18,15 @@ const Admin = () => {
     setIsAuthenticated(false);
   };
 
-  if (!isAuthenticated) {
-    return<><Header/><AdminLogin onLogin={handleLogin} /></> ;
-  }
-
-  return <><Header/><AdminDashboard onLogout={handleLogout} /></>;
+  return (
+    <Layout>
+      {isAuthenticated ? (
+        <AdminDashboard onLogout={handleLogout} adminUser={adminUser} />
+      ) : (
+        <AdminLogin onLogin={handleLogin} />
+      )}
+    </Layout>
+  );
 };
 
 export default Admin;

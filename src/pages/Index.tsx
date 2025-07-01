@@ -1,3 +1,4 @@
+import Layout from "../components/Layout";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
@@ -165,17 +166,17 @@ const Index = () => {
     
     switch(sortBy) {
       case 'popularity':
-        return games.sort((a, b) => b.players - a.players);
+        return [...games].sort((a, b) => b.players - a.players);
       case 'rating':
-        return games.sort((a, b) => b.rating - a.rating);
+        return [...games].sort((a, b) => b.rating - a.rating);
       case 'prize':
-        return games.sort((a, b) => {
+        return [...games].sort((a, b) => {
           const prizeA = parseFloat(a.prize);
           const prizeB = parseFloat(b.prize);
           return isNaN(prizeA) || isNaN(prizeB) ? 0 : prizeB - prizeA;
         });
       case 'newest':
-        return games.sort((a, b) => 
+        return [...games].sort((a, b) => 
           new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
         );
       default:
@@ -221,6 +222,8 @@ const Index = () => {
   };
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
       <Navigation />
       <WelcomeModal />
@@ -445,6 +448,8 @@ const Index = () => {
         </Card>
       </main>
     </div>
+
+    </Layout>
   );
 };
 

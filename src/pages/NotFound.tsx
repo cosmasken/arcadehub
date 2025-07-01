@@ -1,9 +1,12 @@
+import Layout from "../components/Layout";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Zap } from "lucide-react";
 
 const NotFound = () => {
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern flex items-center justify-center">
       <div className="text-center p-8 max-w-2xl mx-4 bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-purple-500/30 shadow-xl shadow-purple-500/10">
         <div className="inline-flex items-center justify-center w-32 h-32 mb-6 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 shadow-lg shadow-purple-500/30">
@@ -41,6 +44,8 @@ const NotFound = () => {
         </div>
       </div>
     </div>
+
+    </Layout>
   );
 };
 

@@ -1,9 +1,9 @@
+import Layout from "../components/Layout";
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Web3Provider } from '../contexts/Web3Context';
 import { Tournament, Sponsor } from '../types/tournament';
 import { useToast } from '../hooks/use-toast';
-import Header from '../components/Header';
 import SponsorSelectionModal from '../components/SponsorSelectionModal';
 import TokenPaymentModal from '../components/TokenPaymentModal';
 import LoadingModal from '../components/LoadingModal';
@@ -112,6 +112,8 @@ const TournamentDetail = () => {
 
   if (!tournament) {
     return (
+    <Layout>
+      
       <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-red-400 mb-4">TOURNAMENT NOT FOUND</h1>
@@ -120,7 +122,9 @@ const TournamentDetail = () => {
           </Button>
         </div>
       </div>
-    );
+  
+    </Layout>
+  );
   }
 
   const handleTournamentAction = (action: 'join' | 'register') => {
@@ -232,9 +236,11 @@ const TournamentDetail = () => {
   };
 
   return (
+    <Layout>
+      
     <Web3Provider>
       <div className="min-h-screen bg-black text-green-400 font-mono">
-        <Header />
+        
         
         <div className="pt-24 pb-16 px-6">
           <div className="container mx-auto max-w-4xl">
@@ -412,6 +418,8 @@ const TournamentDetail = () => {
         />
       </div>
     </Web3Provider>
+
+    </Layout>
   );
 };
 

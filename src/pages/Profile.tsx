@@ -1,3 +1,4 @@
+import Layout from "../components/Layout";
 import React from 'react';
 import Navigation from '../components/Navigation';
 import { Card } from '../components/ui/card';
@@ -31,15 +32,21 @@ const Profile = () => {
   // Fallback UI while loading
   if (loading) {
     return (
+    <Layout>
+      
       <div className="flex justify-center items-center min-h-[50vh]">
         <span className="text-cyan-400 text-xl">Loading profile...</span>
       </div>
-    );
+  
+    </Layout>
+  );
   }
 
   // If no profile found
   if (!username) {
     return (
+    <Layout>
+      
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
         <Navigation />
         <main className="container mx-auto px-4 py-24 md:py-8">
@@ -48,7 +55,9 @@ const Profile = () => {
           </div>
         </main>
         </div>
-    );
+  
+    </Layout>
+  );
   }
 
   // Format helpers
@@ -69,6 +78,8 @@ const Profile = () => {
   };
 
   return (
+    <Layout>
+      
         <div className="container mx-auto max-w-6xl">
           {/* Profile Header */}
           <Card className="bg-black border-cyan-400 border-2 p-8 mb-8">
@@ -187,6 +198,8 @@ const Profile = () => {
           </div>
         </div>
 
+
+    </Layout>
   );
 };
 

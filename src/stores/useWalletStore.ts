@@ -38,10 +38,19 @@ const web3AuthOptions: Web3AuthOptions = {
   privateKeyProvider,
 };
 
+interface TokenInfo {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logoURI?: string;
+  balance?: string;
+}
+
 interface WalletStore {
   isConnected: boolean;
   isInitialized: boolean;
-  supportedTokens: any[];
+  supportedTokens: TokenInfo[];
   web3auth: Web3Auth | null;
   provider: IProvider | null;
   aaProvider: ethers.BrowserProvider | null;
@@ -100,22 +109,30 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
   connectWallet: async () => {
     set({ isLoading: true, error: null });
     try {
-      //await get().initializeWeb3Auth();
-      const web3auth = get().web3auth;
-      if (!web3auth) throw new Error('Web3Auth not initialized');
+      // Ensure we have a fresh Web3Auth instance
+      const web3auth = get().web3auth || new Web3Auth(web3AuthOptions);
+      
+      // Initialize Web3Auth if not already initialized
+      if (!web3auth.provider) {
+        await web3auth.initModal();
+      }
 
+      // Connect to the wallet
       const web3authProvider = await web3auth.connect();
       if (!web3authProvider) {
         throw new Error('Failed to connect to Web3Auth provider');
       }
 
+      // Set up ethers provider and signer
       const aaProvider = new ethers.BrowserProvider(web3authProvider);
       const aaSigner = await aaProvider.getSigner();
       const address = await aaSigner.getAddress();
 
       console.log('Connected address:', address);
       
+      // Update state with connection details
       set({ 
+        web3auth,
         provider: web3authProvider,
         aaProvider,
         aaSigner,
@@ -124,12 +141,14 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         isInitialized: true,
       });
 
+      // Initialize AA wallet
       await get().initAAWallet();
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       set({ 
         isLoading: false,
-        error: 'Failed to connect wallet'
+        isConnected: false,
+        error: 'Failed to connect wallet. Please try again.'
       });
       throw error;
     }
@@ -139,8 +158,28 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
     try {
       const web3auth = get().web3auth;
       if (web3auth) {
+        // First clear the provider and auth state
+        set({ 
+          isConnected: false,
+          provider: null,
+          aaProvider: null,
+          aaSigner: null,
+          aaWalletAddress: null,
+          isLoading: true,
+          error: null
+        });
+
+        // Then logout and clean up Web3Auth
         await web3auth.logout();
+        
+        // Clear any remaining auth data
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('openlogin_store');
+          sessionStorage.clear();
+        }
       }
+      
+      // Final state reset
       set({ 
         isConnected: false,
         isInitialized: false,
@@ -154,7 +193,10 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
       });
     } catch (error) {
       console.error('Failed to disconnect wallet:', error);
-      set({ error: 'Failed to disconnect wallet' });
+      set({ 
+        error: 'Failed to disconnect wallet',
+        isLoading: false 
+      });
     }
   },
 

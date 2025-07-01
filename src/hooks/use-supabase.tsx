@@ -1,313 +1,251 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '../types/supabase';
+import { createClient } from '@supabase/supabase-js';
+import { 
+  User, Game, Tournament, TournamentParticipant, 
+  TournamentSponsor, UserStats, UserAchievement,
+  UserRole, UserRoleAssignment, CreateUserRequest, 
+  UpdateUserRequest, CreateTournamentRequest, 
+  PaginatedResponse, WithRelations
+} from '@/types/supabase';
 
-let supabase: SupabaseClient<Database> | null = null;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Initialize Supabase client
-export const getSupabase = () => {
-  if (!supabase) {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    });
-  }
-
-  return supabase;
-};
-
-// ========== Users ==========
-export const getUserByWallet = async (walletAddress: string) => {
-  const { data, error } = await getSupabase()
+// ========== User Operations ==========
+export const createUser = async (userData: CreateUserRequest): Promise<User> => {
+  const { data, error } = await supabase
     .from('users')
-    .select('*')
-    .eq('wallet_address', walletAddress.toLowerCase())
-    .single();
-  
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching user:', error);
-    throw error;
-  }
-  
-  return data;
-};
-
-export const createUser = async (walletAddress: string, userData?: Partial<Database['public']['Tables']['users']['Insert']>) => {
-  const { data, error } = await getSupabase()
-    .from('users')
-    .insert([{ 
-      wallet_address: walletAddress.toLowerCase(),
-      ...userData 
+    .insert([{
+      ...userData,
+      user_type: userData.user_type || 'player',
+      is_verified: false
     }])
     .select()
     .single();
-    
-  if (error) {
-    console.error('Error creating user:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-export const updateUser = async (walletAddress: string, updates: Partial<Database['public']['Tables']['users']['Update']>) => {
-  const { data, error } = await getSupabase()
+export const getUser = async (userId: string): Promise<User | null> => {
+  const { data, error } = await supabase
     .from('users')
-    .update(updates)
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getUserByWallet = async (walletAddress: string): Promise<User | null> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
     .eq('wallet_address', walletAddress.toLowerCase())
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateUser = async (userId: string, updates: UpdateUserRequest): Promise<User> => {
+  const { data, error } = await supabase
+    .from('users')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', userId)
     .select()
     .single();
-    
-  if (error) {
-    console.error('Error updating user:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-// ========== Games ==========
-export const getGames = async (filters: {
-  category?: string;
-  isActive?: boolean;
-  search?: string;
-  limit?: number;
-}) => {
-  let query = getSupabase()
-    .from('games')
-    .select('*')
-    .order('name');
+// ========== Role Operations ==========
+export const getUserRoles = async (userId: string): Promise<UserRoleAssignment[]> => {
+  const { data, error } = await supabase
+    .from('user_role_assignments')
+    .select(`
+      *,
+      role:user_roles(*)
+    `)
+    .eq('user_id', userId);
 
-  if (filters.category) {
-    query = query.eq('category', filters.category);
-  }
-  if (filters.isActive !== undefined) {
-    query = query.eq('is_active', filters.isActive);
-  }
-  if (filters.search) {
-    query = query.ilike('name', `%${filters.search}%`);
-  }
-  if (filters.limit) {
-    query = query.limit(filters.limit);
-  }
+  if (error) throw error;
+  return data || [];
+};
 
-  const { data, error } = await query;
+export const assignUserRole = async (userId: string, roleId: number): Promise<UserRoleAssignment> => {
+  const { data, error } = await supabase
+    .from('user_role_assignments')
+    .insert([{ user_id: userId, role_id: roleId }])
+    .select()
+    .single();
 
-  if (error) {
-    console.error('Error fetching games:', error);
-    throw error;
-  }
-
+  if (error) throw error;
   return data;
 };
 
-// ========== Tournaments ==========
-export const getTournaments = async (filters: {
-  status?: 'upcoming' | 'live' | 'completed' | 'cancelled';
-  gameId?: number;
-  sponsorId?: string;
-  limit?: number;
-  offset?: number;
-}) => {
-  let query = getSupabase()
+// ========== Tournament Operations ==========
+export const createTournament = async (tournamentData: CreateTournamentRequest): Promise<Tournament> => {
+  const { data, error } = await supabase
+    .from('tournaments')
+    .insert([{
+      ...tournamentData,
+      status: tournamentData.status || 'upcoming',
+      entry_fee: tournamentData.entry_fee || 0
+    }])
+    .select(`
+      *,
+      game:games(*),
+      sponsor:users(*)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getTournament = async (tournamentId: number): Promise<Tournament | null> => {
+  const { data, error } = await supabase
     .from('tournaments')
     .select(`
       *,
       game:games(*),
       sponsor:users(*)
     `)
-    .order('start_time', { ascending: true });
+    .eq('id', tournamentId)
+    .maybeSingle();
 
-  if (filters.status) {
-    query = query.eq('status', filters.status);
-  }
-  if (filters.gameId) {
-    query = query.eq('game_id', filters.gameId);
-  }
-  if (filters.sponsorId) {
-    query = query.eq('sponsor_id', filters.sponsorId);
-  }
-  if (filters.limit) {
-    query = query.limit(filters.limit);
-  }
-  if (filters.offset) {
-    query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error('Error fetching tournaments:', error);
-    throw error;
-  }
-
+  if (error) throw error;
   return data;
 };
 
-export const getTournamentById = async (id: number) => {
-  const { data, error } = await getSupabase()
-    .from('tournaments')
-    .select(`
-      *,
-      game:games(*),
-      sponsor:users(*),
-      participants:tournament_participants(
-        user:users(*),
-        score,
-        rank
-      )
-    `)
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    console.error('Error fetching tournament:', error);
-    throw error;
-  }
-
-  return data;
-};
-
-export const createTournament = async (tournamentData: Database['public']['Tables']['tournaments']['Insert']) => {
-  const { data, error } = await getSupabase()
-    .from('tournaments')
-    .insert([tournamentData])
-    .select()
-    .single();
-    
-  if (error) {
-    console.error('Error creating tournament:', error);
-    throw error;
-  }
-  
-  return data;
-};
-
-// ========== Tournament Participants ==========
-export const joinTournament = async (tournamentId: number, userId: string) => {
-  const { data, error } = await getSupabase()
+export const joinTournament = async (
+  tournamentId: number, 
+  userId: string, 
+  onchainTxHash?: string
+): Promise<TournamentParticipant> => {
+  const { data, error } = await supabase
     .from('tournament_participants')
-    .insert([{
-      tournament_id: tournamentId,
+    .insert([{ 
+      tournament_id: tournamentId, 
       user_id: userId,
+      onchain_tx_hash: onchainTxHash,
       score: 0
     }])
-    .select()
+    .select(`
+      *,
+      user:users(*),
+      tournament:tournaments(*)
+    `)
     .single();
-    
-  if (error) {
-    console.error('Error joining tournament:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-export const updateParticipantScore = async (tournamentId: number, userId: string, score: number) => {
-  const { data, error } = await getSupabase()
+export const updateParticipantScore = async (
+  tournamentId: number, 
+  userId: string, 
+  score: number
+): Promise<TournamentParticipant> => {
+  const { data, error } = await supabase
     .from('tournament_participants')
     .update({ score })
     .eq('tournament_id', tournamentId)
     .eq('user_id', userId)
-    .select()
+    .select(`
+      *,
+      user:users(*)
+    `)
     .single();
-    
-  if (error) {
-    console.error('Error updating participant score:', error);
-    throw error;
-  }
-  
+
+  if (error) throw error;
   return data;
 };
 
-// ========== User Stats ==========
-export const getUserStats = async (userId: string) => {
-  const { data, error } = await getSupabase()
+// ========== Sponsor Operations ==========
+export const addTournamentSponsor = async (
+  tournamentId: number, 
+  sponsorId: string, 
+  tokenAddress?: string, 
+  tokenAmount?: number
+): Promise<TournamentSponsor> => {
+  const { data, error } = await supabase
+    .from('tournament_sponsors')
+    .insert([{
+      tournament_id: tournamentId,
+      sponsor_id: sponsorId,
+      token_address: tokenAddress,
+      token_amount: tokenAmount
+    }])
+    .select(`
+      *,
+      sponsor:users(*),
+      tournament:tournaments(*)
+    `)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// ========== User Stats & Achievements ==========
+export const getUserStats = async (userId: string): Promise<UserStats | null> => {
+  const { data, error } = await supabase
     .from('user_stats')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') {
-    console.error('Error fetching user stats:', error);
-    throw error;
-  }
-
-  return data || {
-    user_id: userId,
-    total_tournaments: 0,
-    tournaments_won: 0,
-    total_prizes: 0,
-    win_rate: 0
-  };
-};
-
-// ========== Real-time Subscriptions ==========
-export const subscribeToTournamentUpdates = (tournamentId: number, callback: (payload: any) => void) => {
-  const subscription = getSupabase()
-    .channel(`tournament_${tournamentId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'tournament_participants',
-        filter: `tournament_id=eq.${tournamentId}`
-      },
-      callback
-    )
-    .subscribe();
-
-  return () => {
-    getSupabase().removeChannel(subscription);
-  };
-};
-
-// ========== Storage ==========
-export const uploadFile = async (bucket: string, path: string, file: File) => {
-  const { data, error } = await getSupabase()
-    .storage
-    .from(bucket)
-    .upload(path, file);
-
-  if (error) {
-    console.error('Error uploading file:', error);
-    throw error;
-  }
-
+  if (error && error.code !== 'PGRST116') throw error;
   return data;
 };
 
-export const getPublicUrl = (bucket: string, path: string) => {
-  const { data } = getSupabase()
-    .storage
-    .from(bucket)
-    .getPublicUrl(path);
+export const getUserAchievements = async (userId: string): Promise<UserAchievement[]> => {
+  const { data, error } = await supabase
+    .from('user_achievements')
+    .select('*')
+    .eq('user_id', userId);
 
-  return data.publicUrl;
+  if (error) throw error;
+  return data || [];
 };
 
-// ========== RPC Functions ==========
-export const updateTournamentRankings = async (tournamentId: number) => {
-  const { data, error } = await getSupabase()
-    .rpc('update_tournament_rankings', { tournament_id: tournamentId });
+// ========== Utility Functions ==========
+export const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('id')
+    .eq('username', username)
+    .maybeSingle();
 
-  if (error) {
-    console.error('Error updating tournament rankings:', error);
-    throw error;
-  }
-
-  return data;
+  if (error) throw error;
+  return !data; // Available if no user found
 };
 
-// Export the supabase client for direct access when needed
-export { supabase };
+export const uploadFile = async (file: File, path: string): Promise<{ path: string }> => {
+  const fileName = `${Date.now()}-${file.name}`;
+  const filePath = `${path}/${fileName}`;
+  
+  const { error } = await supabase.storage
+    .from('public')
+    .upload(filePath, file);
+
+  if (error) throw error;
+  
+  return { 
+    path: `${supabaseUrl}/storage/v1/object/public/public/${filePath}`
+  };
+};
+
+export default supabase;

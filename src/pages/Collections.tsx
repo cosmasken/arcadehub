@@ -12,6 +12,7 @@ import { Slider } from '../components/ui/slider';
 import { Wallet, Gift, Loader2 } from 'lucide-react';
 import LoadingModal from '../components/LoadingModal';
 import { TESTNET_CONFIG } from '../config';
+import { NFT } from '../types/nft';
 import { useToast } from '../components/ui/use-toast';
 import { ethers } from 'ethers';
 import {
@@ -42,11 +43,11 @@ const Spinner = () => (
 const Collections: React.FC = () => {
   const { isConnected, aaWalletAddress, aaSigner } = useWalletStore();
   const { toast } = useToast();
-  const [nfts, setNfts] = useState<any[]>([]);
+  const [nfts, setNfts] = useState<NFT[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedNFT, setSelectedNFT] = useState<any>(null);
+  const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
   const [tradeType, setTradeType] = useState('send');
   const [tradeAddress, setTradeAddress] = useState('');
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
@@ -65,8 +66,9 @@ const Collections: React.FC = () => {
     try {
       const fetchedNFTs = await getNFTs(aaWalletAddress);
       setNfts(fetchedNFTs);
-    } catch (err) {
-      setError("Failed to load NFTs. Please try again later.");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load NFTs. Please try again later.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +82,7 @@ const Collections: React.FC = () => {
     }
   }, [isConnected, loadNFTs]);
 
-  const handleTradeSellSend = (nft: any) => {
+  const handleTradeSellSend = (nft: NFT) => {
     setSelectedNFT(nft);
     setModalOpen(true);
     setTradeType('send');
@@ -110,8 +112,9 @@ const Collections: React.FC = () => {
         );
         const approved = await nftContract.isApprovedForAll(aaWalletAddress, operatorAddress);
         setIsApproved(approved);
-      } catch (err) {
-        setApprovalError("Failed to check NFT approval");
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to check NFT approval";
+        setApprovalError(errorMessage);
       }
     }
   }, [selectedNFT, aaSigner, aaWalletAddress]);
@@ -158,11 +161,12 @@ const Collections: React.FC = () => {
           variant: "destructive",
         });
       }
-    } catch (err: any) {
-      setApprovalError("Approval failed: " + (err.message || "Unknown error"));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setApprovalError("Approval failed: " + errorMessage);
       toast({
         title: "Error",
-        description: "Approval failed: " + (err.message || "Unknown error"),
+        description: "Approval failed: " + errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -221,10 +225,11 @@ const Collections: React.FC = () => {
         setModalOpen(false);
         // Reload NFTs to reflect the transfer
         loadNFTs();
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error";
         toast({
           title: "Error",
-          description: "Failed to send NFT: " + (err.message || "Unknown error"),
+          description: "Failed to send NFT: " + errorMessage,
           variant: "destructive",
         });
       } finally {

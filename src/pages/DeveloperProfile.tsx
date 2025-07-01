@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 import supabase from '../hooks/use-supabase';
 
+import { DeveloperProfile, GameProfile } from '../types/developer';
+
 function useDeveloperProfile(walletAddress: string | undefined) {
-  const [profile, setProfile] = React.useState<any>(null);
-  const [games, setGames] = React.useState<any[]>([]);
+  const [profile, setProfile] = React.useState<DeveloperProfile | null>(null);
+  const [games, setGames] = React.useState<GameProfile[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {

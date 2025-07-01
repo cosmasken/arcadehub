@@ -36,11 +36,13 @@ import supabase from '../hooks/use-supabase';
 import { add } from 'date-fns';
 import { TESTNET_CONFIG } from '../config';
 
+import { Achievement } from '../types/achievements';
+
 interface MintingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onMintSuccess: (achievement: any, txHash: string) => void;
-  achievement: any;
+  onMintSuccess: (achievement: Achievement, txHash: string) => void;
+  achievement: Achievement;
   setIsLoadingModalOpen: (open: boolean) => void;
 }
 
@@ -199,8 +201,9 @@ const MintingModal: React.FC<MintingModalProps> = ({
 
       setMintResult({ success: true, txHash: result.transactionHash });
       onMintSuccess(achievement, result.transactionHash);
-    } catch (error: any) {
-      setMintResult({ success: false, error: error.message || 'Mint error' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Mint error';
+      setMintResult({ success: false, error: errorMessage });
     } finally {
       setIsMinting(false);
       setIsLoadingModalOpen(false);

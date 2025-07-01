@@ -20,11 +20,12 @@ import {
   Twitter,
   Globe
 } from 'lucide-react';
+import { Developer, GameFormData } from '../types/developerUpload';
 import { usePinata } from '../hooks/use-pinata';
 import supabase from '../hooks/use-supabase';
 import { submitGameAA } from '../lib/aaUtils';
 import useWalletStore from '../stores/useWalletStore';
-import { toast } from '../hooks/use-toast';
+import { toast } from '../components/ui/use-toast';
 import { ethers } from 'ethers';
 import LoadingModal from '../components/LoadingModal';
 import { truncateAddress } from '../lib/utils';
@@ -34,13 +35,13 @@ const DeveloperUpload = () => {
   const { aaSigner, aaWalletAddress } = useWalletStore();
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const { error, uploadFile } = usePinata();
-  const [developers, setDevelopers] = useState([]);
-  const [formData, setFormData] = useState({
+  const [developers, setDevelopers] = useState<Developer[]>([]);
+  const [formData, setFormData] = useState<GameFormData>({
     title: '',
     description: '',
     category: '',
-    thumbnail: null as File | null,
-    assets: null as File | null
+    thumbnail: null,
+    assets: null
   });
   const [isUploading, setIsUploading] = useState(false);
 
@@ -49,7 +50,7 @@ const DeveloperUpload = () => {
     const { data, error } = await supabase
       .from("profiles")
       .select("id, wallet_address, username, bio")
-      .eq("role", "developer");
+      .eq("user_type", "developer");
     if (!error) setDevelopers(data || []);
   };
   fetchDevelopers();
@@ -137,10 +138,11 @@ const DeveloperUpload = () => {
       if (assetInput) assetInput.value = '';
       const thumbInput = document.getElementById('thumbnail') as HTMLInputElement;
       if (thumbInput) thumbInput.value = '';
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during upload or registration.";
       toast({
         title: "Upload or Registration Failed",
-        description: err.message || "An error occurred during upload or registration.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -150,40 +152,48 @@ const DeveloperUpload = () => {
   };
   const featuredDevelopers = [
     {
-      id: 1,
+      id: "1",
       name: "CYBER_STUDIO",
       username: "@cyberstudio",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+      wallet_address: "0x1234567890abcdef1234567890abcdef12345678",
+      bio: "Leading the charge in cyberpunk game development.",
       games: 8,
       downloads: 156743,
       rating: 4.8,
       featured: true
     },
     {
-      id: 2,
+      id: "2",
       name: "PIXEL_FORGE",
       username: "@pixelforge",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+      wallet_address: "0xabcdef1234567890abcdef1234567890abcdef12",
+      bio: "Crafting nostalgic pixel art adventures.",
       games: 12,
       downloads: 234567,
       rating: 4.9,
       featured: true
     },
     {
-      id: 3,
+      id: "3",
       name: "NEON_LABS",
       username: "@neonlabs",
       avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+      wallet_address: "0x1234abcdef1234567890abcdef1234567890ab",
+      bio: "Innovating with vibrant, high-energy game experiences.",
       games: 5,
       downloads: 89432,
       rating: 4.7,
       featured: false
     },
     {
-      id: 4,
+      id: "4",
       name: "RETRO_WORKS",
       username: "@retroworks",
       avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+      wallet_address: "0xabcdef1234abcdef1234567890abcdef123456",
+      bio: "Dedicated to bringing classic arcade vibes to the blockchain.",
       games: 15,
       downloads: 345612,
       rating: 4.8,

@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { WalletSummary, WalletBalance, PendingReward, WalletTransaction } from '../types/supabase';
-import useUserStore from './useUserStore';
 import useWalletStore from './useWalletStore';
 
 interface WalletRewardsStore {

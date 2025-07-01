@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, AuthClientOptions } from '@supabase/supabase-js';
 import {
   User, Game, Tournament, TournamentParticipant,
   TournamentSponsor, UserStats, UserAchievement,
@@ -10,15 +10,132 @@ import {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+interface SupabaseAuthTokens {
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  tokenType?: string;
+}
+
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create a single supabase client for interacting with your database
+let supabase: SupabaseClient;
+
+// Initialize Supabase with authentication tokens
+export const initSupabase = (tokens?: SupabaseAuthTokens) => {
+  const { accessToken, refreshToken } = tokens || {};
+  
+  const options: AuthClientOptions = {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      storage: {
+        getItem: (key: string) => {
+          const item = localStorage.getItem(key);
+          return item ? JSON.parse(item) : null;
+        },
+        setItem: (key: string, value: string) => {
+          localStorage.setItem(key, value);
+        },
+        removeItem: (key: string) => {
+          localStorage.removeItem(key);
+        }
+      }
+    },
+    global: {
+      headers: {
+        ...(accessToken && { Authorization: `Bearer ${accessToken}` })
+      }
+    }
+  };
+
+  // If we have a refresh token, set up the session
+  if (refreshToken) {
+    options.auth.autoRefreshToken = true;
+    options.auth.refreshInterval = 300; // 5 minutes
+  }
+
+  supabase = createClient(supabaseUrl, supabaseAnonKey, options);
+
+  // Set the session if we have tokens
+  if (accessToken && refreshToken) {
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    }).catch(console.error);
+  }
+
+  return supabase;
+};
+
+// Initialize without token by default
+initSupabase();
+
+// Function to update the auth token
+export const setAuthTokens = async (tokens: {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn?: number;
+  tokenType?: string;
+}) => {
+  const { accessToken, refreshToken } = tokens;
+  
+  // Initialize with new tokens
+  initSupabase({ accessToken, refreshToken });
+  
+  // Set the session with the new tokens
+  const { data, error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken
+  });
+
+  if (error) {
+    console.error('Error setting auth session:', error);
+    throw error;
+  }
+
+  return data;
+};
+
+// Function to clear the auth token
+export const clearAuth = async () => {
+  try {
+    await supabase.auth.signOut();
+    localStorage.removeItem('supabase.auth.token');
+    initSupabase();
+  } catch (error) {
+    console.error('Error clearing auth:', error);
+    throw error;
+  }
+};
+
+// Get current session
+export const getCurrentSession = async () => {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  return session;
+};
+
+// Get current user
+export const getCurrentUser = async () => {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  return user;
+};
 
 // ========== User Operations ==========
 export const createUser = async (userData: CreateUserRequest): Promise<User | null> => {
   try {
+    // Make sure we have a valid session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
     const { data, error } = await supabase
       .from('users')
       .insert([{
@@ -36,6 +153,27 @@ export const createUser = async (userData: CreateUserRequest): Promise<User | nu
     return data;
   } catch (error) {
     console.error("Failed to create user:", error);
+    throw error; // Re-throw to be caught by the caller
+  }
+};
+
+export const deleteUser = async (userId: string): Promise<boolean> => {
+  try {
+    // Make sure we have a valid session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', userId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Failed to delete user:", error);
     throw error; // Re-throw to be caught by the caller
   }
 };
@@ -62,19 +200,30 @@ export const getUserByWallet = async (walletAddress: string): Promise<User | nul
   return data;
 };
 
-export const updateUser = async (userId: string, updates: UpdateUserRequest): Promise<User> => {
-  const { data, error } = await supabase
-    .from('users')
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', userId)
-    .select()
-    .single();
+export const updateUser = async (userId: string, updates: UpdateUserRequest): Promise<User | null> => {
+  try {
+    // Make sure we have a valid session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || user.id !== userId) {
+      throw new Error('Unauthorized');
+    }
 
-  if (error) throw error;
-  return data;
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
 };
 
 // ========== Role Operations ==========

@@ -98,7 +98,7 @@ const Profile = () => {
               <div className="lg:col-span-1 space-y-6">
                 {/* Quick Stats */}
                 <Card className="bg-black border-cyan-400 border-2 p-6">
-                  <h2 className="text-xl font-bold text-cyan-400 mb-4">&gt; STATS</h2>
+                  <h2 className="text-xl font-bold text-cyan-400 mb-4"> STATS</h2>
                   <div className="space-y-4">
                     <div className="flex justify-between">
                       <span className="text-green-400">TOTAL SCORE:</span>
@@ -125,7 +125,7 @@ const Profile = () => {
 
                 {/* Achievements */}
                 <Card className="bg-black border-cyan-400 border-2 p-6">
-                  <h2 className="text-xl font-bold text-cyan-400 mb-4">&gt; ACHIEVEMENTS</h2>
+                  <h2 className="text-xl font-bold text-cyan-400 mb-4"> ACHIEVEMENTS</h2>
                   <div className="space-y-3">
                     {achievements.map((achievement, index) => (
                       <div key={index} className={`flex items-center space-x-3 p-3 border ${achievement.earned ? 'border-green-400 bg-green-400/10' : 'border-gray-600 bg-gray-900/50'}`}>
@@ -151,7 +151,7 @@ const Profile = () => {
               <div className="lg:col-span-2">
                 <Card className="bg-black border-cyan-400 border-2 p-6">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-cyan-400">&gt; RECENT GAMES</h2>
+                    <h2 className="text-xl font-bold text-cyan-400"> RECENT GAMES</h2>
                     <Button variant="outline" className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono">
                       VIEW ALL
                     </Button>

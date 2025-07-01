@@ -95,7 +95,7 @@ const DeveloperProfile = () => {
             {/* Back Button */}
             <Link to="/developer" className="inline-flex items-center text-cyan-400 hover:text-green-400 mb-8 transition-colors">
               <ArrowLeft className="w-5 h-5 mr-2" />
-              &gt; BACK_TO_DEVELOPERS
+               BACK_TO_DEVELOPERS
             </Link>
 
             {/* Developer Header */}
@@ -197,7 +197,7 @@ const DeveloperProfile = () => {
               <div className="lg:col-span-2">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-cyan-400 neon-text">
-                    &gt; PUBLISHED_GAMES &lt;
+                     PUBLISHED_GAMES 
                   </h2>
                   {/* You can add a follow button if you implement followers */}
                 </div>

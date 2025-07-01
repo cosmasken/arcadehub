@@ -66,7 +66,7 @@ const SponsorAnalytics = () => {
                 BACK TO DASHBOARD
               </Button>
               <h1 className="text-3xl font-mono font-bold text-cyan-400">
-                &gt; SPONSOR_ANALYTICS &lt;
+                 SPONSOR_ANALYTICS 
               </h1>
               <p className="text-green-400 mt-2">
                 Detailed insights into your tournament sponsorships

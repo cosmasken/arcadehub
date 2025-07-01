@@ -133,7 +133,7 @@ const Tournaments = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold mb-4 text-cyan-400">
-              &gt; TOURNAMENTS &lt;
+               TOURNAMENTS 
             </h1>
             <p className="text-green-400 text-lg tracking-wider">
               COMPETE FOR MASSIVE PRIZES

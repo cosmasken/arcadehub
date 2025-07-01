@@ -28,7 +28,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, change, icon: Icon,
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-xs font-arcade text-foreground/70 mb-2 tracking-wider uppercase">
-            &gt; {title.replace(' ', '_')}
+             {title.replace(' ', '_')}
           </p>
           <p className="text-2xl md:text-3xl font-orbitron font-bold text-neon-blue neon-text mb-1">
             {value}

@@ -220,7 +220,7 @@ const SpaceInvaders = () => {
             {/* Game Header */}
             <div className="text-center mb-8">
               <h1 className="text-4xl md:text-6xl font-bold mb-4 text-cyan-400 neon-text">
-                &gt; SPACE INVADERS &lt;
+                 SPACE INVADERS 
               </h1>
               <p className="text-green-400 text-lg tracking-wider">
                 DEFEND_EARTH // DESTROY_ALIENS // SAVE_HUMANITY
@@ -232,7 +232,7 @@ const SpaceInvaders = () => {
               <div className="lg:col-span-1">
                 <Card className="game-card p-6 mb-6">
                   <h3 className="text-cyan-400 font-bold mb-4 neon-text">
-                    &gt; GAME_STATS &lt;
+                     GAME_STATS 
                   </h3>
                   <div className="space-y-4">
                     <div>
@@ -261,7 +261,7 @@ const SpaceInvaders = () => {
                 {/* Controls */}
                 <Card className="game-card p-6">
                   <h3 className="text-cyan-400 font-bold mb-4 neon-text">
-                    &gt; CONTROLS &lt;
+                     CONTROLS 
                   </h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center space-x-2">
@@ -282,7 +282,7 @@ const SpaceInvaders = () => {
                 <Card className="game-card p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-cyan-400 font-bold neon-text">
-                      &gt; BATTLEFIELD &lt;
+                       BATTLEFIELD 
                     </h3>
                     <div className="flex space-x-2">
                       {!isPlaying && !gameOver && (

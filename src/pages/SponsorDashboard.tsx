@@ -281,7 +281,7 @@ const SponsorDashboard = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-mono font-bold text-cyan-400 neon-text">
-                &gt; SPONSOR_DASHBOARD &lt;
+                 SPONSOR_DASHBOARD 
               </h1>
               <p className="text-green-400 mt-2">
                 Welcome back, {aaWalletAddress ? `${aaWalletAddress.slice(0, 6)}...${aaWalletAddress.slice(-4)}` : 'SPONSOR_001'}
@@ -347,7 +347,7 @@ const SponsorDashboard = () => {
 
           <div className="mb-8">
             <h2 className="text-xl font-mono text-cyan-400 mb-4">
-              &gt; ACTIVE TOURNAMENTS &lt;
+               ACTIVE TOURNAMENTS 
             </h2>
             <div className="space-y-4">
               {activeTournaments.map((tournament) => (

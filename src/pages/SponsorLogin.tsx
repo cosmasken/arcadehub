@@ -111,7 +111,7 @@ const SponsorLogin = () => {
             <div className="inline-flex items-center space-x-2 mb-4">
               <Trophy className="w-8 h-8 text-yellow-400" />
               <h1 className="text-4xl md:text-5xl font-mono font-bold text-cyan-400 neon-text">
-                &gt; SPONSOR_LOGIN &lt;
+                 SPONSOR_LOGIN 
               </h1>
             </div>
             <p className="text-xl text-green-400 max-w-2xl mx-auto mb-8">
@@ -178,7 +178,7 @@ const SponsorLogin = () => {
           {/* Benefits Section */}
           <div className="mt-16 border-2 border-yellow-400 p-8 rounded bg-yellow-400/10">
             <h2 className="text-2xl font-mono text-yellow-400 mb-6 text-center">
-              &gt; SPONSOR_BENEFITS &lt;
+               SPONSOR_BENEFITS 
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center">

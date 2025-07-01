@@ -34,7 +34,7 @@ const ViewTournamentModal = ({ isOpen, onClose, onManage, tournament }: ViewTour
       <DialogContent className="bg-black border-2 border-green-400 text-green-400 max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-cyan-400 font-mono text-xl">
-             &gt; TOURNAMENT_DETAILS  &lt;
+              TOURNAMENT_DETAILS  
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">

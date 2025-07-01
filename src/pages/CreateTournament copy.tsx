@@ -207,7 +207,7 @@ const CreateTournament = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-mono font-bold text-cyan-400 neon-text">
-                &gt; CREATE_TOURNAMENT &lt;
+                 CREATE_TOURNAMENT 
               </h1>
               <p className="text-green-400 mt-2">
                 Set up a new sponsored tournament with custom prize pool

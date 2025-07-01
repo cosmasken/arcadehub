@@ -150,7 +150,7 @@ const ManageTournamentModal = ({ isOpen, onClose, tournament }: ManageTournament
       <DialogContent className="bg-black border-2 border-green-400 text-green-400 max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-cyan-400 font-mono text-xl">
-             &gt; MANAGE_TOURNAMENT  &Lt;
+              MANAGE_TOURNAMENT  
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">

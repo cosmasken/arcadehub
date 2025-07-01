@@ -88,7 +88,7 @@ const Leaderboard = () => {
             {/* Header */}
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-6xl font-bold mb-4 text-cyan-400">
-                &gt; LEADERBOARD &lt;
+                 LEADERBOARD 
               </h1>
               <p className="text-green-400 text-lg tracking-wider">
                 TOP PLAYERS IN THE ARCADE
@@ -131,7 +131,7 @@ const Leaderboard = () => {
             {/* Leaderboard Table */}
             <Card className="bg-black border-cyan-400 border-2 p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-cyan-400">&gt; TOP PLAYERS</h2>
+                <h2 className="text-2xl font-bold text-cyan-400"> TOP PLAYERS</h2>
                 <Button className="bg-green-400 text-black hover:bg-green-300 font-mono">
                   <Target className="w-4 h-4 mr-2" />
                   VIEW ALL

@@ -88,7 +88,7 @@ const CollectionDetail = () => {
             {/* Back Button */}
             <Link to="/collections" className="inline-flex items-center text-cyan-400 hover:text-green-400 mb-8 transition-colors">
               <ArrowLeft className="w-5 h-5 mr-2" />
-              &gt; BACK_TO_COLLECTIONS
+               BACK_TO_COLLECTIONS
             </Link>
 
             {/* Collection Header */}
@@ -173,7 +173,7 @@ const CollectionDetail = () => {
             {/* NFT Items Grid */}
             <div>
               <h2 className="text-2xl font-bold text-cyan-400 mb-6 neon-text">
-                &gt; COLLECTION_ITEMS &lt;
+                 COLLECTION_ITEMS 
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

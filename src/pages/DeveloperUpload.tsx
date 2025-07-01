@@ -327,7 +327,7 @@ const DeveloperUpload = () => {
     <div>
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-5xl font-bold mb-4 text-cyan-400 neon-text">
-          &gt; FEATURED_DEVELOPERS &lt;
+           FEATURED_DEVELOPERS 
         </h2>
         <p className="text-green-400 text-lg tracking-wider">
           TOP_GAME_CREATORS // INDIE_STUDIOS // BLOCKCHAIN_PIONEERS
@@ -403,7 +403,7 @@ const DeveloperUpload = () => {
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-6xl font-bold mb-4 text-cyan-400 neon-text">
-              &gt; DEVELOPER_HUB &lt;
+               DEVELOPER_HUB 
             </h1>
             <p className="text-green-400 text-lg tracking-wider mb-8">
               UPLOAD_GAMES // EARN_CRYPTO // BUILD_COMMUNITY

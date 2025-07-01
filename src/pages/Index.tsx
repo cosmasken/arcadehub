@@ -83,7 +83,7 @@ const Index = () => {
         <section className="pt-24 pb-16 px-6">
           <div className="container mx-auto text-center max-w-4xl">
             <h1 className="text-sm sm:text-5xl md:text-7xl font-bold mb-6 text-cyan-400 neon-text">
-              &gt; RETRO ARCADE &lt;
+               RETRO ARCADE 
             </h1>
             {/* Beta Warning Section */}
             <div className="mb-6">
@@ -102,12 +102,12 @@ const Index = () => {
               <Link to="/games/honey-clicker">
                 <Button className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-sm md:text-lg px-8 py-4 tracking-wider border-2 border-cyan-400 hover:border-green-400">
                   <GamepadIcon className="w-5 h-5" />
-                  &gt; PLAY_HONEY_CLICKER
+                   PLAY_HONEY_CLICKER
                 </Button>
               </Link>
               <Link to="/collections">
                 <Button className="bg-transparent text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono text-lg px-8 py-4 tracking-wider border-2 border-cyan-400">
-                  &gt; VIEW_COLLECTIONS
+                   VIEW_COLLECTIONS
                 </Button>
               </Link>
             </div> */}
@@ -130,7 +130,7 @@ const Index = () => {
           <div className="container mx-auto max-w-2xl text-center">
             <div className="p-6 flex flex-col items-center">
               <h2 className="text-sm sm:text-3xl md:text-5xl font-bold mb-6 text-cyan-400 neon-text">
-              &gt; TOTAL AVAILABLE TOKENS &lt;
+               TOTAL AVAILABLE TOKENS 
             </h2>
               {/* <span className="text-cyan-400 font-bold text-lg mb-2 neon-text"></span> */}
               <span className="text-3xl md:text-5xl font-mono text-green-400 mb-1 neon-text"> 
@@ -145,7 +145,7 @@ const Index = () => {
           <div className="container mx-auto max-w-7xl">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-5xl font-bold mb-4 text-cyan-400 neon-text">
-                &gt; FEATURED_GAMES &lt;
+                 FEATURED_GAMES 
               </h2>
               <p className="text-green-400 text-lg tracking-wider">
                 HIGH_STAKES // BIG_REWARDS // PURE_SKILL
@@ -166,14 +166,14 @@ const Index = () => {
         <section className="py-16 px-6 bg-black/50">
           <div className="container mx-auto text-center max-w-4xl">
             <h2 className="text-sm sm:text-3xl md:text-5xl font-bold mb-6 text-cyan-400 neon-text">
-              &gt; JOIN_THE_REVOLUTION &lt;
+               JOIN_THE_REVOLUTION 
             </h2>
             <p className="text-xl mb-8 text-green-400 tracking-wider">
               CONNECT_WALLET // START_EARNING // BECOME_LEGEND
             </p>
             <Link to="/developer">
               <Button className="bg-green-400 text-black hover:bg-cyan-400 font-mono text-lg px-8 py-4 tracking-wider border-2 border-green-400 hover:border-cyan-400">
-                &gt; UPLOAD_YOUR_GAME
+                 UPLOAD_YOUR_GAME
               </Button>
             </Link>
           </div>

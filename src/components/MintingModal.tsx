@@ -271,7 +271,7 @@ const MintingModal: React.FC<MintingModalProps> = ({
       <DialogContent className="bg-black border-2 border-cyan-400 text-green-400 font-mono max-w-md">
         <DialogHeader>
           <DialogTitle className="text-cyan-400 text-xl neon-text">
-            &gt; MINT_CONFIG &lt;
+             MINT_CONFIG 
           </DialogTitle>
           <DialogDescription className="text-green-400">
             Configure your minting parameters

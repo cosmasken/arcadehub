@@ -141,7 +141,7 @@ const Header = () => {
             <div className="flex items-center space-x-8">
               <Link to="/">
                 <h1 className="text-sm sm:text-lg md:text-xl text-cyan-400 tracking-wider font-bold font-mono hover:text-green-400 transition-colors">
-                  &gt; NERO_ARCADE &lt;
+                   NERO_ARCADE 
                 </h1>
               </Link>
               <nav className="hidden lg:flex items-center space-x-6">
@@ -149,21 +149,21 @@ const Header = () => {
                   to="/"
                   className="text-green-400 hover:text-cyan-400 transition-colors font-mono tracking-wider text-xs uppercase border-b-2 border-transparent hover:border-cyan-400 pb-1"
                 >
-                  &gt; GAMES
+                   GAMES
                 </Link>
 
                 <Link
                   to="/admin"
                   className="text-green-400 hover:text-cyan-400 transition-colors font-mono tracking-wider text-xs uppercase border-b-2 border-transparent hover:border-cyan-400 pb-1"
                 >
-                  &gt; ADMIN
+                   ADMIN
                 </Link>
 
                  <Link
                   to="/sponsors"
                   className="text-green-400 hover:text-cyan-400 transition-colors font-mono tracking-wider text-xs uppercase border-b-2 border-transparent hover:border-cyan-400 pb-1"
                 >
-                  &gt; SPONSORS
+                   SPONSORS
                 </Link>
               </nav>
             </div>
@@ -228,7 +228,7 @@ const Header = () => {
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
                               <Settings className="w-4 h-4" />
-                              <span>&gt; MY ACHIEVEMNTS</span>
+                              <span> MY ACHIEVEMNTS</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
@@ -236,7 +236,7 @@ const Header = () => {
                               to="/"
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
-                              <span>&gt; GAMES</span>
+                              <span> GAMES</span>
                             </Link>
 
 
@@ -247,7 +247,7 @@ const Header = () => {
                               to="/collections"
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
-                              <span>&gt; COLLECTIONS</span>
+                              <span> COLLECTIONS</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
@@ -255,7 +255,7 @@ const Header = () => {
                               to="/leaderboard"
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
-                              <span>&gt; lEADERBOARD</span>
+                              <span> lEADERBOARD</span>
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
@@ -263,7 +263,7 @@ const Header = () => {
                               to="/tournaments"
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
-                              <span>&gt; TOURNAMENTS</span>
+                              <span> TOURNAMENTS</span>
                             </Link>
                           </DropdownMenuItem>
                         </>
@@ -274,7 +274,7 @@ const Header = () => {
                               to={aaWalletAddress ? `/developer/profile/${aaWalletAddress}` : "/developer"}
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
-                              <span>&gt; DEV DASHBOARD</span>
+                              <span> DEV DASHBOARD</span>
                             </Link>
                           </DropdownMenuItem>
                           {/* <DropdownMenuItem asChild>
@@ -282,14 +282,14 @@ const Header = () => {
                               to="/upload"
                               className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400"
                             >
-                              <span>&gt; UPLOAD GAME</span>
+                              <span> UPLOAD GAME</span>
                             </Link>
                           </DropdownMenuItem> */}
                         </>
                       )}
                       <DropdownMenuItem className="flex items-center space-x-2 cursor-pointer hover:text-cyan-400">
                         <Settings className="w-4 h-4" />
-                        <span>&gt; SETTINGS</span>
+                        <span> SETTINGS</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="bg-cyan-400" />
                       <DropdownMenuItem
@@ -297,7 +297,7 @@ const Header = () => {
                         className="flex items-center space-x-2 cursor-pointer hover:text-red-400"
                       >
                         <LogOut className="w-4 h-4" />
-                        <span>&gt; LOGOUT</span>
+                        <span> LOGOUT</span>
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -308,7 +308,7 @@ const Header = () => {
                   className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-xs tracking-wider border-2 border-cyan-400 hover:border-green-400"
                 >
                   <Wallet className="w-4 h-4 mr-2" />
-                  &gt; CONNECT_WALLET
+                   CONNECT_WALLET
                 </Button>
               )}
             </div>

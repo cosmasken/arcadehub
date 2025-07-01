@@ -198,33 +198,24 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
 
       // Prepare user data for Supabase
       const userData = {
-        id: walletAddress,
+        // Don't include id - let the database handle it
         username: username.trim(),
         bio: bio.trim() || null,
         avatar_url: avatarUrl,
         user_type: userType,
-        wallet_address: walletAddress,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      // Call onComplete with the user data
-      // The parent component (App.tsx) will handle the actual database operation
-      onComplete({
-        ...userData,
-        // Ensure we're only including fields that match the UserData type
-        username: userData.username,
-        bio: userData.bio,
-        avatar_url: userData.avatar_url,
-        user_type: userData.user_type,
-        email: null, // These fields are required by the UserData type
+        // Don't include created_at or updated_at - let the database handle these
+        // Include other required fields with default values
+        email: null,
         company_name: null,
         website: null,
         industry: null,
         contact_email: null,
         contact_phone: null,
         social_links: {}
-      });
+      };
+
+      // Call onComplete with the user data
+      onComplete(userData);
 
     } catch (error) {
       console.error('Error creating profile:', error);

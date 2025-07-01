@@ -1,6 +1,6 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet } from "react-router-dom";
 
 // Hooks & Stores
 import { useWalletStore } from "./stores/useWalletStore";
@@ -123,115 +123,132 @@ const App = () => {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        {isInitializing && (
-          <LoadingModal
-            isOpen={true}
-            title="INITIALIZING"
-            description="Please wait while we set up your wallet and connection."
-            transactionText="Setting up your wallet and secure Web3 connection..."
-          />
-        )}
-        <OnboardingModal
-          isOpen={showOnboarding}
-          onComplete={async (userData) => {
-            try {
-              if (!aaWalletAddress) {
-                throw new Error('Wallet not connected');
-              }
-              
-              // Prepare user data for Supabase
-              const userProfileData = {
-                ...userData,
-                wallet_address: aaWalletAddress,
-                updated_at: new Date().toISOString(),
-              };
-              
-              // Remove any undefined values
-              Object.keys(userProfileData).forEach(key => 
-                userProfileData[key] === undefined && delete userProfileData[key]
-              );
-              
-              // Call the API to create or update the user
-              const { data: user, error } = await supabase
-                .from('users')
-                .upsert(userProfileData, {
-                  onConflict: 'wallet_address',
-                  ignoreDuplicates: false
-                })
-                .select()
-                .single();
-
-              if (error) {
-                console.error('Supabase error:', error);
-                throw new Error(error.message || 'Failed to save user profile');
-              }
-              
-              if (!user) {
-                throw new Error('No user data returned from database');
-              }
-              
-              // Update the user profile in the app state
-              setUserProfile(user);
-              setShowOnboarding(false);
-              
-              toast({
-                title: 'Profile updated',
-                description: 'Your profile has been saved successfully.',
-              });
-              
-              // Refresh the page to ensure all components have the latest user data
-              window.location.reload();
-              
-            } catch (error) {
-              console.error('Error in onComplete:', error);
-              toast({
-                title: 'Error',
-                description: error instanceof Error ? error.message : 'Failed to save profile',
-                variant: 'destructive',
-              });
-            }
-          }}
-        />
-        <ErrorBoundary>
-          <BrowserRouter>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <div className="min-h-screen bg-background">
+            <Toaster />
+            <Sonner />
+            
+            {isInitializing && (
+              <LoadingModal
+                isOpen={true}
+                title="INITIALIZING"
+                description="Please wait while we set up your wallet and connection."
+                transactionText="Setting up your wallet and secure Web3 connection..."
+              />
+            )}
+            
             <Routes>
-              <Route element={
-                <Layout userProfile={userProfile}>
-                  <Outlet />
-                </Layout>
-              }>
+              <Route path="/" element={<Layout userProfile={userProfile} />}>
                 <Route index element={<Index />} />
-                <Route path="/leaderboard" element={<Leaderboard />} />
-                <Route path="/tournaments" element={<Tournaments />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/collections" element={<Collections />} />
-                <Route path="/collections/:id" element={<CollectionDetail />} />
-                <Route path="/games/honey-clicker" element={<HoneyClicker />} />
-                <Route path="/games/snake" element={<SnakeGame />} />
-                <Route path="/games/tetris" element={<Tetris />} />
-                <Route path="/games/space-invaders" element={<SpaceInvaders />} />
-                <Route path="/wallet" element={<WalletPage />} />
+                <Route path="leaderboard" element={<Leaderboard />} />
+                <Route path="tournaments" element={<Tournaments />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="collections" element={<Collections />} />
+                <Route path="collections/:id" element={<CollectionDetail />} />
+                <Route path="developer-profile/:id" element={<DeveloperProfile />} />
+                <Route path="honey-clicker" element={<HoneyClicker />} />
+                <Route path="space-invaders" element={<SpaceInvaders />} />
+                <Route path="snake" element={<SnakeGame />} />
+                <Route path="tetris" element={<Tetris />} />
+                <Route path="sponsors" element={<Sponsors />} />
+                <Route path="sponsor-login" element={<SponsorLogin />} />
+                <Route path="sponsor-dashboard" element={<SponsorDashboard />} />
+                <Route path="create-tournament" element={<CreateTournament />} />
+                <Route path="sponsor-analytics" element={<SponsorAnalytics />} />
+                <Route path="wallet" element={<WalletPage />} />
+                <Route path="admin" element={<Admin />} />
+                <Route path="*" element={<NotFound />} />
               </Route>
-              
-              {/* Routes that don't use the Layout */}
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/sponsors" element={<Sponsors />} />
-              <Route path="/sponsor/login" element={<SponsorLogin />} />
-              <Route path="/sponsor/dashboard" element={<SponsorDashboard />} />
-              <Route path="/sponsor/create-tournament" element={<CreateTournament />} />
-              <Route path="/sponsor/analytics" element={<SponsorAnalytics />} />
-              <Route path="/developer" element={<DeveloperUpload />} />
-              <Route path="/developer/profile/:id" element={<DeveloperProfile />} />
-              <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
-        </ErrorBoundary>
-      </TooltipProvider>
-    </QueryClientProvider>
+            
+            <OnboardingModal
+              isOpen={showOnboarding}
+              onComplete={async (userData) => {
+                try {
+                  if (!aaWalletAddress) {
+                    throw new Error('Wallet not connected');
+                  }
+                  
+                  // Prepare user data for Supabase
+                  const userProfileData = {
+                    ...userData,
+                    wallet_address: aaWalletAddress,
+                    updated_at: new Date().toISOString(),
+                  };
+                  
+                  // Remove any undefined values and the id field
+                  Object.keys(userProfileData).forEach(key => {
+                    if (userProfileData[key] === undefined || key === 'id') {
+                      delete userProfileData[key];
+                    }
+                  });
+                  
+                  // First, check if user exists
+                  const { data: existingUser } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('wallet_address', aaWalletAddress)
+                    .single();
+                  
+                  let user;
+                  
+                  if (existingUser) {
+                    // Update existing user
+                    const { data: updatedUser, error: updateError } = await supabase
+                      .from('users')
+                      .update(userProfileData)
+                      .eq('wallet_address', aaWalletAddress)
+                      .select()
+                      .single();
+                    
+                    if (updateError) throw updateError;
+                    user = updatedUser;
+                  } else {
+                    // Create new user
+                    const { data: newUser, error: createError } = await supabase
+                      .from('users')
+                      .insert(userProfileData)
+                      .select()
+                      .single();
+                    
+                    if (createError) throw createError;
+                    user = newUser;
+                  }
+                  
+                  if (!user) {
+                    throw new Error('No user data returned from database');
+                  }
+                  
+                  // Update the user profile in the app state
+                  setUserProfile(user);
+                  setShowOnboarding(false);
+                  
+                  toast({
+                    title: 'Profile updated',
+                    description: 'Your profile has been saved successfully.',
+                  });
+                  
+                  // Use a small timeout before reloading to allow the toast to show
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1000);
+                  
+                } catch (error) {
+                  console.error('Error in onComplete:', error);
+                  toast({
+                    title: 'Error',
+                    description: error instanceof Error ? error.message : 'Failed to save profile',
+                    variant: 'destructive',
+                  });
+                }
+              }}
+            />
+          </div>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 export default App;

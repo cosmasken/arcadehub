@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useGame } from '../hooks/useGame';
+import { useGameState } from '../context/GameStateContext';
 import { GRID_SIZE } from '../constants';
 
 const GameBoard: React.FC = () => {
   const { state, changeDirection } = useGame();
+  const { state: gameState } = useGameState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const requestRef = useRef<number>();
@@ -12,23 +14,44 @@ const GameBoard: React.FC = () => {
 
   // Handle keyboard controls
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    switch (e.key) {
-      case 'ArrowUp':
-        changeDirection('UP');
-        break;
-      case 'ArrowDown':
-        changeDirection('DOWN');
-        break;
-      case 'ArrowLeft':
-        changeDirection('LEFT');
-        break;
-      case 'ArrowRight':
-        changeDirection('RIGHT');
-        break;
-      default:
-        break;
+    const useWASD = gameState.settings.useWASD;
+
+    if (useWASD) {
+      switch (e.key.toLowerCase()) {
+        case 'w':
+          changeDirection('UP');
+          break;
+        case 's':
+          changeDirection('DOWN');
+          break;
+        case 'a':
+          changeDirection('LEFT');
+          break;
+        case 'd':
+          changeDirection('RIGHT');
+          break;
+        default:
+          break;
+      }
+    } else {
+      switch (e.key) {
+        case 'ArrowUp':
+          changeDirection('UP');
+          break;
+        case 'ArrowDown':
+          changeDirection('DOWN');
+          break;
+        case 'ArrowLeft':
+          changeDirection('LEFT');
+          break;
+        case 'ArrowRight':
+          changeDirection('RIGHT');
+          break;
+        default:
+          break;
+      }
     }
-  }, [changeDirection]);
+  }, [changeDirection, gameState.settings.useWASD]);
 
   // Set up keyboard event listeners
   useEffect(() => {
@@ -49,11 +72,11 @@ const GameBoard: React.FC = () => {
         const cellSize = Math.floor(size / GRID_SIZE);
         const width = cellSize * GRID_SIZE;
         const height = cellSize * GRID_SIZE;
-        
+
         // Set canvas dimensions
         canvasRef.current.width = width;
         canvasRef.current.height = height;
-        
+
         // Update state for any components that need to know the dimensions
         setDimensions({ width, height });
       }
@@ -61,16 +84,16 @@ const GameBoard: React.FC = () => {
 
     // Initial setup
     updateCanvasSize();
-    
+
     // Handle window resize with debounce
     let resizeTimer: NodeJS.Timeout;
     const handleResize = () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(updateCanvasSize, 100);
     };
-    
+
     window.addEventListener('resize', handleResize);
-    
+
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -82,7 +105,7 @@ const GameBoard: React.FC = () => {
   const drawFood = (ctx: CanvasRenderingContext2D, food: { x: number; y: number }) => {
     if (!canvasRef.current) return;
     const cellSize = canvasRef.current.width / GRID_SIZE;
-    
+
     // Draw food with a gradient
     const gradient = ctx.createRadialGradient(
       (food.x + 0.5) * cellSize,
@@ -92,10 +115,10 @@ const GameBoard: React.FC = () => {
       (food.y + 0.5) * cellSize,
       cellSize * 0.8
     );
-    
+
     gradient.addColorStop(0, '#ff6b6b');
     gradient.addColorStop(1, '#ff0000');
-    
+
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.arc(
@@ -106,7 +129,7 @@ const GameBoard: React.FC = () => {
       Math.PI * 2
     );
     ctx.fill();
-    
+
     // Add shine effect
     ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.beginPath();
@@ -123,26 +146,26 @@ const GameBoard: React.FC = () => {
   // Game rendering loop
   const render = useCallback((timestamp: number) => {
     if (!canvasRef.current) return;
-    
+
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
 
     // Clear the canvas
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
 
-      // Draw the grid with a dark theme and neon effect
+    // Draw the grid with a dark theme and neon effect
     ctx.strokeStyle = 'rgba(0, 255, 157, 0.05)';
     ctx.lineWidth = 0.5;
-    
+
     // Draw a subtle gradient background
     const bgGradient = ctx.createLinearGradient(0, 0, canvasRef.current.width, canvasRef.current.height);
     bgGradient.addColorStop(0, '#0a0a1a');
     bgGradient.addColorStop(1, '#0a1a1a');
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    
+
     const cellSize = canvasRef.current.width / GRID_SIZE;
-    
+
     // Draw grid lines
     for (let i = 0; i <= GRID_SIZE; i++) {
       // Vertical lines
@@ -150,7 +173,7 @@ const GameBoard: React.FC = () => {
       ctx.moveTo(i * cellSize, 0);
       ctx.lineTo(i * cellSize, canvasRef.current.height);
       ctx.stroke();
-      
+
       // Horizontal lines
       ctx.beginPath();
       ctx.moveTo(0, i * cellSize);
@@ -180,20 +203,20 @@ const GameBoard: React.FC = () => {
         const intensity = 200 - Math.min(150, index * 2);
         ctx.fillStyle = `rgb(46, 213, 115, ${intensity / 255})`;
       }
-      
+
       ctx.fillRect(
         segment.x * cellSize + 1,
         segment.y * cellSize + 1,
         cellSize - 2,
         cellSize - 2
       );
-      
+
       // Add eyes to the head
       if (index === 0) {
         const eyeSize = cellSize * 0.15;
         const eyeOffset = cellSize * 0.25;
         const pupilOffset = cellSize * 0.1;
-        
+
         // Left eye
         ctx.fillStyle = 'white';
         ctx.beginPath();
@@ -205,7 +228,7 @@ const GameBoard: React.FC = () => {
           Math.PI * 2
         );
         ctx.fill();
-        
+
         // Right eye
         ctx.beginPath();
         ctx.arc(
@@ -216,7 +239,7 @@ const GameBoard: React.FC = () => {
           Math.PI * 2
         );
         ctx.fill();
-        
+
         // Pupils
         ctx.fillStyle = 'black';
         ctx.beginPath();
@@ -230,10 +253,10 @@ const GameBoard: React.FC = () => {
         ctx.fill();
       }
     });
-    
+
     // Draw the food
     drawFood(ctx, state.food);
-    
+
     // Draw game over message if needed
     if (state.gameOver) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';

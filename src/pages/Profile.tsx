@@ -305,13 +305,13 @@ const Profile = () => {
                 <h2 className="text-xl font-bold text-yellow-400 mb-4 font-mono tracking-tight">💰 SPONSOR ACTIONS</h2>
                 <div className="space-y-3">
                   <Button asChild variant="default" className="w-full bg-yellow-400 text-black hover:bg-yellow-300 font-mono focus-visible:ring-2 focus-visible:ring-yellow-400">
-                    <Link to="/create-tournament">
+                    <Link to="/sponsor/create-tournament">
                       <Trophy className="w-4 h-4 mr-2" />
                       CREATE TOURNAMENT
                     </Link>
                   </Button>
                   <Button asChild variant="outline" className="w-full border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black font-mono focus-visible:ring-2 focus-visible:ring-yellow-400">
-                    <Link to="/sponsor-analytics">
+                    <Link to="/sponsor/analytics">
                       <BarChart3 className="w-4 h-4 mr-2" />
                       VIEW ANALYTICS
                     </Link>

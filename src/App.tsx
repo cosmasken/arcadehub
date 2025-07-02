@@ -200,7 +200,7 @@ const App = () => {
                 <Route path="sponsors" element={<Sponsors />} />
                 <Route path="sponsor/login" element={<SponsorLogin />} />
                 <Route path="sponsor/dashboard" element={<SponsorDashboard />} />
-                <Route path="sponosr/create-tournament" element={<CreateTournament />} />
+                <Route path="sponsor/create-tournament" element={<CreateTournament />} />
                 <Route path="sponsor/analytics" element={<SponsorAnalytics />} />
                 <Route path="wallet" element={<WalletPage />} />
                 <Route path="admin" element={<Admin />} />

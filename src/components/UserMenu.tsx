@@ -1,5 +1,5 @@
 // src/components/UserMenu.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useWalletStore from '../stores/useWalletStore';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -15,17 +15,46 @@ import { LogOut, User, Settings, Wallet, Copy, Check, Gamepad2, Gift, Trophy } f
 import { useToast } from './ui/use-toast';
 import { Link } from 'react-router-dom';
 import useProfileStore from '../stores/useProfileStore';
-import { UserRole, UserRoles } from '../types/supabase';
+import { supabase } from '../lib/supabase';
 
 export function UserMenu() {
   const { isConnected, aaWalletAddress, connect, disconnect } = useWalletStore();
-  const { role } = useProfileStore();
-  const isDeveloper = role === 'developer';
-  const isAdmin = role === 'admin';
-  const isGamer = role === 'gamer';
+  // const { role: storeRole } = useProfileStore();
+  const [role, setRole] = useState('');
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const { toast } = useToast();
+
+  // Fetch role from Supabase if not present in store
+  const fetchRole = async () => {
+    if (!aaWalletAddress) return;
+    const { data, error } = await supabase
+      .from('users')
+      .select('user_type')
+      .eq('wallet_address', aaWalletAddress.toLowerCase())
+      .single();
+    if (!error && data && data.user_type) {
+      setRole(data.user_type);
+      console.log('Fetched role:', data.user_type);
+    }
+  };
+
+  useEffect(() => {
+    if (!role && aaWalletAddress) {
+      fetchRole();
+    } else if (role) {
+      setRole(role);
+    }
+  }, [role, aaWalletAddress]);
+
+  // Add refresh handler
+  const handleRefreshMenu = async () => {
+    await fetchRole();
+    toast({
+      title: 'Menu refreshed',
+      description: 'User role and menu options updated.',
+    });
+  };
 
   const handleConnect = async () => {
     try {
@@ -78,57 +107,70 @@ export function UserMenu() {
 
   const renderUserTypeOptions = () => {
     if (!role) return null;
-
-    const options = [];
-    
-    if (isDeveloper) {
-      options.push(
-        <DropdownMenuItem asChild key="dev-dashboard">
-          <Link to="/developer/dashboard" className="w-full text-left">
-            <Settings className="mr-2 h-4 w-4" />
-            Developer Dashboard
-          </Link>
-        </DropdownMenuItem>,
-        <DropdownMenuItem asChild key="dev-games">
-          <Link to="/developer/games" className="w-full text-left">
-            <Gamepad2 className="mr-2 h-4 w-4" />
-            My Games
-          </Link>
-        </DropdownMenuItem>
-      );
-    } else if (isAdmin) {
-      options.push(
-        <DropdownMenuItem asChild key="admin-dashboard">
-          <Link to="/admin/dashboard" className="w-full text-left">
-            <Settings className="mr-2 h-4 w-4" />
-            Admin Dashboard
-          </Link>
-        </DropdownMenuItem>,
-        <DropdownMenuItem asChild key="admin-users">
-          <Link to="/admin/users" className="w-full text-left">
-            <User className="mr-2 h-4 w-4" />
-            Manage Users
-          </Link>
-        </DropdownMenuItem>
-      );
-    } else if (isGamer) {
-      options.push(
-        <DropdownMenuItem asChild key="profile">
-          <Link to="/profile" className="w-full text-left">
-            <User className="mr-2 h-4 w-4" />
-            My Profile
-          </Link>
-        </DropdownMenuItem>,
-        <DropdownMenuItem asChild key="leaderboard">
-          <Link to="/leaderboard" className="w-full text-left">
-            <Trophy className="mr-2 h-4 w-4" />
-            Leaderboard
-          </Link>
-        </DropdownMenuItem>
-      );
+    switch (role) {
+      case 'developer':
+        return [
+          <DropdownMenuItem asChild key="dev-dashboard">
+            <Link to="/developer/dashboard" className="w-full text-left">
+              <Settings className="mr-2 h-4 w-4" />
+              Developer Dashboard
+            </Link>
+          </DropdownMenuItem>,
+          <DropdownMenuItem asChild key="dev-games">
+            <Link to="/developer/games" className="w-full text-left">
+              <Gamepad2 className="mr-2 h-4 w-4" />
+              My Games
+            </Link>
+          </DropdownMenuItem>
+        ];
+      case 'sponsor':
+        return [
+          <DropdownMenuItem asChild key="sponsor-dashboard">
+            <Link to="/sponsor/dashboard" className="w-full text-left">
+              <Gift className="mr-2 h-4 w-4" />
+              Sponsor Dashboard
+            </Link>
+          </DropdownMenuItem>,
+          <DropdownMenuItem asChild key="sponsor-create-tournament">
+            <Link to="/sponsor/create-tournament" className="w-full text-left">
+              <Trophy className="mr-2 h-4 w-4" />
+              Create Tournament
+            </Link>
+          </DropdownMenuItem>
+        ];
+      case 'admin':
+        return [
+          <DropdownMenuItem asChild key="admin-dashboard">
+            <Link to="/admin/dashboard" className="w-full text-left">
+              <Settings className="mr-2 h-4 w-4" />
+              Admin Dashboard
+            </Link>
+          </DropdownMenuItem>,
+          <DropdownMenuItem asChild key="admin-users">
+            <Link to="/admin/users" className="w-full text-left">
+              <User className="mr-2 h-4 w-4" />
+              Manage Users
+            </Link>
+          </DropdownMenuItem>
+        ];
+      case 'gamer':
+      case 'player':
+      default:
+        return [
+          <DropdownMenuItem asChild key="profile">
+            <Link to="/profile" className="w-full text-left">
+              <User className="mr-2 h-4 w-4" />
+              My Profile
+            </Link>
+          </DropdownMenuItem>,
+          <DropdownMenuItem asChild key="leaderboard">
+            <Link to="/leaderboard" className="w-full text-left">
+              <Trophy className="mr-2 h-4 w-4" />
+              Leaderboard
+            </Link>
+          </DropdownMenuItem>
+        ];
     }
-
-    return options;
   };
 
   if (!isConnected || !aaWalletAddress) {
@@ -187,6 +229,13 @@ export function UserMenu() {
             <>
               {renderUserTypeOptions()}
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <button onClick={handleRefreshMenu} className="w-full text-left">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Refresh Menu
+                </button>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
             </>
           )}
           <DropdownMenuItem asChild>
@@ -195,6 +244,7 @@ export function UserMenu() {
               Copy Address
             </button>
           </DropdownMenuItem>
+
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <button onClick={handleDisconnect} className="w-full text-left">

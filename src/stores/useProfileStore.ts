@@ -119,7 +119,6 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     try {
       // Ensure wallet address is in lowercase for consistent database queries
       const normalizedWalletAddress = walletAddress.toLowerCase();
-      
       // 1. Fetch basic profile from users table
       const { data: profile, error: profileError } = await supabase
         .from('users')
@@ -133,30 +132,12 @@ const useProfileStore = create<ProfileState>((set, get) => ({
         return;
       }
 
-      // 2. Fetch user role assignments separately
-      const { data: roleAssignments } = await supabase
-        .from('user_role_assignments')
-        .select(`
-          role_id,
-          user_roles (
-            name,
-            description
-          )
-        `)
-        .eq('user_id', profile.id);
-
-      // Get user role from role assignments or use user_type
-      const userRoles = roleAssignments?.map((assignment: any) => assignment.user_roles?.name) || [];
-      const primaryRole = userRoles.includes('admin') ? 'admin' : 
-                         userRoles.includes('sponsor') ? 'sponsor' :
-                         userRoles.includes('player') ? 'gamer' : 
-                         profile.user_type || 'gamer';
-
+      // Set role directly from user_type
       set({
         username: profile.username,
         bio: profile.bio,
         avatar: profile.avatar_url,
-        role: primaryRole as 'gamer' | 'developer' | 'admin' | 'sponsor',
+        role: profile.user_type,
       });
 
       // 3. Fetch achievements based on new schema
@@ -175,7 +156,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
         .single();
 
       // 5. For different user types, fetch different data
-      if (primaryRole === 'admin') {
+      if (profile.user_type === 'admin') {
         // Fetch admin-specific data
         const { count: userCount } = await supabase
           .from('users')
@@ -192,7 +173,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
             systemHealth: 'Good',
           },
         });
-      } else if (primaryRole === 'sponsor') {
+      } else if (profile.user_type === 'sponsor') {
         // Fetch sponsor-specific data
         const { data: sponsoredTournaments } = await supabase
           .from('tournaments')
@@ -219,7 +200,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       }
 
       // 6. Fetch games if user type includes developer functionality
-      if (profile.user_type === 'developer' || userRoles.includes('developer')) {
+      if (profile.user_type === 'developer') {
         const { data: developerGames } = await supabase
           .from('games')
           .select('*')

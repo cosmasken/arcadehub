@@ -1,6 +1,6 @@
 import Layout from "../components/Layout";
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
 import Breadcrumbs from '../components/Breadcrumbs';
 import GameCard from '../components/GameCard';
@@ -11,6 +11,7 @@ import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { GamepadIcon, Users, Wallet as WalletIcon, Search, X, Star } from 'lucide-react';
 import useWalletStore from '../stores/useWalletStore';
+import useProfileStore from '../stores/useProfileStore';
 import { Input } from '../components/ui/input';
 import Tooltip from '../components/Tooltip';
 
@@ -33,7 +34,8 @@ const TOKEN_ABI = "../abi/ArcadeToken.json";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isConnected, connectWallet } = useWalletStore();
+  const { isConnected } = useWalletStore();
+  const { role } = useProfileStore();
   const [showWalletTooltip, setShowWalletTooltip] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('popularity');
@@ -209,6 +211,25 @@ const Index = () => {
     navigate('?');
   };
 
+  // Redirect based on user role
+  console.log('Current user role:', role);
+  
+  // Check if we have a valid role before redirecting
+  if (role) {
+    if (role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    }
+    
+    if (role === 'sponsor') {
+      return <Navigate to="/sponsor/dashboard" replace />;
+    }
+    
+    if (role === 'developer') {
+      return <Navigate to="/developer/upload" replace />;
+    }
+  }
+
+  // Default view for gamers and unauthenticated users
   return (
     <Layout>
 

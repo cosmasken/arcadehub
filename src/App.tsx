@@ -95,6 +95,15 @@ const App = () => {
         console.log('User profile found:', user);
         setUserProfile(user);
         setShowOnboarding(false);
+        
+        // Update profile store with user data
+        const profileStore = useProfileStore.getState();
+        profileStore.setUsername(user.username || '');
+        profileStore.setBio(user.bio || '');
+        profileStore.setAvatar(user.avatar_url || '');
+        // Update role using the correct type
+        const userRole = user.user_type as 'gamer' | 'developer' | 'admin' | 'sponsor';
+        useProfileStore.setState({ role: userRole || 'gamer' });
       } else {
         console.log('No user profile found, showing onboarding');
         setUserProfile(null);

@@ -156,11 +156,13 @@ const App = () => {
                   if (!aaWalletAddress) {
                     throw new Error('Wallet not connected');
                   }
+
+                  const normalizedWalletAddress = aaWalletAddress.toLowerCase();
                   
                   // Prepare user data for Supabase
                   const userProfileData = {
                     ...userData,
-                    wallet_address: aaWalletAddress,
+                    wallet_address: normalizedWalletAddress,
                     updated_at: new Date().toISOString(),
                   };
                   
@@ -175,7 +177,7 @@ const App = () => {
                   const { data: existingUser } = await supabase
                     .from('users')
                     .select('*')
-                    .eq('wallet_address', aaWalletAddress)
+                    .eq('wallet_address', normalizedWalletAddress)
                     .single();
                   
                   let user;
@@ -185,7 +187,7 @@ const App = () => {
                     const { data: updatedUser, error: updateError } = await supabase
                       .from('users')
                       .update(userProfileData)
-                      .eq('wallet_address', aaWalletAddress)
+                      .eq('wallet_address', normalizedWalletAddress)
                       .select()
                       .single();
                     
@@ -216,10 +218,7 @@ const App = () => {
                     description: 'Your profile has been saved successfully.',
                   });
                   
-                  // Use a small timeout before reloading to allow the toast to show
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 1000);
+      
                   
                 } catch (error) {
                   console.error('Error in onComplete:', error);

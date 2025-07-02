@@ -10,6 +10,8 @@ import { User as SupabaseUser, UserRole as SupabaseUserRole } from '../types/sup
 import { supabase } from '../lib/supabase';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
 import useWalletStore from '../stores/useWalletStore';
+import { usePinata } from '../hooks/use-pinata';
+import useProfileStore from '../stores/useProfileStore';
 
 type UserRole = 'player' | 'developer' | 'sponsor';
 
@@ -49,9 +51,11 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
-
   const { aaWalletAddress } = useWalletStore();
+  const { uploadFile, error } = usePinata();
+  const { onboardUser } = useProfileStore();
   
+
   const checkUsernameExists = async (username: string): Promise<boolean> => {
     const { data, error } = await supabase
       .from('users')
@@ -162,49 +166,47 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       return;
     }
 
+    if (!aaWalletAddress) {
+      toast({
+        title: 'Error',
+        description: 'Wallet not connected',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setIsUploading(true);
 
     try {
-      // Get wallet address from store
-      const walletStore = useWalletStore.getState();
-      const walletAddress = walletStore.aaWalletAddress;
-      
-      if (!walletAddress) {
-        throw new Error('Wallet not connected');
-      }
-
       // Handle avatar upload if file is selected
-      let avatarUrl = null;
-      if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${walletAddress}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
+      // let avatarUrl = null;
+      // if (avatarFile) {
+      //   const fileExt = avatarFile.name.split('.').pop();
+      //   const fileName = `${aaWalletAddress}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      //   const filePath = `avatars/${fileName}`;
         
-        // Upload to Supabase Storage
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(filePath, avatarFile);
+      //   // Upload to Supabase Storage
+      //   const { error: uploadError } = await supabase.storage
+      //     .from('avatars')
+      //     .upload(filePath, avatarFile);
         
-        if (uploadError) throw uploadError;
+      //   if (uploadError) throw uploadError;
         
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('avatars')
-          .getPublicUrl(filePath);
+      //   // Get public URL
+      //   const { data: { publicUrl } } = supabase.storage
+      //     .from('avatars')
+      //     .getPublicUrl(filePath);
           
-        avatarUrl = publicUrl;
-      }
+      //   avatarUrl = publicUrl;
+      // }
 
-      // Prepare user data for Supabase
+      // Prepare user data for onboarding
       const userData = {
-        // Don't include id - let the database handle it
         username: username.trim(),
         bio: bio.trim() || null,
-        avatar_url: avatarUrl,
+        avatar_url: null,
         user_type: userType,
-        // Don't include created_at or updated_at - let the database handle these
-        // Include other required fields with default values
         email: null,
         company_name: null,
         website: null,
@@ -214,8 +216,15 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
         social_links: {}
       };
 
-      // Call onComplete with the user data
-      onComplete(userData);
+      // Use the onboardUser function from useProfileStore
+      const success = await onboardUser(aaWalletAddress, userData);
+      
+      if (success) {
+        // Call onComplete with the user data if needed by parent component
+        onComplete(userData);
+      } else {
+        throw new Error('Failed to onboard user');
+      }
 
     } catch (error) {
       console.error('Error creating profile:', error);

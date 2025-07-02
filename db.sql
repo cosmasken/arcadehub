@@ -131,7 +131,40 @@ CREATE TABLE user_achievements (
     image_url TEXT,
     earned_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE TABLE public.wallet_balances (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  token_symbol TEXT NOT NULL,
+  balance DECIMAL(28, 18) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, token_symbol)
+);
 
+CREATE TABLE public.wallet_transactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  tx_hash TEXT NOT NULL UNIQUE,
+  amount DECIMAL(28, 18) NOT NULL,
+  token_symbol TEXT NOT NULL,
+  transaction_type TEXT NOT NULL, -- 'deposit', 'withdrawal', 'transfer', etc.
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'completed', 'failed'
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE public.pending_rewards (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  amount DECIMAL(28, 18) NOT NULL,
+  token_symbol TEXT NOT NULL,
+  reward_type TEXT NOT NULL, -- 'game', 'referral', 'promotion', etc.
+  status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'claimed', 'expired'
+  expires_at TIMESTAMPTZ,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 -- Wallet transactions
 CREATE TABLE wallet_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

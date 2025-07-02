@@ -95,11 +95,14 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   fetchProfile: async (walletAddress: string) => {
     set({ loading: true, error: null });
     try {
+      // Ensure wallet address is in lowercase for consistent database queries
+      const normalizedWalletAddress = walletAddress.toLowerCase();
+      
       // 1. Fetch profile from users table
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('wallet_address', walletAddress)
+        .eq('wallet_address', normalizedWalletAddress)
         .single();
 
       if (profileError || !profile) {
@@ -118,7 +121,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       const { data: achievements } = await supabase
         .from('user_achievements')
         .select('*, achievement:achievements(*)')
-        .eq('user_wallet', walletAddress);
+        .eq('user_wallet', normalizedWalletAddress);
 
       set({ achievements: achievements?.length || 0 });
 
@@ -126,7 +129,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       const { count: gamesPlayed } = await supabase
         .from('game_plays')
         .select('*', { count: 'exact', head: true })
-        .eq('player_wallet', walletAddress);
+        .eq('player_wallet', normalizedWalletAddress);
 
       set({ gamesPlayed: gamesPlayed || 0 });
 
@@ -134,7 +137,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
       const { data: developerGames } = await supabase
         .from('games')
         .select('*')
-        .eq('developer', walletAddress);
+        .eq('developer', normalizedWalletAddress);
 
       set({ developerGames: developerGames || [] });
 
@@ -206,22 +209,36 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   onboardUser: async (walletAddress: string, userData: any) => {
     set({ loading: true, error: null });
     try {
+      // Ensure wallet address is in lowercase to match database constraint
+      const normalizedWalletAddress = walletAddress.toLowerCase();
+      
+      // Create a new object without wallet_address if it exists in userData
+      // const { wallet_address, ...restUserData } = userData;
+      
       const { error } = await supabase.from('users').upsert([
         {
-          wallet_address: walletAddress,
+          wallet_address: normalizedWalletAddress,
           ...userData,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
-      ]);
+      ], {
+        onConflict: 'wallet_address',
+        defaultToNull: false
+      });
+      
       if (error) {
+        console.error('Error in onboardUser:', error);
         set({ loading: false, error: error.message });
         return false;
       }
-      await get().fetchProfile(walletAddress);
+      
+      // Fetch profile using the normalized wallet address
+      await get().fetchProfile(normalizedWalletAddress);
       set({ loading: false });
       return true;
     } catch (err: any) {
+      console.error('Exception in onboardUser:', err);
       set({ loading: false, error: err.message });
       return false;
     }

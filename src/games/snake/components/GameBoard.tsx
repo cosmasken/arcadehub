@@ -310,6 +310,24 @@ const GameBoard: React.FC = () => {
 
 
 
+  // Handle splash screen completion
+  const handleSplashComplete = useCallback(() => {
+    dispatch({ type: 'SPLASH_COMPLETE' });
+    // Show initial tooltip after splash
+    setTimeout(() => {
+      dispatch({ 
+        type: 'SHOW_TOOLTIP',
+        message: 'Use arrow keys or WASD to control the snake',
+        duration: 4000
+      });
+    }, 1000);
+  }, [dispatch]);
+
+  // Handle tooltip completion
+  const handleTooltipComplete = useCallback(() => {
+    dispatch({ type: 'HIDE_TOOLTIP' });
+  }, [dispatch]);
+
   // Handle menu actions
   const handleStart = useCallback(() => {
     if (state.menuType === 'start') {
@@ -337,65 +355,57 @@ const GameBoard: React.FC = () => {
     dispatch({ type: 'RETURN_TO_MENU' });
   }, [dispatch]);
 
-  // Handle splash screen completion
-  const handleSplashComplete = useCallback(() => {
-    console.log('Splash screen completed, dispatching SPLASH_COMPLETE');
-    try {
-      dispatch({ type: 'SPLASH_COMPLETE' });
-    } catch (error) {
-      console.error('Error in handleSplashComplete:', error);
-    }
-  }, [dispatch]);
-  
-  // Debug log when isLoading changes
-  useEffect(() => {
-    console.log('isLoading state changed:', state.isLoading);
-  }, [state.isLoading]);
-
-  // Initialize canvas after component mounts
-  useEffect(() => {
-    if (canvasRef.current && containerRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        // Set up canvas context here if needed
-        ctx.imageSmoothingEnabled = false;
-      }
-    }
-  }, []);
-
   return (
-    <div ref={containerRef} className="w-full h-full flex items-center justify-center p-4 overflow-hidden bg-black">
-      {/* Game Canvas */}
-      <div className="relative w-full h-full max-w-4xl max-h-[80vh] bg-gray-900 rounded-lg overflow-hidden">
+    <div className="relative w-full h-full flex items-center justify-center bg-gray-900 p-4">
+      <div 
+        ref={containerRef}
+        className="relative w-full h-full max-w-4xl max-h-[90vh] flex items-center justify-center"
+      >
         <canvas
           ref={canvasRef}
-          width={800}
-          height={600}
-          className="w-full h-full"
-          tabIndex={0}
+          className="bg-gray-800 rounded-lg shadow-lg"
+          style={{
+            width: `${dimensions.width}px`,
+            height: `${dimensions.height}px`,
+          }}
         />
         
         {/* Splash Screen */}
         {state.isLoading && (
-          <SplashScreen onComplete={handleSplashComplete} />
+          <SplashScreen 
+            type="splash"
+            message="Loading..."
+            onComplete={handleSplashComplete} 
+          />
         )}
         
-        {/* Game Menu - Always render but control visibility with state */}
-        <div className={`absolute inset-0 transition-opacity duration-300 ${state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          {state.menuType && (
-            <GameMenu 
-              type={state.menuType}
-              score={state.score}
-              highScore={state.highScore}
-              level={state.level}
-              onStart={handleStart}
-              onRestart={handleRestart}
-              onSave={handleSave}
-              onQuit={handleQuit}
-            />
-          )}
-        </div>
+        {/* Tooltip - Only show when menu is not open and not showing login prompt */}
+        {state.showTooltip && !state.showMenu && !gameState.ui.showLoginPrompt && (
+          <SplashScreen
+            type="tooltip"
+            message={state.tooltipMessage}
+            duration={state.tooltipDuration}
+            onComplete={handleTooltipComplete}
+          />
+        )}
+        
+        {/* Game Menu - Only show if not showing login prompt */}
+        {!gameState.ui.showLoginPrompt && (
+          <div className={`absolute inset-0 transition-opacity duration-300 ${state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+            {state.menuType && (
+              <GameMenu 
+                type={state.menuType}
+                score={state.score}
+                highScore={state.highScore}
+                level={state.level}
+                onStart={handleStart}
+                onRestart={handleRestart}
+                onSave={handleSave}
+                onQuit={handleQuit}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

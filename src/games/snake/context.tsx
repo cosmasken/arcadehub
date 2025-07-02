@@ -1,81 +1,11 @@
-import React, { createContext, useReducer, useCallback, useEffect, useRef } from 'react';
-import { GameState, GameAction, GameContextType, Position, Direction } from './types';
+import React, { createContext, useReducer, useCallback, useRef, useEffect } from 'react';
+import { GameState, GameAction, GameContextType, Direction } from './types';
+import { getInitialState, getRandomPosition } from './initialState';
 import { GRID_SIZE, INITIAL_GAME_SPEED, DIRECTIONS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
 
 // Helper functions
-const getRandomPosition = (direction: Direction = 'RIGHT'): Position => ({
-  x: Math.floor(Math.random() * GRID_SIZE),
-  y: Math.floor(Math.random() * GRID_SIZE),
-  dx: 0,
-  dy: 0,
-  targetX: 0,
-  targetY: 0,
-  moving: false,
-  direction
-});
-
-const getInitialState = (): GameState => {
-  return {
-    // Game state
-    snake: [{
-      x: 10,
-      y: 10,
-      dx: 0,
-      dy: 0,
-      targetX: 10,
-      targetY: 10,
-      moving: false,
-      direction: 'RIGHT'
-    }],
-    food: getRandomPosition(),
-    direction: DIRECTIONS.RIGHT,
-    nextDirection: DIRECTIONS.RIGHT,
-    gameOver: false,
-    isPaused: false,
-    isStarted: false,
-    
-    // UI state
-    isLoading: true, // Show splash screen by default
-    showMenu: true, // Show menu by default
-    menuType: 'start' as const, // Default to start menu
-    
-    // Scoring and progress
-    score: 0,
-    highScore: Number(localStorage.getItem('snake-highscore')) || 0,
-    level: 1,
-    linesCleared: 0,
-    
-    // Game economy
-    coins: 0,
-    inventory: {},
-    achievements: [],
-    
-    // Settings
-    settings: {
-      gridSize: GRID_SIZE,
-      cellSize: 20,
-      gameSpeed: INITIAL_GAME_SPEED,
-      theme: 'classic',
-      soundEnabled: true,
-      musicEnabled: true,
-      ghostPiece: false,
-      wallCollision: true,
-    },
-    
-    // Tournament enhancements
-    gameStartTime: 0,
-    gameDuration: 0,
-    moveCount: 0,
-    foodEaten: 0,
-    comboMultiplier: 1,
-    maxCombo: 0,
-    perfectMoves: 0,
-    gameMode: 'classic',
-    timeLimit: undefined,
-    targetScore: undefined,
-    gameSeed: Math.random().toString(36).substring(2, 15), // Random seed
-  };
-};
+// Re-export for backward compatibility
+export { getInitialState, getRandomPosition };
 
 // Game context
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -339,12 +269,31 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       const achievement = ACHIEVEMENTS.find(a => a.id === action.achievementId);
       if (!achievement) return state;
       
+      // Show tooltip when achievement is unlocked
+      const tooltipMessage = `Achievement Unlocked: ${achievement.name}! +${achievement.reward} coins`;
+      
       return {
         ...state,
         achievements: [...state.achievements, action.achievementId],
         coins: state.coins + achievement.reward,
+        showTooltip: true,
+        tooltipMessage,
       };
     }
+    
+    case 'SHOW_TOOLTIP':
+      return {
+        ...state,
+        showTooltip: true,
+        tooltipMessage: action.message,
+        tooltipDuration: action.duration || 3000,
+      };
+      
+    case 'HIDE_TOOLTIP':
+      return {
+        ...state,
+        showTooltip: false,
+      };
     
     default:
       return state;

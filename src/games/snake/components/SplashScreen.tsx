@@ -1,37 +1,47 @@
 import React, { useEffect, useState } from 'react';
 
+type SplashType = 'splash' | 'tooltip';
+
 interface SplashScreenProps {
+  type: SplashType;
+  message?: string;
+  duration?: number;
   onComplete: () => void;
 }
 
-const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
+const SplashScreen: React.FC<SplashScreenProps> = ({ 
+  type = 'splash',
+  message = 'Loading...',
+  duration = 3000,
+  onComplete 
+}) => {
   const [isVisible, setIsVisible] = useState(true);
   const [progress, setProgress] = useState(0);
+  const isSplash = type === 'splash';
 
   useEffect(() => {
-    console.log('SplashScreen: Starting animation');
+    console.log(`SplashScreen (${type}): Starting animation`);
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
     let animationFrameId: number;
-    const TOTAL_DURATION = 3000; // 3 seconds total
     let startTime: number;
     
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
-      const progress = Math.min((elapsed / TOTAL_DURATION) * 100, 100);
+      const currentProgress = Math.min((elapsed / duration) * 100, 100);
       
-      setProgress(progress);
+      setProgress(currentProgress);
       
-      if (progress < 100) {
+      if (currentProgress < 100) {
         animationFrameId = requestAnimationFrame(animate);
       } else {
-        // Animation complete
-        console.log('SplashScreen: Animation complete, starting fade out');
+        // Animation complete, start fade out
+        console.log(`SplashScreen (${type}): Animation complete, starting fade out`);
         setIsVisible(false);
         // Small delay before calling onComplete for smooth fade out
         timeoutId = setTimeout(() => {
-          console.log('SplashScreen: Calling onComplete');
+          console.log(`SplashScreen (${type}): Calling onComplete`);
           if (isMounted) {
             onComplete();
           }
@@ -43,40 +53,36 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     animationFrameId = requestAnimationFrame(animate);
     
     return () => {
-      console.log('SplashScreen: Cleaning up');
+      console.log(`SplashScreen (${type}): Cleaning up`);
       isMounted = false;
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [onComplete]);
+  }, [onComplete, type, duration]);
 
   if (!isVisible) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 transition-opacity duration-500">
-      <div className="text-center">
-        <h1 className="text-5xl font-bold text-cyan-400 mb-6 animate-pulse">Snake Game</h1>
-        <p className="text-white text-xl mb-8">Loading...</p>
-        
-        {/* Progress bar */}
-        <div className="w-64 h-4 bg-gray-800 rounded-full overflow-hidden mx-auto">
+  if (isSplash) {
+    return (
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center z-50 transition-opacity duration-500">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">Snake Game</h1>
+          <p className="text-gray-300">{message}</p>
+        </div>
+        <div className="w-64 h-2 bg-gray-700 rounded-full overflow-hidden">
           <div 
             className="h-full bg-cyan-500 transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
-        
-        <p className="text-gray-400 mt-4">{progress}%</p>
-        
-        <div className="mt-12 text-gray-500 text-sm">
-          <p>Use arrow keys or WASD to control the snake</p>
-          <p className="mt-2">Eat the food to grow and earn points</p>
-        </div>
       </div>
+    );
+  }
+
+  // Tooltip variant
+  return (
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300">
+      <p className="text-sm">{message}</p>
     </div>
   );
 };

@@ -1,8 +1,10 @@
 import React from 'react';
 import { useGame } from '../hooks/useGame';
+import { useGameState } from '../context/GameStateContext';
 
 const StatsPanel: React.FC = () => {
   const { state } = useGame();
+  const { state: gameState } = useGameState();
   
   return (
     <div className="bg-white rounded-lg p-4 shadow-md">
@@ -38,31 +40,27 @@ const StatsPanel: React.FC = () => {
         </div>
       </div>
       
-      {state.gameOver && (
-        <div className="mt-4 p-3 bg-red-50 rounded-md text-center">
-          <p className="text-red-600 font-medium">Game Over!</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-2 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-          >
-            Play Again
-          </button>
-        </div>
-      )}
-      
-      {!state.isStarted && !state.gameOver && (
-        <div className="mt-4 text-center">
-          <p className="text-gray-600 mb-2">Press any arrow key to start</p>
-          <div className="grid grid-cols-3 gap-1 max-w-[120px] mx-auto">
-            <div></div>
-            <button className="bg-gray-200 p-2 rounded">⬆️</button>
-            <div></div>
-            <button className="bg-gray-200 p-2 rounded">⬅️</button>
-            <button className="bg-gray-200 p-2 rounded">⬇️</button>
-            <button className="bg-gray-200 p-2 rounded">➡️</button>
+      <div className="mt-4 text-center">
+        <p className="text-gray-600 mb-2 text-sm">Controls</p>
+        <div className="grid grid-cols-3 gap-1 max-w-[120px] mx-auto">
+          <div></div>
+          <div className="bg-gray-100 p-2 rounded flex items-center justify-center">
+            {gameState.settings.useWASD ? 'W' : '↑'}
+          </div>
+          <div></div>
+          <div className="bg-gray-100 p-2 rounded flex items-center justify-center">
+            {gameState.settings.useWASD ? 'A' : '←'}
+          </div>
+          <div className="bg-gray-100 p-2 rounded flex items-center justify-center">
+            {gameState.settings.useWASD ? 'S' : '↓'}
+          </div>
+          <div className="bg-gray-100 p-2 rounded flex items-center justify-center">
+            {gameState.settings.useWASD ? 'D' : '→'}
           </div>
         </div>
-      )}
+      </div>
+      
+
     </div>
   );
 };

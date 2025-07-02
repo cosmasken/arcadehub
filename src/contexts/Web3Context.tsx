@@ -11,11 +11,11 @@ interface MockUser {
 }
 
 interface MockProvider {
-  request: (args: any) => Promise<any>;
+  request: (args: unknown) => Promise<unknown>;
 }
 
 interface Web3ContextType {
-  web3auth: any;
+  web3auth: MockWeb3Auth | null;
   provider: MockProvider | null;
   user: MockUser | null;
   isLoading: boolean;
@@ -56,7 +56,7 @@ const mockUsers = [
 ];
 
 export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
-  const [web3auth, setWeb3auth] = useState<any>(null);
+  const [web3auth, setWeb3auth] = useState<MockWeb3Auth | null>(null);
   const [provider, setProvider] = useState<MockProvider | null>(null);
   const [user, setUser] = useState<MockUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +77,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
             const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
             mockWeb3Auth.connected = true;
             mockWeb3Auth.provider = {
-              request: async (args: any) => {
+              request: async (args: unknown) => {
                 console.log("Mock provider request:", args);
                 return "0x1234567890abcdef";
               }
@@ -104,8 +104,8 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         // Simulate checking for existing session
         if (Math.random() > 0.8) { // 20% chance of being "already connected"
           mockWeb3Auth.connected = true;
-          const mockProvider = {
-            request: async (args: any) => {
+          const mockProvider: MockProvider = {
+            request: async (args: unknown) => {
               console.log("Mock provider request:", args);
               return "0x1234567890abcdef";
             }

@@ -1,11 +1,10 @@
+import Layout from "../components/Layout";
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
-import Header from '../components/Header';
 import LoadingModal from '../components/LoadingModal';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { 
   Wallet, 
   Shield, 
@@ -15,7 +14,7 @@ import {
   Trophy,
   ArrowRight
 } from 'lucide-react';
-
+import {Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 const SponsorLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -101,8 +100,10 @@ const SponsorLogin = () => {
   // }, [user, navigate]);
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
+      
       
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-4xl">
@@ -111,7 +112,7 @@ const SponsorLogin = () => {
             <div className="inline-flex items-center space-x-2 mb-4">
               <Trophy className="w-8 h-8 text-yellow-400" />
               <h1 className="text-4xl md:text-5xl font-mono font-bold text-cyan-400 neon-text">
-                &gt; SPONSOR_LOGIN &lt;
+                 SPONSOR_LOGIN 
               </h1>
             </div>
             <p className="text-xl text-green-400 max-w-2xl mx-auto mb-8">
@@ -178,7 +179,7 @@ const SponsorLogin = () => {
           {/* Benefits Section */}
           <div className="mt-16 border-2 border-yellow-400 p-8 rounded bg-yellow-400/10">
             <h2 className="text-2xl font-mono text-yellow-400 mb-6 text-center">
-              &gt; SPONSOR_BENEFITS &lt;
+               SPONSOR_BENEFITS 
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center">
@@ -213,6 +214,8 @@ const SponsorLogin = () => {
         description="Please confirm the connection in your wallet..."
       />
     </div>
+
+    </Layout>
   );
 };
 

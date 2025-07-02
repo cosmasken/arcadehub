@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Header from './Header';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { 
@@ -50,7 +49,6 @@ const SponsorAnalytics = () => {
 
   return (
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
       
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-7xl">
@@ -66,7 +64,7 @@ const SponsorAnalytics = () => {
                 BACK TO DASHBOARD
               </Button>
               <h1 className="text-3xl font-mono font-bold text-cyan-400">
-                &gt; SPONSOR_ANALYTICS &lt;
+                 SPONSOR_ANALYTICS 
               </h1>
               <p className="text-green-400 mt-2">
                 Detailed insights into your tournament sponsorships

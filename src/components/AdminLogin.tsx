@@ -62,7 +62,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         <div className="text-center mb-8">
           <Shield className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-red-400 neon-text mb-2">
-            &gt; ADMIN_ACCESS &lt;
+             ADMIN_ACCESS 
           </h1>
           <p className="text-green-400 text-sm">
             AUTHORIZED PERSONNEL ONLY

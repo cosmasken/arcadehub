@@ -1,38 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
+import { Loader2, CheckCircle, X, Upload, User as UserIcon, User, Gamepad2, Check, Trophy, Gift, Code } from 'lucide-react';
+import { useToast } from '../components/ui/use-toast';
+import { User as SupabaseUser, UserRole as SupabaseUserRole } from '../types/supabase';
+import { supabase } from '../lib/supabase';
 import { RadioGroup, RadioGroupItem } from '../components/ui/radio-group';
-import { CheckCircle, X, Loader2, User, Gamepad2, Code } from 'lucide-react';
-import { toast } from '../components/ui/use-toast';
-import useProfileStore from '../stores/useProfileStore';
 import useWalletStore from '../stores/useWalletStore';
 import { usePinata } from '../hooks/use-pinata';
+import useProfileStore from '../stores/useProfileStore';
+
+type UserRole = 'player' | 'developer' | 'sponsor';
+
+type SocialLinks = {
+  twitter?: string;
+  discord?: string;
+  website?: string;
+  github?: string;
+  [key: string]: string | undefined;
+};
+
+export interface UserData extends Omit<SupabaseUser,
+  'id' | 'wallet_address' | 'created_at' | 'updated_at' |
+  'onchain_id' | 'onchain_tx_hash' | 'onchain_status' |
+  'is_verified' | 'verification_data' | 'user_type'
+> {
+  user_type: UserRole;
+  social_links?: SocialLinks | null;
+}
 
 interface OnboardingModalProps {
   isOpen: boolean;
-  onComplete: (userData: any) => void;
+  onComplete: (userData: UserData) => void;
 }
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
-type UserType = 'developer' | 'gamer';
+// UserRole type is already defined above
 type OnboardingStep = 'userType' | 'profile' | 'complete';
 
 const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete }) => {
   const [step, setStep] = useState<OnboardingStep>('userType');
-  const [userType, setUserType] = useState<UserType>('gamer');
+  const [userType, setUserType] = useState<UserRole>('player');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { uploadFile, error } = usePinata();
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  const { checkUsernameExists, onboardUser } = useProfileStore();
+  const { toast } = useToast();
   const { aaWalletAddress } = useWalletStore();
+  const { uploadFile, error } = usePinata();
+  const { onboardUser } = useProfileStore();
+
+
+  const checkUsernameExists = async (username: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('username', username)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking username:', error);
+      return false;
+    }
+
+    return !!data;
+  };
 
   // Real username check
   const checkUsernameAvailability = async (username: string) => {
@@ -46,16 +83,51 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAvatarFile(e.target.files?.[0] || null);
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid file type',
+          description: 'Please upload an image file (JPEG, PNG, etc.)',
+          variant: 'destructive',
+        });
+        return;
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please upload an image smaller than 5MB',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setAvatarFile(file);
+    }
   };
+
+  const timeoutRef = useRef<NodeJS.Timeout>();
+
+  useEffect(() => {
+    // Cleanup function to clear the timeout when the component unmounts
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleUsernameChange = (value: string) => {
     setUsername(value);
     setUsernameStatus('idle');
     if (value.trim().length >= 3) {
-      // Debounce
-      clearTimeout((handleUsernameChange as any).timeoutId);
-      (handleUsernameChange as any).timeoutId = setTimeout(() => {
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      // Set a new timeout
+      timeoutRef.current = setTimeout(() => {
         checkUsernameAvailability(value);
       }, 500);
     }
@@ -65,97 +137,123 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     setStep('profile');
   };
 
+  // Reset fields when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep('userType');
+      setUserType('player');
+      setUsername('');
+      setBio('');
+      setUsernameStatus('idle');
+      setAvatarFile(null);
+      setIsSubmitting(false);
+      setIsUploading(false);
+    }
+  }, [isOpen]);
+
   const handleComplete = async () => {
-    
+    // Validate username
     if (!username.trim()) {
       toast({
-        title: "Error",
-        description: "Username is required",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Username is required',
+        variant: 'destructive',
       });
       return;
     }
 
-    switch (usernameStatus) {
-      case 'checking':
-        toast({
-          title: "Please wait",
-          description: "Checking username availability...",
-          variant: "default"
-        });
-        return;
-      case 'taken':
-        toast({
-          title: "Error",
-          description: "Please choose a different username",
-          variant: "destructive"
-        });
-        return;
-      // case 'idle':
-      //   await checkUsernameAvailability(username);
-      //   if (usernameStatus === 'taken') {
-      //     toast({
-      //       title: "Error",
-      //       description: "Username is not available",
-      //       variant: "destructive"
-      //     });
-      //     return;
-      //   }
-      //   if (usernameStatus !== 'available') {
-      //     toast({
-      //       title: "Error",
-      //       description: "Please try again after checking username availability.",
-      //       variant: "destructive"
-      //     });
-      //     return;
-      //   }
-      //   break;
-      case 'available':
-        // Good to proceed
-        break;
-      default:
-        toast({
-          title: "Error",
-          description: "Unknown username status. Please try again.",
-          variant: "destructive"
-        });
-        return;
+    // Always check username availability before submit
+    setUsernameStatus('checking');
+    const exists = await checkUsernameExists(username.trim());
+    if (exists) {
+      setUsernameStatus('taken');
+      toast({
+        title: 'Username not available',
+        description: 'Please choose a different username',
+        variant: 'destructive',
+      });
+      return;
+    } else {
+      setUsernameStatus('available');
+    }
+
+    if (!aaWalletAddress) {
+      toast({
+        title: 'Error',
+        description: 'Wallet not connected',
+        variant: 'destructive',
+      });
+      return;
     }
 
     setIsSubmitting(true);
+    setIsUploading(true);
 
-    let avatarHash = null;
-    if (avatarFile) {
-      avatarHash = await uploadFile(avatarFile);
-      if (!avatarHash) {
-        toast({
-          title: "Avatar Upload Failed",
-          description: error || "Could not upload avatar to IPFS.",
-          variant: "destructive"
-        });
-        setIsUploading(false);
-        return;
+    try {
+      // Handle avatar upload if file is selected
+      // let avatarUrl = null;
+      // if (avatarFile) {
+      //   const fileExt = avatarFile.name.split('.').pop();
+      //   const fileName = `${aaWalletAddress}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+      //   const filePath = `avatars/${fileName}`;
+
+      //   // Upload to Supabase Storage
+      //   const { error: uploadError } = await supabase.storage
+      //     .from('avatars')
+      //     .upload(filePath, avatarFile);
+
+      //   if (uploadError) throw uploadError;
+
+      //   // Get public URL
+      //   const { data: { publicUrl } } = supabase.storage
+      //     .from('avatars')
+      //     .getPublicUrl(filePath);
+
+      //   avatarUrl = publicUrl;
+      // }
+
+      // Prepare user data for onboarding
+      const userData = {
+        username: username.trim(),
+        bio: bio.trim() || null,
+        avatar_url: null,
+        user_type: userType,
+        email: null,
+        company_name: null,
+        website: null,
+        industry: null,
+        contact_email: null,
+        contact_phone: null,
+        social_links: {}
+      };
+
+      // Use the onboardUser function from useProfileStore
+      const success = await onboardUser(aaWalletAddress, userData);
+      if (success) {
+        // Call onComplete with the user data if needed by parent component
+        onComplete(userData);
+      } else {
+        throw new Error('Failed to onboard user');
       }
-    }
-
-    const success = await onboardUser(aaWalletAddress, {
-      username: username.trim(),
-      bio: bio.trim() || null,
-      role: userType,
-      avatar: avatarHash
-    });
-    setIsSubmitting(false);
-    if (success) {
-      setStep('complete');
-      setTimeout(() => {
-        onComplete({ username, bio, userType });
-      }, 2000);
-    } else {
-      toast({
-        title: "Error",
-        description: "Failed to create profile. Please try again.",
-        variant: "destructive"
-      });
+    } catch (error: any) {
+      // Handle duplicate username error from API
+      if (error?.code === '23505' || (error?.message && error.message.includes('duplicate key value'))) {
+        toast({
+          title: 'Username already exists',
+          description: 'Please choose a different username.',
+          variant: 'destructive',
+        });
+        setUsernameStatus('taken');
+      } else {
+        toast({
+          title: 'Error creating profile',
+          description: error instanceof Error ? error.message : 'Failed to create user profile',
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -189,65 +287,95 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     return username.trim().length >= 3 && usernameStatus === 'available';
   };
 
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      // Only proceed if we're not in the middle of submission
+      if (isSubmitting) return;
+
+      // If the form is complete and valid, submit it
+      if (step === 'profile' && isFormValid()) {
+        handleComplete();
+      } else {
+        // Otherwise, just close with empty data
+        onComplete({
+          username: '',
+          bio: null,
+          user_type: 'player',
+          email: null,
+          avatar_url: null,
+          company_name: null,
+          website: null,
+          social_links: null,
+          industry: null,
+          contact_email: null,
+          contact_phone: null
+        });
+      }
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={() => { }}>
-      <DialogContent className="max-w-md bg-white">
-        <DialogHeader>
-          <DialogTitle className="text-2xl text-black font-bold text-center flex items-center justify-center gap-2">
-            {step === 'userType' && 'Welcome to Web3 Portal!'}
-            {step === 'profile' && (
-              <>
-                <User className="h-6 w-6" />
-                Complete Your Profile
-              </>
-            )}
-            {step === 'complete' && 'Welcome to Web3 Portal!'}
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
+      <DialogContent className="sm:max-w-[500px] p-6 bg-gradient-to-b from-black/90 to-black/80 backdrop-blur-sm border border-white/10 rounded-2xl shadow-2xl">
+        <DialogHeader className="mb-6">
+          <DialogTitle className="text-2xl font-bold text-center text-white">
+            Welcome to ArcadeHub
           </DialogTitle>
         </DialogHeader>
 
         {step === 'userType' && (
           <div className="space-y-6 py-4">
-            <p className="text-center text-black font-bold text-sm">
-              Tell us about yourself to get started
+            <p className="text-center text-gray-300 text-sm">
+              Are you a player or a developer?
             </p>
 
-            <div className="space-y-4 text-black">
-              <Label className="text-base font-medium">I am a...</Label>
-              <RadioGroup value={userType} onValueChange={(value: UserType) => setUserType(value)}>
-                <div
-                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
-            ${userType === 'gamer'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-400'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setUserType('gamer')}
-                >
-                  <RadioGroupItem value="gamer" id="gamer" />
-                  <div className="flex items-center space-x-3">
-                    <Gamepad2 className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <label htmlFor="gamer" className="font-medium cursor-pointer">Gamer</label>
-                      <p className="text-sm text-gray-500">I want to play and discover games</p>
-                    </div>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setUserType('player')}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${userType === 'player'
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-white/10 hover:border-white/20'
+                  }`}
+              >
+                <Gamepad2 className="h-8 w-8 mb-2 text-blue-400" />
+                <span className="font-medium text-white">Player</span>
+                <p className="text-xs text-gray-400 mt-1 text-center">Play games and earn rewards</p>
+              </button>
 
-                <div
-                  className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition
-            ${userType === 'developer'
-                      ? 'border-green-500 bg-green-50 dark:bg-green-900/30 ring-2 ring-green-400'
-                      : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setUserType('developer')}
-                >
-                  <RadioGroupItem value="developer" id="developer" />
-                  <div className="flex items-center space-x-3">
-                    <Code className="h-5 w-5 text-green-500" />
-                    <div>
-                      <label htmlFor="developer" className="font-medium cursor-pointer">Developer</label>
-                      <p className="text-sm text-gray-500">I want to upload and publish games</p>
-                    </div>
-                  </div>
+              <button
+                type="button"
+                onClick={() => setUserType('developer')}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${userType === 'developer'
+                    ? 'border-purple-500 bg-purple-500/10'
+                    : 'border-white/10 hover:border-white/20'
+                  }`}
+              >
+                <Code className="h-8 w-8 mb-2 text-purple-400" />
+                <span className="font-medium text-white">Developer</span>
+                <p className="text-xs text-gray-400 mt-1 text-center">Create and publish games</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setUserType('sponsor')}
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${userType === 'sponsor'
+                    ? 'border-green-500 bg-green-500/10'
+                    : 'border-white/10 hover:border-white/20'
+                  }`}
+              >
+                <Gift className="h-8 w-8 mb-2 text-green-400" />
+                <span className="font-medium text-white">Sponsor</span>
+                <p className="text-xs text-gray-400 mt-1 text-center">Support games and tournaments</p>
+              </button>
+
+              <div className="opacity-50 cursor-not-allowed">
+                <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-white/10">
+                  <Trophy className="h-8 w-8 mb-2 text-yellow-400" />
+                  <span className="font-medium text-white">Admin</span>
+                  <p className="text-xs text-gray-400 mt-1 text-center">Manage platform</p>
                 </div>
-              </RadioGroup>
+              </div>
             </div>
 
             <Button onClick={handleNext} className="w-full">

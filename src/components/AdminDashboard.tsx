@@ -24,7 +24,17 @@ import PointsSystem from '../abi/PointsSystem.json';
 import TokenSelector from './TokenSelector';
 import { ethers } from 'ethers';
 import { approvePointsClaimAA, rejectPointsClaimAA, getProvider, setPointsToTokensRateAA, addAdminAA, removeAdminAA } from '../lib/aaUtils';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
+
+interface AdminUser {
+  username: string;
+  password: string;
+}
+
+interface AdminDashboardProps {
+  onLogout: () => void;
+  adminUser: AdminUser | null;
+}
 
 interface Claim {
   player: string;
@@ -34,7 +44,7 @@ interface Claim {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-const AdminDashboard: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminUser }) => {
   const [activeTab, setActiveTab] = useState<'claims' | 'games' | 'admins' | 'balance'>('claims');
   const [activeClaimsTab, setActiveClaimsTab] = useState<'pending' | 'approved' | 'rejected' | 'history'>('pending');
   const { toast } = useToast();

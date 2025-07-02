@@ -44,8 +44,9 @@ export function usePinata() {
             console.log(url);
            // setError(null);
             return data.IpfsHash;
-        } catch (err: any) {
-            setError(err.message || "Unknown error");
+        } catch (err: unknown) {
+            const errorMessage = err instanceof Error ? err.message : "Unknown error";
+            setError(errorMessage);
             return null;
         } finally {
             setUploading(false);

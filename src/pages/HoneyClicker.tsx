@@ -1,5 +1,5 @@
+import Layout from "../components/Layout";
 import React, { useState, useEffect } from 'react';
-import Header from '../components/Header';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -18,7 +18,7 @@ import { useGameState } from '../hooks/useGameState';
 import { achievements as achievementsMap } from '../data/achievements';
 import { shopItems } from '../data/shopItems';
 import supabase from '../hooks/use-supabase';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { submitTournamentScoreAA, getProvider } from '../lib/aaUtils';
 import { useToast } from '../hooks/use-toast';
 import { ethers } from 'ethers';
@@ -69,7 +69,8 @@ const HoneyClicker = () => {
           TESTNET_CONFIG.smartContracts.tournamentHub,
           TournamentHubABI,
           provider
-        );
+      
+  );
         const activeIds: number[] = await contract.getActiveTournamentIds();
         for (const id of activeIds) {
           const info = await contract.getTournamentInfo(id, aaWalletAddress);
@@ -91,7 +92,8 @@ const HoneyClicker = () => {
 
   useEffect(() => {
     setIsPaused(false);
-    return () => setIsPaused(true);
+    return (
+      ) => setIsPaused(true);
   }, []);
 
   const [mintedAchievements, setMintedAchievements] = useState<string[]>(() => {
@@ -111,7 +113,8 @@ const HoneyClicker = () => {
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    return (
+      ) => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [gameStartTime]);
 
   useEffect(() => {
@@ -165,7 +168,8 @@ const HoneyClicker = () => {
         Math.floor(honey),
         signature,
         0 // paymentType: sponsored gas
-      );
+    
+  );
       if (!result.userOpHash) {
         throw new Error("Transaction failed. No UserOperation hash returned.");
       }
@@ -208,8 +212,10 @@ const HoneyClicker = () => {
   }, [loading]);
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400 font-mono">
-      <Header />
+      
       <TokenClaimModal
         isOpen={isClaimModalOpen}
         onClose={() => setIsClaimModalOpen(false)}
@@ -290,6 +296,8 @@ const HoneyClicker = () => {
                     const unlocked = unlockedAchievements[achievement.id];
                     const minted = mintedAchievements.includes(achievement.id.toString());
                     return (
+    <Layout>
+      
                       <div
                         key={achievement.id}
                         className={`p-3 border ${unlocked ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-600'}`}
@@ -317,7 +325,9 @@ const HoneyClicker = () => {
                           <span className="mt-2 inline-block text-xs text-green-400">Minted</span>
                         )}
                       </div>
-                    );
+                  
+    </Layout>
+  );
                   })}
                 </div>
               </Card>
@@ -350,6 +360,8 @@ const HoneyClicker = () => {
                     const owned = ownedItems[item.id] || 0;
                     const affordable = canAfford(item.id);
                     return (
+    <Layout>
+      
                       <div key={item.id} className="border border-green-400 p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div>
@@ -375,7 +387,9 @@ const HoneyClicker = () => {
                           </Button>
                         </div>
                       </div>
-                    );
+                  
+    </Layout>
+  );
                   })}
                 </div>
               </Card>
@@ -411,6 +425,8 @@ const HoneyClicker = () => {
         transactionText={loadingTransactionText}
       />
     </div>
+
+    </Layout>
   );
 };
 

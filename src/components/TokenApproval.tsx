@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { useTokenStore } from '../stores/useTokenStore';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 interface TokenApprovalProps {
   selectedToken: string;
   onApprovalComplete: () => void;

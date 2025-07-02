@@ -27,7 +27,7 @@ import {
 
 import TokenSelector from './TokenSelector';
 import TokenApproval from './TokenApproval';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { useTokenStore } from '../stores/useTokenStore';
 import { useToast } from './ui/use-toast';
 import { mintNFT, checkAAWalletTokenAllowance } from '../lib/aaUtils';
@@ -36,11 +36,13 @@ import supabase from '../hooks/use-supabase';
 import { add } from 'date-fns';
 import { TESTNET_CONFIG } from '../config';
 
+import { Achievement } from '../types/achievements';
+
 interface MintingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onMintSuccess: (achievement: any, txHash: string) => void;
-  achievement: any;
+  onMintSuccess: (achievement: Achievement, txHash: string) => void;
+  achievement: Achievement;
   setIsLoadingModalOpen: (open: boolean) => void;
 }
 
@@ -199,8 +201,9 @@ const MintingModal: React.FC<MintingModalProps> = ({
 
       setMintResult({ success: true, txHash: result.transactionHash });
       onMintSuccess(achievement, result.transactionHash);
-    } catch (error: any) {
-      setMintResult({ success: false, error: error.message || 'Mint error' });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Mint error';
+      setMintResult({ success: false, error: errorMessage });
     } finally {
       setIsMinting(false);
       setIsLoadingModalOpen(false);
@@ -271,7 +274,7 @@ const MintingModal: React.FC<MintingModalProps> = ({
       <DialogContent className="bg-black border-2 border-cyan-400 text-green-400 font-mono max-w-md">
         <DialogHeader>
           <DialogTitle className="text-cyan-400 text-xl neon-text">
-            &gt; MINT_CONFIG &lt;
+             MINT_CONFIG 
           </DialogTitle>
           <DialogDescription className="text-green-400">
             Configure your minting parameters

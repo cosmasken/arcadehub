@@ -8,7 +8,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { useState } from 'react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { useToast } from '../hooks/use-toast';
 import { submitPointsClaimSponsored } from '../lib/aaUtils'
 import { CheckCircle, XCircle } from 'lucide-react';
@@ -73,11 +73,12 @@ const handleClaim = async () => {
     });
     setClaimResult({ success: true, txHash: result.transactionHash });
     onClaim?.(); // Call parent handler if provided
-  } catch (error: any) {
-    setClaimResult({ success: false, error: error.message || "Claim error" });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Claim error";
+    setClaimResult({ success: false, error: errorMessage });
     toast({
       title: "Claim Failed",
-      description: error.message || "There was an error submitting your claim.",
+      description: errorMessage,
       variant: "destructive",
     });
   } finally {

@@ -1,189 +1,436 @@
-
-import React from 'react';
-import Header from '../components/Header';
+import Layout from "../components/Layout";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
+import Navigation from '../components/Navigation';
+import Breadcrumbs from '../components/Breadcrumbs';
 import GameCard from '../components/GameCard';
-import StatsCard from '../components/StatsCard';
+import WelcomeModal from '../components/WelcomeModal';
+import HowToPlay from '../components/HowToPlay';
 import { Badge } from '../components/ui/badge';
 import { Card } from '../components/ui/card';
-import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
-import { GamepadIcon, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { getProvider } from '../lib/aaUtils';
-import { ethers } from 'ethers';
-import { TESTNET_CONFIG } from '@/config';
+import { GamepadIcon, Users, Wallet as WalletIcon, Search, X, Star } from 'lucide-react';
+import useWalletStore from '../stores/useWalletStore';
+import useProfileStore from '../stores/useProfileStore';
+import { Input } from '../components/ui/input';
+import Tooltip from '../components/Tooltip';
+
+type GameStatus = 'live' | 'upcoming' | 'completed' | 'beta';
+
+interface Game {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  status: GameStatus;
+  category: string;
+  players: number;
+  rating: number;
+  prize: string;
+  lastUpdated: string;
+}
 
 const TOKEN_ABI = "../abi/ArcadeToken.json";
 
 const Index = () => {
-
   const navigate = useNavigate();
-  const featuredGames = [
+  const { isConnected } = useWalletStore();
+  const { role } = useProfileStore();
+  const [showWalletTooltip, setShowWalletTooltip] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('popularity');
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const hasSeenWalletTooltip = localStorage.getItem('hasSeenWalletTooltip');
+    if (!hasSeenWalletTooltip && isConnected === false) {
+      const timer = setTimeout(() => {
+        setShowWalletTooltip(true);
+        setTimeout(() => setShowWalletTooltip(false), 5000);
+        localStorage.setItem('hasSeenWalletTooltip', 'true');
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected]);
+
+  const allGames: Game[] = useMemo(() => [
     {
       id: "honey-clicker",
-      title: "HONEY CLICKER",
-      description: "Click to earn sweet honey and build your bee empire. Buy upgrades and unlock achievements in this addictive idle game.",
-      image: "https://gateway.pinata.cloud/ipfs/bafkreieakkvzailupjytuioiwrrm7d37kw2eqxp52lv7svg4b3dimtku2q",
-      category: "IDLE",
-      players: 15420,
+      title: "Honey Clicker",
+      description: "Click to collect honey and grow your hive!",
+      image: "/honey-clicker.jpg",
+      status: "live" as const,
+      category: "idle",
+      players: 12453,
       rating: 4.8,
-      prize: "50 NERO",
-      status: "live" as const
+      prize: "100 NERO",
+      lastUpdated: '2023-06-15'
     },
     {
-      id: "space-invaders",
-      title: "SPACE INVADERS",
-      description: "Defend Earth from waves of alien invaders in this retro arcade classic. Compete for high scores and earn crypto rewards.",
-      image: "https://gateway.pinata.cloud/ipfs/bafkreif5x7q6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4m7y5x6z3v5j2k4",
-      category: "ARCADE",
-      players: 10234,
-      rating: 4.5,
-      prize: "30 NERO",
-      status: "beta" as const
+      id: "tetris",
+      title: "Tetris",
+      description: "Classic block-stacking puzzle game",
+      image: "/tetris.jpg",
+      status: "live" as const,
+      category: "puzzle",
+      players: 8976,
+      rating: 4.9,
+      prize: "150 NERO",
+      lastUpdated: '2023-06-20'
     },
+    {
+      id: "snake",
+      title: "Snake",
+      description: "Classic snake game with a modern twist",
+      image: "/snake.jpg",
+      status: "live" as const,
+      category: "arcade",
+      players: 5234,
+      rating: 4.5,
+      prize: "75 NERO",
+      lastUpdated: '2023-07-01'
+    }
+  ], []);
 
-  ];
+  const categories = useMemo(() => [
+    'all',
+    ...Array.from(new Set(allGames.map(game => game.category)))
+  ], [allGames]);
 
-  const stats = [
+  const stats = useMemo(() => [
     {
       title: "ACTIVE PLAYERS",
       value: "47,892",
       change: "+12.5% from last week",
       icon: Users,
       trend: "up" as const
+    },
+    {
+      title: "TOTAL PRIZES",
+      value: "1,250,000 NERO",
+      change: "+8.2% from last week",
+      icon: Star,
+      trend: "up" as const
+    },
+    {
+      title: "GAMES AVAILABLE",
+      value: "24",
+      change: "+2 new this week",
+      icon: GamepadIcon,
+      trend: "up" as const
     }
-  ];
+  ], []);
 
+  const filteredGames = useMemo(() => {
+    let result = [...allGames];
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(game =>
+        game.title.toLowerCase().includes(query) ||
+        game.description.toLowerCase().includes(query)
+      );
+    }
+
+    // Filter by category
+    const category = searchParams.get('category');
+    if (category && category !== 'all') {
+      result = result.filter(game => game.category === category);
+    }
+
+    // Filter by status
+    const status = searchParams.get('status') as GameStatus | null;
+    if (status) {
+      result = result.filter(game => game.status === status);
+    } else {
+      // By default, only show live games
+      result = result.filter(game => game.status === 'live');
+    }
+
+    return result;
+  }, [allGames, searchQuery, searchParams]);
+
+  const sortedGames = useMemo(() => {
+    const games = [...filteredGames];
+
+    switch (sortBy) {
+      case 'popularity':
+        return [...games].sort((a, b) => b.players - a.players);
+      case 'rating':
+        return [...games].sort((a, b) => b.rating - a.rating);
+      case 'prize':
+        return [...games].sort((a, b) => {
+          const prizeA = parseFloat(a.prize);
+          const prizeB = parseFloat(b.prize);
+          return isNaN(prizeA) || isNaN(prizeB) ? 0 : prizeB - prizeA;
+        });
+      case 'newest':
+        return [...games].sort((a, b) =>
+          new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+        );
+      default:
+        return games;
+    }
+  }, [filteredGames, sortBy]);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleCategoryFilter = (category: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (category === 'all') {
+      params.delete('category');
+    } else {
+      params.set('category', category);
+    }
+    navigate(`?${params.toString()}`);
+  };
+
+  const handleStatusFilter = (status: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (status === 'all') {
+      params.delete('status');
+    } else {
+      params.set('status', status);
+    }
+    navigate(`?${params.toString()}`);
+  };
+
+  const hasActiveFilters = useMemo(() => {
+    return searchQuery ||
+      searchParams.get('category') ||
+      searchParams.get('status') ||
+      sortBy !== 'popularity';
+  }, [searchQuery, searchParams, sortBy]);
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSortBy('popularity');
+    navigate('?');
+  };
+
+  // Redirect based on user role
+  console.log('Current user role:', role);
+  
+  // Check if we have a valid role before redirecting
+  if (role) {
+    if (role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    }
+    
+    if (role === 'sponsor') {
+      return <Navigate to="/sponsor/dashboard" replace />;
+    }
+    
+    if (role === 'developer') {
+      return <Navigate to="/developer/upload" replace />;
+    }
+  }
+
+  // Default view for gamers and unauthenticated users
   return (
-      <div className="min-h-screen bg-black text-green-400 font-mono">
-        <Header />
+    <Layout>
 
-        {/* Hero Section */}
-        <section className="pt-24 pb-16 px-6">
-          <div className="container mx-auto text-center max-w-4xl">
-            <h1 className="text-sm sm:text-5xl md:text-7xl font-bold mb-6 text-cyan-400 neon-text">
-              &gt; RETRO ARCADE &lt;
-            </h1>
-            {/* Beta Warning Section */}
-            <div className="mb-6">
-              <div className="bg-yellow-900/80 border-2 border-yellow-400 rounded-lg p-4 mx-auto max-w-2xl flex flex-col items-center">
-                <span className="text-yellow-300 font-bold text-lg mb-2">⚠️ BETA WARNING</span>
-                <p className="text-yellow-200 text-sm">
-                  This platform is currently in <span className="font-bold">BETA</span>. Your achievements and progress may be <span className="font-bold">reset</span> in case of upgrades or changes to the system. Please play and test, but keep in mind that your data is not guaranteed to persist.
-                </p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
+        <Navigation />
+        <WelcomeModal />
+        <HowToPlay />
+        <Breadcrumbs />
+
+        {/* <div className="container mx-auto px-4 pt-6 pb-2 flex flex-wrap gap-4 justify-center">
+          <button
+            onClick={() => navigate('/tournaments')}
+            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-green-400 to-emerald-300 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 hover:scale-105"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="text-xl">🏆</span>
+              <span>Tournaments</span>
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+          <button
+            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-cyan-300 to-blue-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="text-xl">💰</span>
+              <span>Rewards</span>
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-yellow-300 to-amber-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/30 hover:scale-105"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="text-xl">📈</span>
+              <span>Leaderboards</span>
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+        </div> */}
+
+        <main className="container mx-auto px-4 py-8">
+          {/* Search and Filters */}
+          <div className="mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-300" />
+                <Input
+                  type="text"
+                  placeholder="Search games..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="pl-10 w-full bg-gray-800 border-purple-700 text-white placeholder-purple-400 focus:ring-2 focus:ring-purple-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-4 py-2 rounded-md border border-purple-700 bg-gray-800 text-purple-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="popularity">Sort by: Most Popular</option>
+                <option value="rating">Sort by: Highest Rated</option>
+                <option value="prize">Sort by: Highest Prize</option>
+                <option value="newest">Sort by: Newest</option>
+              </select>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleCategoryFilter('all')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${!searchParams.get('category')
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
+                  }`}
+              >
+                All Games
+              </button>
+
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryFilter(category)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${searchParams.get('category') === category
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                    : 'bg-gray-800 text-red-200 hover:bg-gray-700 hover:text-white border border-red-700/50 hover:border-red-500'
+                    }`}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </button>
+              ))}
+
+              <div className="ml-2 flex items-center gap-2">
+                <span className="text-sm font-medium text-purple-200">Status:</span>
+                <button
+                  onClick={() => handleStatusFilter('all')}
+                  className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${!searchParams.get('status')
+                    ? 'bg-purple-600 text-white font-medium shadow-lg shadow-purple-500/30'
+                    : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
+                    }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => handleStatusFilter('live')}
+                  className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${searchParams.get('status') === 'live'
+                    ? 'bg-green-500 text-black font-medium shadow-lg shadow-green-500/30'
+                    : 'bg-gray-800 text-green-300 hover:bg-gray-700 hover:text-white border border-green-700/50 hover:border-green-500'
+                    }`}
+                >
+                  Live
+                </button>
+                <button
+                  onClick={() => handleStatusFilter('upcoming')}
+                  className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${searchParams.get('status') === 'upcoming'
+                    ? 'bg-yellow-500 text-black font-medium shadow-lg shadow-yellow-500/30'
+                    : 'bg-gray-800 text-yellow-300 hover:bg-gray-700 hover:text-white border border-yellow-700/50 hover:border-yellow-500'
+                    }`}
+                >
+                  Coming Soon
+                </button>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="ml-auto flex items-center text-sm text-purple-300 hover:text-white bg-gray-800/50 hover:bg-gray-800 px-3 py-1.5 rounded-full border border-purple-700/50 hover:border-purple-500 transition-all duration-200"
+                >
+                  <X size={16} className="mr-1" />
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Stats Banner */}
+          <div className="bg-gradient-to-r from-purple-900/80 to-blue-900/80 border-b-2 border-purple-500/30 mb-8 shadow-lg">
+            <div className="container mx-auto px-6 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {stats.map((stat, index) => (
+                  <div key={index} className="flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm rounded-lg border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300">
+                    <div className="relative">
+                      <div className="absolute -inset-1 bg-purple-500/20 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
+                      {/* {stat.icon} */}
+                    </div>
+                    <div>
+                      <p className="text-sm text-purple-200 font-mono">{stat.title}</p>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-white bg-clip-text text-transparent">{stat.value}</p>
+                      <p className="text-xs text-gray-500">{stat.change}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-            <p className="text-xl md:text-2xl mb-8 text-green-400 tracking-wider">
-              PLAY_TO_EARN // WIN_CRYPTO_PRIZES // DOMINATE_LEADERBOARDS
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Link to="/games/honey-clicker">
-                <Button className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-sm md:text-lg px-8 py-4 tracking-wider border-2 border-cyan-400 hover:border-green-400">
-                  <GamepadIcon className="w-5 h-5" />
-                  &gt; PLAY_HONEY_CLICKER
-                </Button>
-              </Link>
-              <Link to="/collections">
-                <Button className="bg-transparent text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono text-lg px-8 py-4 tracking-wider border-2 border-cyan-400">
-                  &gt; VIEW_COLLECTIONS
-                </Button>
-              </Link>
-            </div>
           </div>
-        </section>
 
-        {/* Stats Section */}
-        <section className="py-16 px-6 bg-black/50">
-          <div className="container mx-auto max-w-6xl">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {stats.map((stat, index) => (
-                <StatsCard key={index} {...stat} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-         {/* Total Available Tokens Section */}
-        <section className="py-8 px-6 ">
-          <div className="container mx-auto max-w-2xl text-center">
-            <div className="p-6 flex flex-col items-center">
-              <h2 className="text-sm sm:text-3xl md:text-5xl font-bold mb-6 text-cyan-400 neon-text">
-              &gt; TOTAL AVAILABLE TOKENS &lt;
-            </h2>
-              {/* <span className="text-cyan-400 font-bold text-lg mb-2 neon-text"></span> */}
-              <span className="text-3xl md:text-5xl font-mono text-green-400 mb-1 neon-text"> 
-                1,000,000 ARCARC</span>
-              <span className="text-xs text-cyan-200 neon-text">Distributed across all games</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Featured Games */}
-        <section className="py-16 px-6">
-          <div className="container mx-auto max-w-7xl">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-5xl font-bold mb-4 text-cyan-400 neon-text">
-                &gt; FEATURED_GAMES &lt;
-              </h2>
-              <p className="text-green-400 text-lg tracking-wider">
-                HIGH_STAKES // BIG_REWARDS // PURE_SKILL
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {featuredGames.map((game) => (
-                <Link key={game.id} to={`/games/${game.id}`}>
+          {/* Games Grid */}
+          {sortedGames.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {sortedGames.map((game) => (
+                <div
+                  key={game.id}
+                  className="transform transition-all duration-300 hover:scale-105 hover:z-10"
+                  style={{
+                    perspective: '1000px',
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
                   <GameCard game={game} />
-                </Link>
+                </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-16 px-6 bg-black/50">
-          <div className="container mx-auto text-center max-w-4xl">
-            <h2 className="text-sm sm:text-3xl md:text-5xl font-bold mb-6 text-cyan-400 neon-text">
-              &gt; JOIN_THE_REVOLUTION &lt;
-            </h2>
-            <p className="text-xl mb-8 text-green-400 tracking-wider">
-              CONNECT_WALLET // START_EARNING // BECOME_LEGEND
-            </p>
-            <Link to="/developer">
-              <Button className="bg-green-400 text-black hover:bg-cyan-400 font-mono text-lg px-8 py-4 tracking-wider border-2 border-green-400 hover:border-cyan-400">
-                &gt; UPLOAD_YOUR_GAME
-              </Button>
-            </Link>
-          </div>
-        </section>
-
-        <div className="mt-16 text-center">
-              <Card className="game-card p-8 ">
-                <h3 className="text-3xl font-bold text-cyan-400 mb-4 neon-text">
-                  READY TO DOMINATE?
-                </h3>
-                <p className="text-green-400 mb-6">
-                  Join thousands of players competing for glory and rewards
-                </p>
-                <div className="flex justify-center space-x-4">
-                  <Badge 
-                  onClick={() => navigate('/tournaments')}
-                  className="bg-green-400 text-black px-4 py-2 cursor-pointer">
-                    🏆 Tournaments
-                  </Badge>
-                  <Badge className="bg-cyan-400 text-black px-4 py-2 cursor-pointer">
-                    💰 Rewards
-                  </Badge>
-                  <Badge
-                  onClick={() => navigate('/leaderboard')}
-                   className="bg-yellow-400 text-black px-4 py-2 cursor-pointer">
-                    📈 Leaderboards
-                  </Badge>
-                </div>
-              </Card>
+          ) : (
+            <div className="col-span-full text-center py-16 bg-gray-900/50 rounded-xl border-2 border-dashed border-purple-900/50">
+              <div className="inline-block p-4 bg-gray-800/80 rounded-full mb-4">
+                <Search className="h-8 w-8 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-bold text-purple-100 mb-2">No Games Found</h3>
+              <p className="text-purple-300 mb-4 max-w-md mx-auto">We couldn't find any games matching your search criteria.</p>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-medium hover:from-purple-500 hover:to-blue-500 transition-all duration-300 shadow-lg hover:shadow-purple-500/30"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
+          )}
+        </main>
       </div>
+
+    </Layout>
   );
 };
 

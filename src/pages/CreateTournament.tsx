@@ -1,15 +1,15 @@
+import Layout from "../components/Layout";
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/use-toast';
-import Header from '../components/Header';
 import PrizePoolDepositModal from '../components/PrizePoolDepositModal';
 import LoadingModal from '../components/LoadingModal';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import {
   ArrowLeft,
   Trophy,
@@ -21,7 +21,7 @@ import {
 import { createTournamentAA, approveTokenForContractAA, getProvider } from '../lib/aaUtils';
 import { ethers } from 'ethers';
 import { TESTNET_CONFIG } from '../config';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 // import supabase from '../hooks/use-supabase';
 
 const CreateTournament = () => {
@@ -45,7 +45,7 @@ const CreateTournament = () => {
   const gameOptions = ['Honey Clicker'];
   const tokenOptions = [
     { address: TESTNET_CONFIG.smartContracts.arcadeToken, symbol: 'ARC' },
-    { address: '0x0000000000000000000000000000000000000000', symbol: 'ETH' }
+    { address: '0x0000000000000000000000000000000000000000', symbol: 'NERO' }
   ];
 
   const handleInputChange = (field: string, value: string | number) => {
@@ -72,10 +72,10 @@ const CreateTournament = () => {
         throw new Error("Wallet not connected. Please connect your wallet.");
       }
 
-      const decimals = formData.token === '0x0000000000000000000000000000000000000000' ? 18 : 18; // ARC and ETH both use 18 decimals
+      const decimals = formData.token === '0x0000000000000000000000000000000000000000' ? 18 : 18; // ARC and NERO both use 18 decimals
       const prizePool = ethers.parseUnits(amount, decimals);
 
-      // Approve token if not ETH
+      // Approve token if not NERO
       if (formData.token !== '0x0000000000000000000000000000000000000000') {
         const approvalResult = await approveTokenForContractAA(
           aaSigner,
@@ -83,6 +83,7 @@ const CreateTournament = () => {
           prizePool,
           TESTNET_CONFIG.smartContracts.tournamentHub
         );
+        
         if (!approvalResult || approvalResult.error) {
           throw new Error(`Token approval failed: ${approvalResult?.error || 'Unknown error'}`);
         }
@@ -169,7 +170,7 @@ const CreateTournament = () => {
         title: "Tournament Created Successfully!",
         description: (
           <span>
-            <span>{formData.title} has been created with {amount} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'ETH'} prize pool. UserOpHash: {result.userOpHash}</span>
+            <span>{formData.title} has been created with {amount} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'NERO'} prize pool. UserOpHash: {result.userOpHash}</span>
             <a
               href={`https://testnet.neroscan.io/tx/${result.transactionHash}`}
               target="_blank"
@@ -199,8 +200,10 @@ const CreateTournament = () => {
   };
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
+      
 
       <main className="pt-24 pb-16 px-6">
         <div className="container mx-auto max-w-4xl">
@@ -215,7 +218,7 @@ const CreateTournament = () => {
             </Button>
             <div>
               <h1 className="text-3xl font-mono font-bold text-cyan-400 neon-text">
-               &gt; CREATE_TOURNAMENT &lt;
+                 CREATE_TOURNAMENT 
               </h1>
               <p className="text-green-400 mt-2">
                 Set up a new sponsored tournament with custom prize pool
@@ -376,7 +379,7 @@ const CreateTournament = () => {
                     <div className="flex justify-between">
                       <span className="text-green-400">Prize Pool:</span>
                       <span className="text-cyan-400 font-mono">
-                        {formData.prizePool || '0'} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'ETH'}
+                        {formData.prizePool || '0'} {formData.token === TESTNET_CONFIG.smartContracts.arcadeToken ? 'ARC' : 'NERO'}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -441,9 +444,13 @@ const CreateTournament = () => {
         isOpen={isDepositModalOpen}
         onClose={() => setIsDepositModalOpen(false)}
         onDeposit={handlePrizePoolDeposit}
-        tournament={formData}
-        prizePool={formData.prizePool}
-        token={formData.token}
+        tournament={{
+          title: formData.title,
+          game: formData.game,
+          maxParticipants: formData.maxParticipants,
+          prizePool: formData.prizePool,
+          token: formData.token
+        }}
       />
 
       <LoadingModal
@@ -452,6 +459,8 @@ const CreateTournament = () => {
         description="Setting up your tournament and depositing prize pool..."
       />
     </div>
+
+    </Layout>
   );
 };
 

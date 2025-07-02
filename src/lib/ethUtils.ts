@@ -38,4 +38,40 @@ async function checkTournamentParticipation(
   }
 }
 
+// Minimal ERC20 ABI for balanceOf and decimals
+const ERC20_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)",
+  "function symbol() view returns (string)"
+];
+
+/**
+ * Fetches balances for all ERC20 tokens for a user.
+ * @param provider ethers.js provider
+ * @param userAddress user's wallet address
+ * @param tokenMap object of {symbol: address}
+ * @returns Promise<{ [symbol: string]: { balance: string, address: string, decimals: number } }>
+ */
+export async function getAllERC20Balances(provider, userAddress, tokenMap) {
+  const balances = {};
+  for (const [symbol, address] of Object.entries(tokenMap)) {
+    try {
+      const contract = new ethers.Contract(address as string, ERC20_ABI, provider);
+      const [rawBalance, decimals] = await Promise.all([
+        contract.balanceOf(userAddress),
+        contract.decimals()
+      ]);
+      balances[symbol] = {
+        balance: ethers.formatUnits(rawBalance, decimals),
+        address,
+        decimals
+      };
+    } catch (err) {
+      console.error(`Error fetching balance for ${symbol}:`, err);
+      balances[symbol] = { balance: '0', address, decimals: 18 };
+    }
+  }
+  return balances;
+}
+
 export { checkTournamentParticipation };

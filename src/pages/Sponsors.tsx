@@ -1,8 +1,7 @@
+import Layout from "../components/Layout";
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '../components/Header';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { 
   Trophy, 
@@ -19,7 +18,7 @@ import {
   Github,
   ArrowRight
 } from 'lucide-react';
-
+import {Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card";
 const Sponsors = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -85,8 +84,10 @@ const Sponsors = () => {
   ];
 
   return (
+    <Layout>
+      
     <div className="min-h-screen bg-black text-green-400">
-      <Header />
+      
       
       <main className="pt-20 pb-12">
         <div className="container mx-auto px-6">
@@ -95,7 +96,7 @@ const Sponsors = () => {
             <div className="inline-flex items-center space-x-2 mb-4">
               <Trophy className="w-8 h-8 text-yellow-400" />
               <h1 className="text-4xl md:text-5xl font-mono font-bold text-cyan-400 neon-text">
-                &gt; SPONSOR_TOURNAMENTS &lt;
+                 SPONSOR_TOURNAMENTS 
               </h1>
             </div>
             <p className="text-xl text-green-400 max-w-3xl mx-auto mb-8">
@@ -136,7 +137,7 @@ const Sponsors = () => {
                     : 'border-transparent text-green-400 hover:text-cyan-400'
                 }`}
               >
-                &gt; {tab.label}
+                 {tab.label}
               </button>
             ))}
           </div>
@@ -203,7 +204,7 @@ const Sponsors = () => {
             <div className="space-y-8">
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
-                  <h2 className="text-2xl font-mono text-cyan-400 mb-4">&gt; SPONSORSHIP_PROCESS &lt;</h2>
+                  <h2 className="text-2xl font-mono text-cyan-400 mb-4"> SPONSORSHIP_PROCESS </h2>
                   <div className="space-y-4">
                     <div className="flex items-start space-x-4">
                       <div className="w-8 h-8 bg-yellow-400 text-black rounded-full flex items-center justify-center font-mono font-bold">1</div>
@@ -260,7 +261,7 @@ const Sponsors = () => {
           {activeTab === 'pricing' && (
             <div className="space-y-8">
               <div className="text-center">
-                <h2 className="text-2xl font-mono text-cyan-400 mb-4">&gt; SPONSORSHIP_TIERS &lt;</h2>
+                <h2 className="text-2xl font-mono text-cyan-400 mb-4"> SPONSORSHIP_TIERS </h2>
                 <p className="text-green-400">Choose the level of visibility and engagement that fits your brand</p>
               </div>
               
@@ -308,7 +309,7 @@ const Sponsors = () => {
           {activeTab === 'login' && (
             <div className="space-y-8">
               <div className="text-center">
-                <h2 className="text-2xl font-mono text-cyan-400 mb-4">&gt; SPONSOR_LOGIN_OPTIONS &lt;</h2>
+                <h2 className="text-2xl font-mono text-cyan-400 mb-4"> SPONSOR_LOGIN_OPTIONS </h2>
                 <p className="text-green-400">Multiple authentication methods for different sponsor types</p>
               </div>
               
@@ -370,7 +371,7 @@ const Sponsors = () => {
 
           {/* CTA Section */}
           <div className="text-center mt-16 border-2 border-yellow-400 p-8 rounded bg-yellow-400/10">
-            <h2 className="text-2xl font-mono text-yellow-400 mb-4">&gt; READY_TO_SPONSOR? &lt;</h2>
+            <h2 className="text-2xl font-mono text-yellow-400 mb-4"> READY_TO_SPONSOR? </h2>
             <p className="text-green-400 mb-6">
               Join the future of competitive gaming sponsorship with transparent, 
               on-chain prize distribution.
@@ -400,6 +401,8 @@ const Sponsors = () => {
         </div>
       </main>
     </div>
+
+    </Layout>
   );
 };
 

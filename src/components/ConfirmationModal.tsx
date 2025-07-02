@@ -61,7 +61,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <AlertDialogHeader>
           <AlertDialogTitle className="text-cyan-400 text-lg neon-text flex items-center space-x-2">
             {getIcon()}
-            <span>&gt; {title} &lt;</span>
+            <span> {title} </span>
           </AlertDialogTitle>
           <AlertDialogDescription className="text-green-400 text-sm">
             {description}

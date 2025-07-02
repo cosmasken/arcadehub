@@ -84,7 +84,7 @@ const LiveActivityFeed: React.FC = () => {
     <Card className="game-card p-4">
       <div className="flex items-center space-x-2 mb-4">
         <TrendingUp className="w-5 h-5 text-cyan-400" />
-        <h3 className="text-cyan-400 font-bold neon-text">&gt; LIVE_ACTIVITY &lt;</h3>
+        <h3 className="text-cyan-400 font-bold neon-text"> LIVE_ACTIVITY </h3>
       </div>
       
       <div className="space-y-2 max-h-64 overflow-y-auto">

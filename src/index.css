@@ -243,3 +243,34 @@
     box-shadow: 0 0 40px rgba(200, 100, 255, 0.6);
   }
 }
+/* Add to your global CSS */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Smooth transitions for dropdown */
+[data-radix-dropdown-menu-content] {
+  animation-duration: 0.2s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-state='open'][data-side='top'] {
+  animation-name: slideDownAndFade;
+}
+
+[data-state='open'][data-side='right'] {
+  animation-name: slideLeftAndFade;
+}
+
+[data-state='open'][data-side='bottom'] {
+  animation-name: slideUpAndFade;
+}
+
+[data-state='open'][data-side='left'] {
+  animation-name: slideRightAndFade;
+}

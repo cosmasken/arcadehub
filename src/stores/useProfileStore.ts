@@ -8,8 +8,8 @@ interface ProfileState {
   avatar: string;
   arcBalance: number;
   gamesPlayed: number;
-  achievements: number;
-  role: 'gamer' | 'developer' | 'admin';
+  achievements: any[];
+  role: 'gamer' | 'developer' | 'admin' | 'sponsor';
   assets: {
     id: string;
     name: string;
@@ -23,6 +23,8 @@ interface ProfileState {
     score: number;
     date: string;
     duration?: string;
+    result?: string;
+    prize?: string;
   }[];
   developerGames: {
     id: string;
@@ -51,6 +53,16 @@ interface ProfileState {
     totalRevenue: number;
     avgRating: number;
   };
+  adminStats?: {
+    totalUsers: number;
+    totalTournaments: number;
+    systemHealth: string;
+  };
+  sponsorStats?: {
+    totalSponsored: number;
+    activeTournaments: number;
+    completedTournaments: number;
+  };
   loading: boolean;
   error: string | null;
   fetchProfile: (walletAddress: string) => Promise<void>;
@@ -67,7 +79,7 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   avatar: '',
   arcBalance: 0,
   gamesPlayed: 0,
-  achievements: 0,
+  achievements: [],
   assets: [],
   history: [],
   developerGames: [],
@@ -85,6 +97,16 @@ const useProfileStore = create<ProfileState>((set, get) => ({
     totalRevenue: 0,
     avgRating: 0,
   },
+  adminStats: {
+    totalUsers: 0,
+    totalTournaments: 0,
+    systemHealth: 'Good',
+  },
+  sponsorStats: {
+    totalSponsored: 0,
+    activeTournaments: 0,
+    completedTournaments: 0,
+  },
   loading: false,
   error: null,
 
@@ -95,108 +117,126 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   fetchProfile: async (walletAddress: string) => {
     set({ loading: true, error: null });
     try {
-      // 1. Fetch profile
+      // Ensure wallet address is in lowercase for consistent database queries
+      const normalizedWalletAddress = walletAddress.toLowerCase();
+      // 1. Fetch basic profile from users table
       const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+        .from('users')
         .select('*')
-        .eq('wallet_address', walletAddress)
+        .eq('wallet_address', normalizedWalletAddress)
         .single();
 
       if (profileError || !profile) {
+        console.error('Profile fetch error:', profileError);
         set({ loading: false, error: profileError?.message || 'Profile not found' });
         return;
       }
 
+      // Set role directly from user_type
       set({
         username: profile.username,
         bio: profile.bio,
-        avatar: profile.avatar,
-        role: profile.role,
+        avatar: profile.avatar_url,
+        role: profile.user_type,
       });
 
-      // 2. Fetch achievements (gamer)
+      // 3. Fetch achievements based on new schema
       const { data: achievements } = await supabase
         .from('user_achievements')
-        .select('*, achievement:achievements(*)')
-        .eq('user_wallet', walletAddress);
-
-      set({ achievements: achievements?.length || 0 });
-
-      // 3. Fetch games played count (gamer)
-      const { count: gamesPlayed } = await supabase
-        .from('game_plays')
-        .select('*', { count: 'exact', head: true })
-        .eq('player_wallet', walletAddress);
-
-      set({ gamesPlayed: gamesPlayed || 0 });
-
-      // 4. Fetch developer games (developer)
-      const { data: developerGames } = await supabase
-        .from('games')
         .select('*')
-        .eq('developer', walletAddress);
+        .eq('user_id', profile.id);
 
-      set({ developerGames: developerGames || [] });
+      set({ achievements: achievements || [] });
 
-      // 5. Fetch developer stats (developer)
-      const gameIds = (developerGames || []).map((g: any) => g.game_id);
-      let devStats = [];
-      if (gameIds.length > 0) {
-        const { data } = await supabase
-          .from('game_stats')
+      // 4. Fetch user stats
+      const { data: userStats } = await supabase
+        .from('user_stats')
+        .select('*')
+        .eq('user_id', profile.id)
+        .single();
+
+      // 5. For different user types, fetch different data
+      if (profile.user_type === 'admin') {
+        // Fetch admin-specific data
+        const { count: userCount } = await supabase
+          .from('users')
+          .select('id', { count: 'exact', head: true });
+        
+        const { count: tournamentCount } = await supabase
+          .from('tournaments')
+          .select('id', { count: 'exact', head: true });
+
+        set({
+          adminStats: {
+            totalUsers: userCount || 0,
+            totalTournaments: tournamentCount || 0,
+            systemHealth: 'Good',
+          },
+        });
+      } else if (profile.user_type === 'sponsor') {
+        // Fetch sponsor-specific data
+        const { data: sponsoredTournaments } = await supabase
+          .from('tournaments')
           .select('*')
-          .in('game_id', gameIds);
-        devStats = data || [];
+          .eq('sponsor_id', profile.id);
+
+        const totalSponsored = sponsoredTournaments?.reduce((sum, t) => sum + Number(t.prize_pool || 0), 0) || 0;
+
+        set({
+          sponsorStats: {
+            totalSponsored: totalSponsored,
+            activeTournaments: sponsoredTournaments?.filter(t => t.status === 'active').length || 0,
+            completedTournaments: sponsoredTournaments?.filter(t => t.status === 'completed').length || 0,
+          },
+        });
+      } else {
+        // Fetch player/gamer data
+        const { data: tournamentParticipations } = await supabase
+          .from('tournament_participants')
+          .select('*')
+          .eq('user_id', profile.id);
+
+        set({ gamesPlayed: tournamentParticipations?.length || 0 });
       }
-      const totalRevenue = 0;
-      let totalPlays = 0, avgRating = 0 ;
-      if (devStats.length > 0) {
-        totalPlays = devStats.reduce((sum, s) => sum + (s.total_plays || 0), 0);
-        avgRating = devStats.reduce((sum, s) => sum + (s.avg_rating || 0), 0) / devStats.length;
-        // If you have revenue data, sum it here
-        // totalRevenue = devStats.reduce((sum, s) => sum + (s.revenue || 0), 0);
+
+      // 6. Fetch games if user type includes developer functionality
+      if (profile.user_type === 'developer') {
+        const { data: developerGames } = await supabase
+          .from('games')
+          .select('*')
+          .eq('developer_id', profile.id);
+
+        set({ 
+          developerGames: developerGames || [],
+          developerStats: {
+            totalGames: developerGames?.length || 0,
+            totalPlays: 0, // Calculate from game stats if available
+            totalRevenue: 0, // Calculate from revenue data if available
+            avgRating: 0, // Calculate from ratings if available
+          },
+        });
       }
 
-      set({
-        developerStats: {
-          totalGames: developerGames?.length || 0,
-          totalPlays,
-          totalRevenue,
-          avgRating: isNaN(avgRating) ? 0 : avgRating,
-        },
-      });
-
-      // 6. Fetch assets (if you have an assets table)
-      // const { data: assets } = await supabase.from('assets').select('*').eq('owner', walletAddress);
-      // set({ assets: assets || [] });
-
-      // 7. Fetch history (if you have a history table)
-      // const { data: history } = await supabase.from('history').select('*').eq('user_wallet', walletAddress);
-      // set({ history: history || [] });
-
-      // 8. Fetch friends (if you have a friends table)
-      // const { data: friends } = await supabase.from('friends').select('*').eq('user_wallet', walletAddress);
-      // set({ friends: friends || [] });
-
-      // 9. Set stats (gamer)
+      // 7. Set general stats
       set({
         stats: {
-          gamesPlayed: gamesPlayed || 0,
+          gamesPlayed: userStats?.total_tournaments || 0,
           achievements: achievements?.length || 0,
-          totalScore: 0, // Replace with real calculation if you have score data
-          rank: '',      // Replace with real calculation if you have rank data
+          totalScore: 0, // Calculate from actual game scores
+          rank: '', // Calculate rank based on points/scores
         },
       });
 
       set({ loading: false });
     } catch (error: any) {
+      console.error('Error fetching profile:', error);
       set({ loading: false, error: error.message });
     }
   },
 
   checkUsernameExists: async (username: string) => {
     const { data } = await supabase
-      .from('profiles')
+      .from('users')
       .select('id')
       .eq('username', username)
       .maybeSingle();
@@ -206,20 +246,36 @@ const useProfileStore = create<ProfileState>((set, get) => ({
   onboardUser: async (walletAddress: string, userData: any) => {
     set({ loading: true, error: null });
     try {
-      const { error } = await supabase.from('profiles').upsert([
+      // Ensure wallet address is in lowercase to match database constraint
+      const normalizedWalletAddress = walletAddress.toLowerCase();
+      
+      const { error } = await supabase.from('users').upsert([
         {
-          wallet_address: walletAddress,
-          ...userData,
+          wallet_address: normalizedWalletAddress,
+          username: userData.username,
+          bio: userData.bio,
+          user_type: userData.role || userData.userType || 'player',
+          avatar_url: userData.avatar,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
-      ]);
+      ], {
+        onConflict: 'wallet_address',
+        defaultToNull: false
+      });
+      
       if (error) {
+        console.error('Error in onboardUser:', error);
         set({ loading: false, error: error.message });
         return false;
       }
-      await get().fetchProfile(walletAddress);
+      
+      // Fetch profile using the normalized wallet address
+      await get().fetchProfile(normalizedWalletAddress);
       set({ loading: false });
       return true;
     } catch (err: any) {
+      console.error('Exception in onboardUser:', err);
       set({ loading: false, error: err.message });
       return false;
     }

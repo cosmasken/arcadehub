@@ -60,7 +60,7 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
       if (API_OPTIMIZATION.debugLogs) {
         console.log('Supported tokens loaded:', tokens);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading supported tokens:', error);
       toast.error('Failed to load supported tokens');
     } finally {
@@ -90,7 +90,7 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
       if (API_OPTIMIZATION.debugLogs) {
         console.log('EOA Token balances loaded:', balances);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading EOA token balances:', error);
     }
   },
@@ -138,9 +138,9 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
       toast.error('Token approval failed');
       return false;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error approving token:', error);
-    toast.error(`Error approving token: ${error.message || 'Unknown error'}`);
+    toast.error(`Error approving token: ${error instanceof Error ? error.message : 'Unknown error'}`);
     return false;
   } finally {
     set({ isApproving: false });
@@ -209,9 +209,10 @@ export const useTokenStore = create<TokenStore>((set, get) => ({
       await loadTokenBalances(aaWalletAddress, supportedTokens);
       await loadEoaTokenBalances(userAddress, supportedTokens);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error transferring tokens:', error);
-      toast.error(`Error transferring tokens: ${error.message || 'Unknown error'}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Error transferring tokens: ${errorMessage}`);
       return false;
     } finally {
       set({ isApproving: false });

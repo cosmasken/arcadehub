@@ -19,7 +19,7 @@ import {
   Heart,
   Gift
 } from 'lucide-react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { TESTNET_CONFIG } from '../config';
 import { ethers } from 'ethers';
 import { getProvider } from '../lib/aaUtils';
@@ -41,6 +41,11 @@ interface Tournament {
   title: string;
   game: string;
   maxParticipants: number;
+  prizePool?: string;
+  token?: string;
+  description?: string;
+  entryFee?: string;
+  rules?: string;
 }
 
 const ARC_TOKEN_ADDRESS = TESTNET_CONFIG.smartContracts.arcadeToken;
@@ -140,7 +145,7 @@ const PrizePoolDepositModal: React.FC<PrizePoolDepositModalProps> = ({
         <DialogHeader>
           <DialogTitle className="text-yellow-400 text-xl neon-text flex items-center">
             <Coins className="w-5 h-5 mr-2" />
-            &gt; DEPOSIT_PRIZE_POOL &lt;
+             DEPOSIT_PRIZE_POOL 
           </DialogTitle>
           <DialogDescription className="text-green-400">
             Fund the prize pool for {tournament.title}

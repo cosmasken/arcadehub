@@ -1,7 +1,7 @@
+import Layout from "../components/Layout";
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Header from '../components/Header';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -80,15 +80,17 @@ const CollectionDetail = () => {
   };
 
   return (
+    <Layout>
+      
       <div className="min-h-screen bg-black text-green-400 font-mono">
-        <Header />
+        
         
         <div className="pt-24 pb-16 px-6">
           <div className="container mx-auto max-w-7xl">
             {/* Back Button */}
             <Link to="/collections" className="inline-flex items-center text-cyan-400 hover:text-green-400 mb-8 transition-colors">
               <ArrowLeft className="w-5 h-5 mr-2" />
-              &gt; BACK_TO_COLLECTIONS
+               BACK_TO_COLLECTIONS
             </Link>
 
             {/* Collection Header */}
@@ -173,7 +175,7 @@ const CollectionDetail = () => {
             {/* NFT Items Grid */}
             <div>
               <h2 className="text-2xl font-bold text-cyan-400 mb-6 neon-text">
-                &gt; COLLECTION_ITEMS &lt;
+                 COLLECTION_ITEMS 
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -214,6 +216,8 @@ const CollectionDetail = () => {
           </div>
         </div>
       </div>
+
+    </Layout>
   );
 };
 

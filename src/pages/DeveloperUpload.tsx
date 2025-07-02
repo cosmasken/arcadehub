@@ -1,6 +1,6 @@
+import Layout from "../components/Layout";
 
 import React, { useState,useEffect } from 'react';
-import Header from '../components/Header';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -20,11 +20,12 @@ import {
   Twitter,
   Globe
 } from 'lucide-react';
+import { Developer, GameFormData } from '../types/developerUpload';
 import { usePinata } from '../hooks/use-pinata';
 import supabase from '../hooks/use-supabase';
 import { submitGameAA } from '../lib/aaUtils';
 import useWalletStore from '../stores/useWalletStore';
-import { toast } from '../hooks/use-toast';
+import { toast } from '../components/ui/use-toast';
 import { ethers } from 'ethers';
 import LoadingModal from '../components/LoadingModal';
 import { truncateAddress } from '../lib/utils';
@@ -34,26 +35,26 @@ const DeveloperUpload = () => {
   const { aaSigner, aaWalletAddress } = useWalletStore();
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
   const { error, uploadFile } = usePinata();
-  const [developers, setDevelopers] = useState([]);
-  const [formData, setFormData] = useState({
+  const [developers, setDevelopers] = useState<Developer[]>([]);
+  const [formData, setFormData] = useState<GameFormData>({
     title: '',
     description: '',
     category: '',
-    thumbnail: null as File | null,
-    assets: null as File | null
+    thumbnail: null,
+    assets: null
   });
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-  const fetchDevelopers = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, wallet_address, username, bio")
-      .eq("role", "developer");
-    if (!error) setDevelopers(data || []);
-  };
-  fetchDevelopers();
-}, []);
+    const fetchDevelopers = async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, wallet_address, username, bio")
+        .eq("user_type", "developer");
+      if (!error) setDevelopers(data || []);
+    };
+    fetchDevelopers();
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -106,10 +107,11 @@ const DeveloperUpload = () => {
         gameId,
         formData.title,
         assetHash,
-        0
+        0 // paymentType: 0 for sponsored
       );
 
-       await supabase.from('games').insert([{
+      // 5. Save to database
+      await supabase.from('games').insert([{
           game_id: gameId,
           title: formData.title,
           description: formData.description,
@@ -137,10 +139,11 @@ const DeveloperUpload = () => {
       if (assetInput) assetInput.value = '';
       const thumbInput = document.getElementById('thumbnail') as HTMLInputElement;
       if (thumbInput) thumbInput.value = '';
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An error occurred during upload or registration.";
       toast({
         title: "Upload or Registration Failed",
-        description: err.message || "An error occurred during upload or registration.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -150,40 +153,48 @@ const DeveloperUpload = () => {
   };
   const featuredDevelopers = [
     {
-      id: 1,
+      id: "1",
       name: "CYBER_STUDIO",
       username: "@cyberstudio",
       avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
+      wallet_address: "0x1234567890abcdef1234567890abcdef12345678",
+      bio: "Leading the charge in cyberpunk game development.",
       games: 8,
       downloads: 156743,
       rating: 4.8,
       featured: true
     },
     {
-      id: 2,
+      id: "2",
       name: "PIXEL_FORGE",
       username: "@pixelforge",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+      wallet_address: "0xabcdef1234567890abcdef1234567890abcdef12",
+      bio: "Crafting nostalgic pixel art adventures.",
       games: 12,
       downloads: 234567,
       rating: 4.9,
       featured: true
     },
     {
-      id: 3,
+      id: "3",
       name: "NEON_LABS",
       username: "@neonlabs",
       avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+      wallet_address: "0x1234abcdef1234567890abcdef1234567890ab",
+      bio: "Innovating with vibrant, high-energy game experiences.",
       games: 5,
       downloads: 89432,
       rating: 4.7,
       featured: false
     },
     {
-      id: 4,
+      id: "4",
       name: "RETRO_WORKS",
       username: "@retroworks",
       avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+      wallet_address: "0xabcdef1234abcdef1234567890abcdef123456",
+      bio: "Dedicated to bringing classic arcade vibes to the blockchain.",
       games: 15,
       downloads: 345612,
       rating: 4.8,
@@ -192,116 +203,122 @@ const DeveloperUpload = () => {
   ];
 
   const renderUploadForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto">
       {/* Game Title */}
       <div className="space-y-2">
-        <Label htmlFor="title" className="text-white">Game Title *</Label>
+        <Label htmlFor="title" className="text-cyan-400 mb-2 block">
+          Game Title
+        </Label>
         <Input
           id="title"
           name="title"
           value={formData.title}
           onChange={handleInputChange}
-          placeholder="Enter your game title"
-          className="bg-blue-800/30 border-blue-700/50 text-white"
-          disabled={isUploading}
+          placeholder="Enter game title"
+          className="bg-black border-cyan-400 text-white"
+          required
         />
       </div>
 
       {/* Game Description */}
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-white">Description *</Label>
+        <Label htmlFor="description" className="text-cyan-400 mb-2 block">
+          Description
+        </Label>
         <Textarea
           id="description"
           name="description"
           value={formData.description}
           onChange={handleInputChange}
           placeholder="Describe your game..."
-          rows={4}
-          className="bg-blue-800/30 border-blue-700/50 text-white"
-          disabled={isUploading}
+          className="bg-black border-cyan-400 text-white min-h-[120px]"
+          required
         />
       </div>
 
       {/* Category */}
       <div className="space-y-2">
-        <Label htmlFor="category" className="text-white">Category *</Label>
+        <Label htmlFor="category" className="text-cyan-400 mb-2 block">
+          Category
+        </Label>
         <select
           id="category"
           name="category"
           value={formData.category}
           onChange={handleInputChange}
-          className="w-full py-2 px-3 bg-blue-800/30 border border-blue-700/50 rounded-md text-white"
-          disabled={isUploading}
+          className="w-full p-2 bg-black border border-cyan-400 text-white rounded"
+          required
         >
           <option value="">Select a category</option>
-          <option value="Strategy">Strategy</option>
-          <option value="Adventure">Adventure</option>
-          <option value="Puzzle">Puzzle</option>
-          <option value="Action">Action</option>
-          <option value="Simulation">Simulation</option>
-          <option value="RPG">RPG</option>
+          <option value="action">Action</option>
+          <option value="adventure">Adventure</option>
+          <option value="puzzle">Puzzle</option>
+          <option value="strategy">Strategy</option>
+          <option value="rpg">RPG</option>
+          <option value="sports">Sports</option>
+          <option value="other">Other</option>
         </select>
       </div>
 
       {/* Game Asset Upload */}
       <div className="space-y-2">
-        <Label htmlFor="assets" className="text-white">Game Assets (ZIP) *</Label>
-        <div className="border-2 border-dashed border-blue-700/50 rounded-lg p-6 text-center">
-          <input
-            id="assets"
-            type="file"
-            accept=".zip"
-            onChange={handleFileChange}
-            className="hidden"
-            disabled={isUploading}
-          />
-          <label
-            htmlFor="assets"
-            className="cursor-pointer flex flex-col items-center space-y-2"
-          >
-            <Upload className="w-8 h-8 text-blue-400" />
-            <span className="text-blue-300">
-              {formData.assets ? formData.assets.name : "Click to upload game assets (.zip)"}
-            </span>
-            <span className="text-sm text-blue-400">
-              Supported format: ZIP
-            </span>
-          </label>
-        </div>
+        <Label className="text-cyan-400 mb-2 block">
+          Game Assets (ZIP file)
+        </Label>
+        <input
+          type="file"
+          id="assets"
+          accept=".zip"
+          onChange={handleFileChange}
+          className="hidden"
+          required
+        />
+        <label
+          htmlFor="assets"
+          className="flex flex-col items-center justify-center w-full p-8 border-2 border-dashed border-cyan-400 rounded-lg cursor-pointer hover:bg-gray-900/50 transition-colors text-center"
+        >
+          <Upload className="w-8 h-8 text-blue-400" />
+          <span className="text-blue-300">
+            {formData.assets ? formData.assets.name : "Click to upload game assets (.zip)"}
+          </span>
+          <span className="text-sm text-blue-400">
+            Supported format: ZIP (max 100MB)
+          </span>
+        </label>
       </div>
 
       {/* Thumbnail Upload */}
       <div className="space-y-2">
-        <Label htmlFor="thumbnail" className="text-white">Thumbnail (PNG/JPG) *</Label>
-        <div className="border-2 border-dashed border-blue-700/50 rounded-lg p-6 text-center">
-          <input
-            id="thumbnail"
-            type="file"
-            accept=".png,.jpg,.jpeg"
-            onChange={handleThumbnailChange}
-            className="hidden"
-            disabled={isUploading}
-          />
-          <label
-            htmlFor="thumbnail"
-            className="cursor-pointer flex flex-col items-center space-y-2"
-          >
-            <Upload className="w-8 h-8 text-blue-400" />
-            <span className="text-blue-300">
-              {formData.thumbnail ? formData.thumbnail.name : "Click to upload thumbnail (.png, .jpg)"}
-            </span>
-            <span className="text-sm text-blue-400">
-              Supported formats: PNG, JPG
-            </span>
-          </label>
-        </div>
+        <Label className="text-cyan-400 mb-2 block">
+          Thumbnail Image
+        </Label>
+        <input
+          type="file"
+          id="thumbnail"
+          accept="image/png, image/jpeg"
+          onChange={handleThumbnailChange}
+          className="hidden"
+          required
+        />
+        <label
+          htmlFor="thumbnail"
+          className="flex flex-col items-center justify-center w-full p-8 border-2 border-dashed border-cyan-400 rounded-lg cursor-pointer hover:bg-gray-900/50 transition-colors text-center"
+        >
+          <Upload className="w-8 h-8 text-blue-400" />
+          <span className="text-blue-300">
+            {formData.thumbnail ? formData.thumbnail.name : "Click to upload thumbnail (.png, .jpg)"}
+          </span>
+          <span className="text-sm text-blue-400">
+            Supported formats: PNG, JPG (max 5MB)
+          </span>
+        </label>
       </div>
 
       {/* Submit Button */}
       <Button
         type="submit"
         disabled={isUploading}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+        className="w-full bg-cyan-400 text-black hover:bg-green-400 font-mono text-xs"
       >
         {isUploading ? (
           <>
@@ -327,7 +344,7 @@ const DeveloperUpload = () => {
     <div>
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-5xl font-bold mb-4 text-cyan-400 neon-text">
-          &gt; FEATURED_DEVELOPERS &lt;
+          FEATURED_DEVELOPERS
         </h2>
         <p className="text-green-400 text-lg tracking-wider">
           TOP_GAME_CREATORS // INDIE_STUDIOS // BLOCKCHAIN_PIONEERS
@@ -337,7 +354,7 @@ const DeveloperUpload = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {developers.map((developer) => (
           <Link key={developer.id} to={`/developer/profile/${developer.wallet_address}`}>
-            <Card className="bg-black border-cyan-400 border-2 p-6 hover:border-green-400 transition-colors group cursor-pointer">
+            <div className="bg-black border-cyan-400 border-2 p-6 hover:border-green-400 transition-colors group cursor-pointer">
               <div className="text-center">
                 <div className="relative inline-block mb-4">
                   <img
@@ -345,13 +362,6 @@ const DeveloperUpload = () => {
                     alt={developer.name}
                     className="w-20 h-20 rounded-lg border-2 border-cyan-400 group-hover:border-green-400 transition-colors"
                   />
-                  {/* {developer.featured && (
-                    <div className="absolute -top-2 -right-2">
-                      <Badge className="bg-yellow-500 text-black p-1">
-                        <Star className="w-3 h-3" />
-                      </Badge>
-                    </div>
-                  )} */}
                 </div>
 
                 <h3 className="text-lg font-bold text-cyan-400 mb-1 tracking-wider">
@@ -359,31 +369,13 @@ const DeveloperUpload = () => {
                 </h3>
                 <p className="text-green-400 text-sm mb-4">
                   {truncateAddress(developer.wallet_address)}
-                  </p>
-              {/* 
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-green-400">GAMES</span>
-                    <span className="text-cyan-400 font-bold">{developer.games}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-green-400">DOWNLOADS</span>
-                    <span className="text-cyan-400 font-bold">{developer.downloads.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-green-400">RATING</span>
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                      <span className="text-cyan-400 font-bold">{developer.rating}</span>
-                    </div>
-                  </div>
-                </div> */}
+                </p>
 
                 <Button size="sm" className="w-full mt-4 bg-cyan-400 text-black hover:bg-green-400 font-mono text-xs">
                   VIEW_PROFILE
                 </Button>
               </div>
-            </Card>
+            </div>
           </Link>
         ))}
       </div>
@@ -391,54 +383,33 @@ const DeveloperUpload = () => {
   );
 
   return (
-    <div className="min-h-screen bg-black text-green-400 font-mono">
-      <Header />
-      <LoadingModal
-        isOpen={isLoadingModalOpen}
-        title="SENDING NFT"
-        description="Please wait while your NFT is being sent as a gift..."
-      />
-      <div className="pt-24 pb-16 px-6">
-        <div className="container mx-auto max-w-7xl">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-cyan-400 neon-text">
-              &gt; DEVELOPER_HUB &lt;
-            </h1>
-            <p className="text-green-400 text-lg tracking-wider mb-8">
-              UPLOAD_GAMES // EARN_CRYPTO // BUILD_COMMUNITY
-            </p>
-
-            {/* Tab Navigation */}
-            <div className="flex justify-center space-x-4 mb-8">
-              <Button
-                onClick={() => setActiveTab('upload')}
-                className={`font-mono ${activeTab === 'upload'
-                    ? 'bg-cyan-400 text-black'
-                    : 'bg-transparent text-cyan-400 border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black'
-                  }`}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                UPLOAD_GAME
-              </Button>
-              <Button
-                onClick={() => setActiveTab('developers')}
-                className={`font-mono ${activeTab === 'developers'
-                    ? 'bg-cyan-400 text-black'
-                    : 'bg-transparent text-cyan-400 border-2 border-cyan-400 hover:bg-cyan-400 hover:text-black'
-                  }`}
-              >
-                <User className="w-4 h-4 mr-2" />
-                DEVELOPERS
-              </Button>
-            </div>
-          </div>
-
-          {/* Tab Content */}
-          {activeTab === 'upload' ? renderUploadForm() : renderDevelopers()}
+    <Layout>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center mb-8">
+          <Button
+            variant={activeTab === 'upload' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('upload')}
+            className="mr-4"
+          >
+            Upload Game
+          </Button>
+          <Button
+            variant={activeTab === 'developers' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('developers')}
+          >
+            Browse Developers
+          </Button>
         </div>
+
+        {activeTab === 'upload' ? renderUploadForm() : renderDevelopers()}
+
+        <LoadingModal
+          isOpen={isLoadingModalOpen}
+          title="Processing..."
+          description={isUploading ? "Uploading files to IPFS..." : "Registering your game..."}
+        />
       </div>
-    </div>
+    </Layout>
   );
 };
 

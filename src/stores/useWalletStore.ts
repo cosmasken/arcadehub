@@ -1,197 +1,160 @@
 import { create } from 'zustand';
 import { ethers } from 'ethers';
-import { Web3Auth } from "@web3auth/modal";
-import type { Web3AuthOptions } from "@web3auth/modal";
-import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
-import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
-import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
-import type { CustomChainConfig } from "@web3auth/base";
-import type { IProvider } from "@web3auth/base";
-import {  getAAWalletAddress } from '../lib/aaUtils';
-import useTokenStore from './useTokenStore';
+import { Web3Auth } from '@web3auth/modal';
+import { CHAIN_NAMESPACES, CustomChainConfig, IProvider } from '@web3auth/base';
+import { WalletConnectV2Adapter } from '@web3auth/wallet-connect-v2-adapter';
+import { EthereumPrivateKeyProvider } from '@web3auth/ethereum-provider';
+import { getAAWalletAddress } from '../lib/aaUtils';
 
-
-//custom chain is described as 
-const customChain :CustomChainConfig = {
-      chainNamespace: CHAIN_NAMESPACES.EIP155,
-      chainId: "0x2b1",
-      rpcTarget: "https://rpc-testnet.nerochain.io",
-      displayName: "Nero",
-      blockExplorerUrl: "https://testnet.neroscan.io",
-      ticker: "NERO",
-      tickerName: "Nero",
-      decimals: 18,
-      logo: "https://cryptologos.cc/logos/ethereum-eth-logo.png",
-      isTestnet: true
-  }
-
+const customChain: CustomChainConfig = {
+  chainNamespace: CHAIN_NAMESPACES.EIP155,
+  chainId: '0x2b1',
+  rpcTarget: 'https://rpc-testnet.nerochain.io',
+  displayName: 'Nero',
+  blockExplorerUrl: 'https://testnet.neroscan.io',
+  ticker: 'NERO',
+  tickerName: 'Nero',
+  decimals: 18,
+  logo: 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+  isTestnet: true,
+};
 
 const clientId = import.meta.env.VITE_WEB3AUTH_CLIENT_ID as string;
 
-const privateKeyProvider = new EthereumPrivateKeyProvider({
-  config: { chainConfig: customChain },
-})
-
-const web3AuthOptions: Web3AuthOptions = {
-  clientId,
-  web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
-  privateKeyProvider,
-};
+interface TokenInfo {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logoURI?: string;
+  balance?: string;
+}
 
 interface WalletStore {
   isConnected: boolean;
   isInitialized: boolean;
-  supportedTokens: any[];
-  web3auth: Web3Auth | null;
+  supportedTokens: TokenInfo[];
   provider: IProvider | null;
   aaProvider: ethers.BrowserProvider | null;
   aaSigner: ethers.Signer | null;
   aaWalletAddress: string | null;
   isLoading: boolean;
   error: string | null;
-  initializeWeb3Auth: () => Promise<void>;
-  connectWallet: () => Promise<void>;
-  disconnectWallet: () => Promise<void>;
-  updateSigner: (signer: ethers.Signer) => void;
-  initAAWallet: () => Promise<void>;
+  initWeb3Auth: () => Promise<void>;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
 }
 
-const web3auth = new Web3Auth(web3AuthOptions);
+const useWalletStore = create<WalletStore>((set) => {
+  const privateKeyProvider = new EthereumPrivateKeyProvider({
+    config: { chainConfig: customChain },
+  });
 
-const adapters = getDefaultExternalAdapters({ options: web3AuthOptions });
-adapters.forEach((adapter) => {
-  web3auth.configureAdapter(adapter);
-});
+  const web3auth = new Web3Auth({
+    clientId,
+    web3AuthNetwork: 'sapphire_devnet',
+    chainConfig: customChain,
+    privateKeyProvider, // Added privateKeyProvider
+  });
 
-export const useWalletStore = create<WalletStore>((set, get) => ({
-  isConnected: false,
-  isInitialized: false,
-  supportedTokens: [],
-  web3auth: null,
-  provider: null,
-  aaProvider: null,
-  aaSigner: null,
-  aaWalletAddress: null,
-  isLoading: false,
-  error: null,
+  // const walletConnectAdapter = new WalletConnectV2Adapter({
+  //   adapterSettings: { projectId: clientId },
+  //   loginSettings: {},
+  // });
 
-  initializeWeb3Auth: async () => {
-    set({ isLoading: true, error: null });
-    try {
-     
-      
-      await web3auth.initModal();
-      set({ 
-        web3auth,
-        provider: web3auth.provider,
-        isLoading: false,
-        isInitialized: true,
-      });
-    } catch (error) {
-      console.error('Failed to initialize Web3Auth:', error);
-      set({ 
-        isLoading: false,
-        error: 'Failed to initialize Web3Auth'
-      });
-      throw error;
-    }
-  },
+  // web3auth.configureAdapter(walletConnectAdapter);
 
-  connectWallet: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      //await get().initializeWeb3Auth();
-      const web3auth = get().web3auth;
-      if (!web3auth) throw new Error('Web3Auth not initialized');
-
-      const web3authProvider = await web3auth.connect();
-      if (!web3authProvider) {
-        throw new Error('Failed to connect to Web3Auth provider');
+  return {
+    isConnected: false,
+    isInitialized: false,
+    supportedTokens: [],
+    provider: null,
+    aaProvider: null,
+    aaSigner: null,
+    aaWalletAddress: null,
+    isLoading: false,
+    error: null,
+    initWeb3Auth: async () => {
+      try {
+        set({ isLoading: true });
+        await web3auth.initModal();
+        set({ isInitialized: true, isLoading: false });
+      } catch (error) {
+        set({ error: (error as Error).message, isLoading: false });
       }
-
-      const aaProvider = new ethers.BrowserProvider(web3authProvider);
-      const aaSigner = await aaProvider.getSigner();
-      const address = await aaSigner.getAddress();
-
-      console.log('Connected address:', address);
-      
-      set({ 
-        provider: web3authProvider,
-        aaProvider,
-        aaSigner,
-        isLoading: false,
-        isConnected: true,
-        isInitialized: true,
-      });
-
-      await get().initAAWallet();
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      set({ 
-        isLoading: false,
-        error: 'Failed to connect wallet'
-      });
-      throw error;
-    }
-  },
-
-  disconnectWallet: async () => {
-    try {
-      const web3auth = get().web3auth;
-      if (web3auth) {
+    },
+    connect: async () => {
+      try {
+        set({ isLoading: true });
+        const provider = await web3auth.connect();
+        if (provider) {
+          //const aaWalletAddress = await getAAWalletAddress(provider);
+          const aaProvider = new ethers.BrowserProvider(provider);
+          const aaSigner = await aaProvider.getSigner();
+          const address = await aaSigner.getAddress();
+          console.log('aaWalletAddress', address);
+          set({ provider, aaProvider, aaSigner, aaWalletAddress: address, isConnected: true, isLoading: false });
+        }
+      } catch (error) {
+        set({ error: (error as Error).message, isLoading: false });
+      }
+    },
+    disconnect: async () => {
+      try {
+        set({ isLoading: true });
         await web3auth.logout();
+        
+        // Reset wallet state
+        set({
+          provider: null,
+          aaProvider: null,
+          aaSigner: null,
+          aaWalletAddress: null,
+          isConnected: false,
+          isLoading: false,
+        });
+
+        // Clear any stored wallet data
+        localStorage.removeItem('walletconnect');
+        localStorage.removeItem('WALLETCONNECT_DEEPLINK_CHOICE');
+        
+        // Reset profile store
+        const profileStore = (await import('./useProfileStore')).default;
+        profileStore.setState({
+          username: '',
+          bio: '',
+          avatar: '',
+          role: 'gamer',
+          arcBalance: 0,
+          gamesPlayed: 0,
+          achievements: [],
+          assets: [],
+          history: [],
+          developerGames: [],
+          friends: [],
+          stats: {
+            gamesPlayed: 0,
+            achievements: 0,
+            totalScore: 0,
+            rank: '',
+          },
+          developerStats: {
+            totalGames: 0,
+            totalPlays: 0,
+            totalRevenue: 0,
+            avgRating: 0,
+          },
+        });
+        
+        // Clear any stored profile data
+        localStorage.removeItem('profile');
+        
+      } catch (error) {
+        console.error('Error during disconnect:', error);
+        set({ error: (error as Error).message, isLoading: false });
       }
-      set({ 
-        isConnected: false,
-        isInitialized: false,
-        web3auth: null,
-        provider: null,
-        aaProvider: null,
-        aaSigner: null,
-        aaWalletAddress: null,
-        isLoading: false,
-        error: null
-      });
-    } catch (error) {
-      console.error('Failed to disconnect wallet:', error);
-      set({ error: 'Failed to disconnect wallet' });
-    }
-  },
-
-  updateSigner: (signer: ethers.Signer) => {
-    set((state) => ({
-      ...state,
-      aaSigner: signer
-    }));
-  },
-
-  initAAWallet: async () => {
-    const { aaSigner } = get();
-    if (!aaSigner) return;
-
-    try {
-      const aaWallet = await getAAWalletAddress(aaSigner);
-      // const aaBuilder = await initAABuilder(aaSigner);
-      console.log('AA Wallet Address:', aaWallet);
-      
-      set({ 
-        aaWalletAddress: aaWallet,
-      });
-
-      // Load supported tokens after AA wallet is initialized
-      const tokenStore = useTokenStore.getState();
-      await tokenStore.loadSupportedTokens(aaSigner);
-      console.log('Supported tokens loaded:', tokenStore.supportedTokens);
-      
-      // Load token balances for the AA wallet
-      await tokenStore.loadTokenBalances(aaWallet, await tokenStore.supportedTokens);
-      console.log(`Token balances loaded for ${aaWallet}`, await tokenStore.tokenBalances);
-
-    } catch (error) {
-      console.error('Failed to initialize AA wallet:', error);
-      set({ error: 'Failed to initialize AA wallet' });
-    }
-  }
-}));
+    },
+  };
+});
 
 export default useWalletStore;

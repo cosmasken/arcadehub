@@ -1,0 +1,28 @@
+<svg width="400" height="225" viewBox="0 0 400 225" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="225" fill="#1E1E2E" />
+  <rect x="20" y="20" width="360" height="185" rx="10" fill="#2A2A3A" stroke="#9C27B0" stroke-width="2" />
+  
+  <!-- Player ship -->
+  <path d="M200 180 L180 160 L220 160 Z" fill="#4CAF50" />
+  
+  <!-- Enemies -->
+  <circle cx="100" cy="80" r="15" fill="#FF5252" />
+  <circle cx="150" cy="80" r="15" fill="#FF5252" />
+  <circle cx="200" cy="80" r="15" fill="#FF5252" />
+  <circle cx="250" cy="80" r="15" fill="#FF5252" />
+  <circle cx="300" cy="80" r="15" fill="#FF5252" />
+  
+  <rect x="90" cy="50" width="20" height="10" rx="5" fill="#FFC107" />
+  <rect x="140" cy="50" width="20" height="10" rx="5" fill="#FFC107" />
+  <rect x="190" cy="50" width="20" height="10" rx="5" fill="#FFC107" />
+  <rect x="240" cy="50" width="20" height="10" rx="5" fill="#FFC107" />
+  <rect x="290" cy="50" width="20" height="10" rx="5" fill="#FFC107" />
+  
+  <!-- Bullets -->
+  <rect x="195" y="150" width="10" height="10" rx="5" fill="#2196F3" />
+  <rect x="95" y="100" width="10" height="10" rx="5" fill="#FF5722" />
+  <rect x="245" y="100" width="10" height="10" rx="5" fill="#FF5722" />
+  
+  <text x="200" y="30" font-family="Arial" font-size="24" font-weight="bold" fill="white" text-anchor="middle">SPACE INVADERS</text>
+  <text x="200" y="210" font-family="Arial" font-size="14" fill="#9C27B0" text-anchor="middle">CLASSIC ARCADE SHOOTER</text>
+</svg>

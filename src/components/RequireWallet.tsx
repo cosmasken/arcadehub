@@ -1,5 +1,5 @@
 import React from "react";
-import { useWalletStore } from "../stores/useWalletStore";
+import useWalletStore from "../stores/useWalletStore";
 import LoadingModal from "./LoadingModal";
 import { Button } from './ui/button';
 import { Wallet } from 'lucide-react'; // Assuming you have a Wallet icon in lucide-react
@@ -35,7 +35,7 @@ const RequireWallet: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             className="bg-cyan-400 text-black hover:bg-green-400 font-mono text-xs tracking-wider border-2 border-cyan-400 hover:border-green-400"
           >
             <Wallet className="w-4 h-4 mr-2" />
-            &gt; CONNECT_WALLET
+             CONNECT_WALLET
           </Button>
 
         </div>

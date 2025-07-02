@@ -1,8 +1,9 @@
+import Layout from "../components/Layout";
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Web3Provider } from '../contexts/Web3Context';
+import { Tournament, Sponsor } from '../types/tournament';
 import { useToast } from '../hooks/use-toast';
-import Header from '../components/Header';
 import SponsorSelectionModal from '../components/SponsorSelectionModal';
 import TokenPaymentModal from '../components/TokenPaymentModal';
 import LoadingModal from '../components/LoadingModal';
@@ -36,7 +37,7 @@ const TournamentDetail = () => {
   const [actionType, setActionType] = useState<'join' | 'register'>('register');
 
   // Extended tournament data with different types
-  const tournaments = [
+  const tournaments: Tournament[] = [
     {
       id: 1,
       title: "CRYPTO CHAMPIONSHIP",
@@ -111,6 +112,8 @@ const TournamentDetail = () => {
 
   if (!tournament) {
     return (
+    <Layout>
+      
       <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-red-400 mb-4">TOURNAMENT NOT FOUND</h1>
@@ -119,7 +122,9 @@ const TournamentDetail = () => {
           </Button>
         </div>
       </div>
-    );
+  
+    </Layout>
+  );
   }
 
   const handleTournamentAction = (action: 'join' | 'register') => {
@@ -134,7 +139,7 @@ const TournamentDetail = () => {
     }
   };
 
-  const handleSponsorJoin = async (selectedSponsor: any) => {
+  const handleSponsorJoin = async (selectedSponsor: Sponsor) => {
     setIsSponsorModalOpen(false);
     setIsLoadingModalOpen(true);
 
@@ -147,17 +152,18 @@ const TournamentDetail = () => {
         description: `You've joined ${tournament.title} sponsored by ${selectedSponsor.name}`,
         className: "bg-green-400 text-black border-green-400",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       setIsLoadingModalOpen(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to join the sponsored tournament. Please try again.";
       toast({
         title: "Join Failed",
-        description: "Failed to join the sponsored tournament. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
   };
 
-  const handleTokenPayment = async (selectedToken: any) => {
+  const handleTokenPayment = async (selectedToken: unknown) => {
     setIsTokenModalOpen(false);
     setIsLoadingModalOpen(true);
 
@@ -170,11 +176,12 @@ const TournamentDetail = () => {
         description: `You've paid with ${selectedToken.name} and joined ${tournament.title}`,
         className: "bg-green-400 text-black border-green-400",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       setIsLoadingModalOpen(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to process token payment. Please try again.";
       toast({
         title: "Payment Failed",
-        description: "Failed to process token payment. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -193,11 +200,12 @@ const TournamentDetail = () => {
         description: `You have joined ${tournament.title}. Good luck!`,
         className: "bg-green-400 text-black border-green-400",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       setIsLoadingModalOpen(false);
+      const errorMessage = error instanceof Error ? error.message : "Failed to join the tournament. Please try again.";
       toast({
         title: "Join Failed",
-        description: "Failed to join the tournament. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -228,9 +236,11 @@ const TournamentDetail = () => {
   };
 
   return (
+    <Layout>
+      
     <Web3Provider>
       <div className="min-h-screen bg-black text-green-400 font-mono">
-        <Header />
+        
         
         <div className="pt-24 pb-16 px-6">
           <div className="container mx-auto max-w-4xl">
@@ -408,6 +418,8 @@ const TournamentDetail = () => {
         />
       </div>
     </Web3Provider>
+
+    </Layout>
   );
 };
 

@@ -1,0 +1,254 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useGame } from '../context';
+import { COLS, ROWS, LEVELS } from '../constants';
+import { drawBlock, drawGhostBlock } from '../utils/draw';
+import { isValidMove } from '../utils/game';
+
+const Board: React.FC = () => {
+    const { state, dispatch } = useGame();
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const animationRef = useRef<number>();
+    const lastTick = useRef<number>(0);
+    const [dimensions] = useState({ 
+      width: COLS * 30, 
+      height: ROWS * 30 
+    });
+    const accumulatedTime = useRef<number>(0);
+    const lastTime = useRef<number>(0);
+  
+    // Set up canvas dimensions on mount
+    useEffect(() => {
+      if (canvasRef.current) {
+        canvasRef.current.width = dimensions.width;
+        canvasRef.current.height = dimensions.height;
+      }
+    }, [dimensions]);
+  
+    // Render function
+    const renderGame = useCallback(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+  
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+  
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+      // Draw grid background
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw grid lines
+      ctx.strokeStyle = '#16213e';
+      ctx.lineWidth = 0.5;
+      
+      // Draw the board - ensure it's a valid 2D array before rendering
+      const board = Array.isArray(state.board) ? state.board : [];
+      for (let y = 0; y < ROWS; y++) {
+        const row = Array.isArray(board[y]) ? board[y] : [];
+        for (let x = 0; x < COLS; x++) {
+          const value = typeof row[x] === 'number' ? row[x] : 0;
+          if (value !== 0) {
+            drawBlock(ctx, x, y, value);
+          }
+        }
+      }
+  
+      // Draw ghost piece if enabled and there's a valid current piece
+      if (state.settings.ghostPiece && state.currentPiece?.shape && state.currentPiece?.position) {
+        const { shape, position, type } = state.currentPiece;
+        let ghostY = position.y;
+        
+        // Find the lowest valid position for the ghost piece
+        while (isValidMove(
+          state.board, 
+          shape, 
+          { x: position.x, y: ghostY + 1 }
+        )) {
+          ghostY++;
+        }
+        
+        // Only draw the ghost piece if it's below the current piece
+        if (ghostY > position.y && Array.isArray(shape)) {
+          for (let y = 0; y < shape.length; y++) {
+            const row = Array.isArray(shape[y]) ? shape[y] : [];
+            for (let x = 0; x < row.length; x++) {
+              if (row[x] !== 0) {
+                drawGhostBlock(ctx, (position?.x || 0) + x, ghostY + y, type || 1);
+              }
+            }
+          }
+        }
+      }
+  
+      // Draw current piece with null/undefined checks
+      if (state.currentPiece && state.currentPiece.shape && state.currentPiece.position) {
+        const { shape, position, type } = state.currentPiece;
+        if (Array.isArray(shape)) {
+          for (let y = 0; y < shape.length; y++) {
+            const row = Array.isArray(shape[y]) ? shape[y] : [];
+            for (let x = 0; x < row.length; x++) {
+              if (row[x] !== 0) {
+                const posX = (position?.x || 0) + x;
+                const posY = (position?.y || 0) + y;
+                drawBlock(ctx, posX, posY, type || 1);
+              }
+            }
+          }
+        }
+      }
+    }, [state.board, state.currentPiece, state.settings.ghostPiece]);
+  
+    // Keyboard event handler
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+      if (!state.isStarted || state.gameOver) return;
+      
+      switch (e.key) {
+        case 'ArrowLeft':
+          dispatch({ type: 'MOVE_LEFT' });
+          break;
+        case 'ArrowRight':
+          dispatch({ type: 'MOVE_RIGHT' });
+          break;
+        case 'ArrowUp':
+          dispatch({ type: 'ROTATE' });
+          break;
+        case 'ArrowDown':
+          dispatch({ type: 'SOFT_DROP' });
+          break;
+        case ' ':
+          dispatch({ type: 'HARD_DROP' });
+          break;
+        case 'p':
+        case 'P':
+          dispatch({ type: 'PAUSE' });
+          break;
+        case 'c':
+        case 'C':
+          dispatch({ type: 'HOLD' });
+          break;
+        default:
+          return;
+      }
+      
+      // Prevent default for game controls to avoid page scrolling
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'p', 'P', 'c', 'C'].includes(e.key)) {
+        e.preventDefault();
+      }
+    }, [dispatch, state.isStarted, state.gameOver]);
+
+    // Set up keyboard event listeners
+    useEffect(() => {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [handleKeyDown]);
+
+    // Start the game automatically when the component mounts
+    useEffect(() => {
+      dispatch({ type: 'RESET' });
+      dispatch({ type: 'START' });
+    }, [dispatch]);
+
+    // Game loop
+    useEffect(() => {
+      if (state.gameOver || state.isPaused || !state.isStarted) {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationRef.current = undefined;
+        }
+        return;
+      }
+
+      let lastTime = performance.now();
+      
+      const gameLoop = (currentTime: number) => {
+        const deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+        
+        // Update game state at a fixed rate
+        if (state.isStarted && !state.isPaused && !state.gameOver) {
+          const currentLevel = LEVELS.find(lvl => lvl.level === state.stats.level) || LEVELS[0];
+          const speed = Math.max(500, currentLevel.speed);
+          
+          accumulatedTime.current += deltaTime;
+          
+          // Only process a tick if enough time has passed
+          if (accumulatedTime.current >= speed) {
+            dispatch({ type: 'TICK' });
+            accumulatedTime.current = 0;
+          }
+        }
+  
+        // Always render at full frame rate for smoothness
+        renderGame();
+  
+        // Continue the game loop
+        animationRef.current = requestAnimationFrame(gameLoop);
+      };
+  
+      // Start the game loop
+      animationRef.current = requestAnimationFrame(gameLoop);
+  
+      // Cleanup function
+      return () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
+    }, [state.gameOver, state.isPaused, state.isStarted, state.stats.level, renderGame, dispatch]);
+  
+    // Initial render
+    useEffect(() => {
+      renderGame();
+    }, [renderGame]);
+  
+    return (
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          className="border-2 border-gray-700 rounded-lg shadow-lg"
+          width={dimensions.width}
+          height={dimensions.height}
+          style={{
+            backgroundColor: '#1a1a2e',
+            boxShadow: '0 0 20px rgba(0, 0, 0, 0.3)'
+          }}
+        />
+        {state.gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 rounded-lg">
+            <div className="text-center p-4 bg-gray-900 rounded-lg">
+              <h2 className="text-2xl font-bold text-red-500 mb-2">Game Over</h2>
+              <p className="text-white">Score: {state.stats.score}</p>
+              <div className="mt-4 space-x-2">
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
+                >
+                  Back to Games
+                </button>
+                <button
+                  onClick={() => dispatch({ type: 'RESET' })}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
+                >
+                  Play Again
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {state.isPaused && !state.gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+            <div className="text-center p-4 bg-gray-900 rounded-lg">
+              <h2 className="text-2xl font-bold text-yellow-400 mb-2">Paused</h2>
+              <p className="text-white">Press P to resume</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  export default Board;

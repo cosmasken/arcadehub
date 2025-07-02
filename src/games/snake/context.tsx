@@ -142,6 +142,9 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           if (head.x === state.food.x && head.y === state.food.y) {
             foodEaten = true;
           }
+        } else if (head.x === state.food.x && head.y === state.food.y) {
+          // Also check for food during movement
+          foodEaten = true;
         }
       }
       
@@ -182,14 +185,27 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       if (foodEaten) {
         // Add new segment at the end of the snake
         const tail = newSnake[newSnake.length - 1];
+        // Find the last segment that's not moving to attach the new segment
+        let lastSegment = tail;
+        if (tail.moving) {
+          // If tail is moving, find the last non-moving segment
+          for (let i = newSnake.length - 2; i >= 0; i--) {
+            if (!newSnake[i].moving) {
+              lastSegment = newSnake[i];
+              break;
+            }
+          }
+        }
+        
+        // Add new segment at the position of the last non-moving segment
         newSnake.push({
-          ...tail,
-          x: tail.targetX,
-          y: tail.targetY,
+          ...lastSegment,
+          x: lastSegment.x,
+          y: lastSegment.y,
           dx: 0,
           dy: 0,
-          targetX: tail.targetX,
-          targetY: tail.targetY,
+          targetX: lastSegment.x,
+          targetY: lastSegment.y,
           moving: false
         });
         
@@ -211,7 +227,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           score: newScore,
           linesCleared: newLinesCleared,
           level: newLevel,
-          direction: state.nextDirection,
+          direction: state.nextDirection, // Ensure direction is updated
           foodEaten: state.foodEaten + 1,
         };
       }

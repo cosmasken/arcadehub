@@ -79,26 +79,14 @@ const Index = () => {
     {
       id: "snake",
       title: "Snake",
-      description: "Classic snake game with a twist",
+      description: "Classic snake game with a modern twist",
       image: "/snake.jpg",
-      status: "upcoming" as const,
-      category: "arcade",
-      players: 0,
-      rating: 0,
-      prize: "75 NERO",
-      lastUpdated: '2023-07-01'
-    },
-    {
-      id: "pong",
-      title: "Pong",
-      description: "Classic arcade pong game",
-      image: "/pong.jpg",
       status: "live" as const,
       category: "arcade",
-      players: 7564,
-      rating: 4.7,
-      prize: "80 NERO",
-      lastUpdated: '2023-06-25'
+      players: 5234,
+      rating: 4.5,
+      prize: "75 NERO",
+      lastUpdated: '2023-07-01'
     }
   ], []);
 

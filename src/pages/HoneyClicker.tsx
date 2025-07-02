@@ -70,7 +70,6 @@ const HoneyClicker = () => {
           TournamentHubABI,
           provider
       
-    </Layout>
   );
         const activeIds: number[] = await contract.getActiveTournamentIds();
         for (const id of activeIds) {
@@ -94,7 +93,6 @@ const HoneyClicker = () => {
   useEffect(() => {
     setIsPaused(false);
     return (
-    <Layout>
       ) => setIsPaused(true);
   }, []);
 
@@ -116,7 +114,6 @@ const HoneyClicker = () => {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return (
-    <Layout>
       ) => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [gameStartTime]);
 
@@ -172,7 +169,6 @@ const HoneyClicker = () => {
         signature,
         0 // paymentType: sponsored gas
     
-    </Layout>
   );
       if (!result.userOpHash) {
         throw new Error("Transaction failed. No UserOperation hash returned.");

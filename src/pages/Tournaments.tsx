@@ -9,10 +9,10 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import {
   Trophy,
-  Clock,
   Users,
   Zap,
-  Calendar
+  CalendarDays,
+  Clock
 } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useWalletStore } from '../stores/useWalletStore';
@@ -20,14 +20,9 @@ import { getProvider, joinTournamentAA } from '../lib/aaUtils';
 import { TESTNET_CONFIG } from '../config';
 import TournamentHubABI from '../abi/TournamentHub.json';
 
-interface Tournament {
-  id: number;
-  title: string;
-  prizePool: string;
-  participants: number;
-  maxParticipants: number;
-  status: string;
-  startTime: string;
+import { Tournament } from '../types/tournament';
+
+interface TournamentDisplay extends Tournament {
   isParticipant: boolean;
 }
 
@@ -35,8 +30,8 @@ const Tournaments: React.FC = () => {
   const { toast } = useToast();
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [isLoadingModalOpen, setIsLoadingModalOpen] = useState(false);
-  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
-  const [activeTournaments, setActiveTournaments] = useState<Tournament[]>([]);
+  const [selectedTournament, setSelectedTournament] = useState<TournamentDisplay | null>(null);
+  const [activeTournaments, setActiveTournaments] = useState<TournamentDisplay[]>([]);
   const { aaWalletAddress, aaSigner } = useWalletStore();
 
   React.useEffect(() => {
@@ -46,28 +41,24 @@ const Tournaments: React.FC = () => {
         const contract = new ethers.Contract(
           TESTNET_CONFIG.smartContracts.tournamentHub,
           TournamentHubABI,
-          provider
+          provider);
       
-    </Layout>
-  );
-        const ids: number[] = await contract.getActiveTournamentIds();
+    const ids: number[] = await contract.getActiveTournamentIds();
         const tournaments = await Promise.all(
           ids.map(async (id) => {
             const info = await contract.getTournamentInfo(id, aaWalletAddress || ethers.ZeroAddress);
             return {
               id: Number(info.id),
               title: info.name || `Tournament #${id}`,
-              prizePool: ethers.formatEther(ethers.parseUnits(info.prizePool?.toString() || '0', 18)),
+              prize: ethers.formatEther(info.prizePool || '0'),
               participants: info.participants?.length || 0,
               maxParticipants: Number(info.maxParticipants || 100), // Default to 100 if not provided
               status: info.isActive ? 'live' : (info.prizesDistributed ? 'completed' : 'ended'),
               startTime: info.startTime ? new Date(Number(info.startTime) * 1000).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
               isParticipant: !!info.isParticipant,
-            } as Tournament;
+            } as TournamentDisplay;
           })
-      
-    </Layout>
-  );
+      );
         setActiveTournaments(tournaments);
       } catch (error) {
         console.error('Error fetching tournaments:', error);
@@ -79,9 +70,15 @@ const Tournaments: React.FC = () => {
       }
     };
     
-    if (aaWalletAddress) {
-      fetchTournaments();
+    if (!aaWalletAddress) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to view and join tournaments.",
+        variant: "destructive",
+      });
+      return;
     }
+    fetchTournaments();
   }, [aaWalletAddress, toast]);
 
   const handleTournamentAction = (tournament: Tournament) => {
@@ -101,9 +98,7 @@ const Tournaments: React.FC = () => {
         selectedTournament.id,
         0, // paymentType: sponsored gas
         { gasMultiplier: 1.5 }
-    
-    </Layout>
-  );
+      );
 
       await tx.wait();
 
@@ -120,9 +115,7 @@ const Tournaments: React.FC = () => {
         TESTNET_CONFIG.smartContracts.tournamentHub,
         TournamentHubABI,
         provider
-    
-    </Layout>
-  );
+      );
       const info = await contract.getTournamentInfo(selectedTournament.id, aaWalletAddress || ethers.ZeroAddress);
       
       setActiveTournaments(prev => 
@@ -135,9 +128,7 @@ const Tournaments: React.FC = () => {
               }
             : t
         )
-    
-    </Layout>
-  );
+      );
 
     } catch (error: unknown) {
       console.error('Error joining tournament:', error);
@@ -218,13 +209,14 @@ const Tournaments: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                   <div>
                     <p className="text-green-400">PRIZE POOL:</p>
-                    <p className="text-yellow-400 font-bold">{tournament.prizePool} ARC</p>
+                    <p className="text-yellow-400 font-bold">{tournament.prize} ARC</p>
                   </div>
                   <div>
                     <p className="text-green-400">PARTICIPANTS:</p>
                     <p className="text-cyan-400 font-bold">{tournament.participants}/{tournament.maxParticipants}</p>
                   </div>
                   <div>
+                    <CalendarDays className="w-4 h-4 mr-2" />
                     <p className="text-green-400">START TIME:</p>
                     <p className="text-cyan-400 font-bold">{tournament.startTime}</p>
                   </div>

@@ -70,9 +70,7 @@ const SponsorDashboard = () => {
           TESTNET_CONFIG.smartContracts.tournamentHub,
           TournamentHubABI,
           provider
-      
-    </Layout>
-  );
+      );
         // 1. Get tournament IDs created by this user
         const ids: number[] = await contract.getUserCreatedTournaments(aaWalletAddress);
         // 2. Fetch info for each tournament
@@ -91,106 +89,12 @@ const SponsorDashboard = () => {
             };
           })
       
-    </Layout>
   );
         setActiveTournaments(tournaments);
       };
       fetchTournaments();
     }, [aaWalletAddress]);
 
-  // const fetchTournaments = async () => {
-  //   if (!aaWalletAddress) return;
-  //   try {
-  //     const ids = await getUserCreatedTournaments(aaWalletAddress);
-  //     const tournaments = await Promise.all(
-  //       ids.map(async (id) => {
-  //         const info = await getTournamentInfo(id, aaWalletAddress);
-  //         const decimals = tokenDecimals[info.token] || 18;
-  //         const symbol = tokenSymbols[info.token] || 'UNKNOWN';
-  //        let prizePool;
-  //           if (typeof info.prizePool === 'string') {
-  //             console.warn(`PrizePool is string: ${info.prizePool}`);
-  //             const [integerPart] = info.prizePool.split('.');
-  //             prizePool = ethers.parseUnits(integerPart, decimals);
-  //           } else {
-  //             prizePool = ethers.toBigInt(info.prizePool);
-  //           }
-  //         return {
-  //           id: info.id,
-  //           title: info.name,
-  //            prizePool: Number(ethers.formatUnits(prizePool, decimals)).toFixed(2),
-  //           // prizePool: Number(ethers.formatUnits(info.prizePool, decimals)).toFixed(2),
-  //           token: info.token,
-  //           tokenSymbol: symbol,
-  //           participants: info.participants.length,
-  //           status: info.isActive ? 'live' : info.prizesDistributed ? 'completed' : 'ended',
-  //           startTime: new Date(info.startTime).toISOString().slice(0, 10),
-  //           yourContribution: Number(ethers.formatUnits(info.prizePool, decimals)).toFixed(2), // Assume creator contributed all
-  //           // distributionTime: info.distributionTime
-  //         };
-  //       })
-  //   
-    </Layout>
-  );
-  //     setActiveTournaments(tournaments);
-      // setSponsorStats(prev => ({
-      //   ...prev,
-      //   activeTournaments: tournaments.filter(t => t.status === 'live').length,
-      //   completedTournaments: tournaments.filter(t => t.status === 'completed').length,
-      //   totalPlayers: tournaments.reduce((sum, t) => sum + t.participants, 0),
-      //   totalSponsored: tournaments.reduce((sum, t) => sum + parseFloat(t.prizePool), 0).toFixed(2)
-      // }));
-  //   } catch (error) {
-  //     toast({
-  //       title: "Fetch Failed",
-  //       description: decodeError(error),
-  //       variant: "destructive"
-  //     });
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   fetchTournaments();
-  //   const handleEvent = (event) => {
-  //     if (event.event === 'TournamentCreated' && event.data.creator.toLowerCase() === aaWalletAddress.toLowerCase()) {
-  //       fetchTournaments();
-  //     } else if (event.event === 'PrizesDistributed') {
-  //       setActiveTournaments(prev =>
-  //         prev.map(t =>
-  //           t.id === event.data.tournamentId ? { ...t, status: 'completed' } : t
-  //         )
-  //     
-    </Layout>
-  );
-  //     } else if (event.event === 'TournamentJoined') {
-  //       setActiveTournaments(prev =>
-  //         prev.map(t =>
-  //           t.id === event.data.tournamentId
-  //             ? { ...t, participants: t.participants + 1 }
-  //             : t
-  //         )
-  //     
-    </Layout>
-  );
-  //     } else if (event.event === 'TournamentEnded') {
-  //       setActiveTournaments(prev =>
-  //         prev.map(t =>
-  //           t.id === event.data.tournamentId
-  //             ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 }
-  //             : t
-  //         )
-  //     
-    </Layout>
-  );
-  //     }
-  //   };
-  //   // listenForTournamentEvents(handleEvent);
-  //   return (
-    <Layout>
-      ) => {
-  //     // Cleanup event listeners (implement in listenForTournamentEvents)
-  //   };
-  // }, [aaWalletAddress]);
 
   const handleViewTournament = (tournament) => {
     setSelectedTournament(tournament);
@@ -231,9 +135,7 @@ const SponsorDashboard = () => {
         prev.map(t =>
           t.id === tournament.id ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 } : t
         )
-    
-    </Layout>
-  );
+    );
     } catch (error) {
       toast({
         title: "End Failed",
@@ -274,7 +176,6 @@ const SponsorDashboard = () => {
           t.id === tournament.id ? { ...t, status: 'completed' } : t
         )
     
-    </Layout>
   );
     } catch (error) {
       toast({

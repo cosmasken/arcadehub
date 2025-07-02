@@ -28,9 +28,8 @@ import DeveloperUpload from "./pages/DeveloperUpload";
 import Collections from "./pages/Collections";
 import CollectionDetail from "./pages/CollectionDetail";
 import DeveloperProfile from "./pages/DeveloperProfile";
-import HoneyClicker from "./pages/HoneyClicker";
 import NotFound from "./pages/NotFound";
-import SpaceInvaders from "./pages/SpaceInvaders";
+import HoneyClicker from './pages/HoneyClicker';
 import Admin from "./pages/Admin";
 import Sponsors from "./pages/Sponsors";
 import SponsorLogin from "./pages/SponsorLogin";
@@ -137,7 +136,6 @@ const App = () => {
                 <Route path="collections/:id" element={<CollectionDetail />} />
                 <Route path="developer-profile/:id" element={<DeveloperProfile />} />
                 <Route path="honey-clicker" element={<HoneyClicker />} />
-                <Route path="space-invaders" element={<SpaceInvaders />} />
                 <Route path="snake" element={<SnakeGame />} />
                 <Route path="tetris" element={<Tetris />} />
                 <Route path="sponsors" element={<Sponsors />} />

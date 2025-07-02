@@ -151,15 +151,20 @@ const App = () => {
     if (isConnected && aaWalletAddress && !isInitializing) {
       // Force check when wallet connects
       checkUserProfile(aaWalletAddress, true);
-    } else if (!isConnected) {
-      // Reset states when wallet disconnects
+    } else if (!isConnected && lastCheckedAddress !== null) {
+      // Only reset states if we had a previous connection
       setUserProfile(null);
       setShowOnboarding(false);
       setLastCheckedAddress(null);
-      // Navigate to home route when disconnecting
-      navigate('/');
+      
+      // Use a timeout to prevent navigation during render
+      const timer = setTimeout(() => {
+        navigate('/', { replace: true });
+      }, 0);
+      
+      return () => clearTimeout(timer);
     }
-  }, [isConnected, aaWalletAddress, isInitializing, checkUserProfile, navigate]);
+  }, [isConnected, aaWalletAddress, isInitializing, lastCheckedAddress, checkUserProfile, navigate]);
 
   // Development helper: expose function to force onboarding check
   useEffect(() => {

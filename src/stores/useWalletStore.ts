@@ -103,6 +103,8 @@ const useWalletStore = create<WalletStore>((set) => {
       try {
         set({ isLoading: true });
         await web3auth.logout();
+        
+        // Reset wallet state
         set({
           provider: null,
           aaProvider: null,
@@ -111,7 +113,44 @@ const useWalletStore = create<WalletStore>((set) => {
           isConnected: false,
           isLoading: false,
         });
+
+        // Clear any stored wallet data
+        localStorage.removeItem('walletconnect');
+        localStorage.removeItem('WALLETCONNECT_DEEPLINK_CHOICE');
+        
+        // Reset profile store
+        const profileStore = (await import('./useProfileStore')).default;
+        profileStore.setState({
+          username: '',
+          bio: '',
+          avatar: '',
+          role: 'gamer',
+          arcBalance: 0,
+          gamesPlayed: 0,
+          achievements: [],
+          assets: [],
+          history: [],
+          developerGames: [],
+          friends: [],
+          stats: {
+            gamesPlayed: 0,
+            achievements: 0,
+            totalScore: 0,
+            rank: '',
+          },
+          developerStats: {
+            totalGames: 0,
+            totalPlays: 0,
+            totalRevenue: 0,
+            avgRating: 0,
+          },
+        });
+        
+        // Clear any stored profile data
+        localStorage.removeItem('profile');
+        
       } catch (error) {
+        console.error('Error during disconnect:', error);
         set({ error: (error as Error).message, isLoading: false });
       }
     },

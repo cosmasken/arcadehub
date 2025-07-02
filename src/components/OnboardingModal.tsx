@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Loader2, CheckCircle, X, Upload, User as UserIcon,User, Gamepad2, Check, Trophy, Gift, Code } from 'lucide-react';
+import { Loader2, CheckCircle, X, Upload, User as UserIcon, User, Gamepad2, Check, Trophy, Gift, Code } from 'lucide-react';
 import { useToast } from '../components/ui/use-toast';
 import { User as SupabaseUser, UserRole as SupabaseUserRole } from '../types/supabase';
 import { supabase } from '../lib/supabase';
@@ -23,9 +23,9 @@ type SocialLinks = {
   [key: string]: string | undefined;
 };
 
-export interface UserData extends Omit<SupabaseUser, 
-  'id' | 'wallet_address' | 'created_at' | 'updated_at' | 
-  'onchain_id' | 'onchain_tx_hash' | 'onchain_status' | 
+export interface UserData extends Omit<SupabaseUser,
+  'id' | 'wallet_address' | 'created_at' | 'updated_at' |
+  'onchain_id' | 'onchain_tx_hash' | 'onchain_status' |
   'is_verified' | 'verification_data' | 'user_type'
 > {
   user_type: UserRole;
@@ -54,7 +54,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
   const { aaWalletAddress } = useWalletStore();
   const { uploadFile, error } = usePinata();
   const { onboardUser } = useProfileStore();
-  
+
 
   const checkUsernameExists = async (username: string): Promise<boolean> => {
     const { data, error } = await supabase
@@ -62,12 +62,12 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       .select('id')
       .eq('username', username)
       .single();
-    
+
     if (error && error.code !== 'PGRST116') {
       console.error('Error checking username:', error);
       return false;
     }
-    
+
     return !!data;
   };
 
@@ -137,6 +137,20 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     setStep('profile');
   };
 
+  // Reset fields when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep('userType');
+      setUserType('player');
+      setUsername('');
+      setBio('');
+      setUsernameStatus('idle');
+      setAvatarFile(null);
+      setIsSubmitting(false);
+      setIsUploading(false);
+    }
+  }, [isOpen]);
+
   const handleComplete = async () => {
     // Validate username
     if (!username.trim()) {
@@ -148,22 +162,19 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       return;
     }
 
-    // Check username availability
-    if (usernameStatus === 'taken') {
+    // Always check username availability before submit
+    setUsernameStatus('checking');
+    const exists = await checkUsernameExists(username.trim());
+    if (exists) {
+      setUsernameStatus('taken');
       toast({
         title: 'Username not available',
         description: 'Please choose a different username',
         variant: 'destructive',
       });
       return;
-    }
-
-    if (usernameStatus === 'checking') {
-      toast({
-        title: 'Please wait',
-        description: 'Checking username availability...',
-      });
-      return;
+    } else {
+      setUsernameStatus('available');
     }
 
     if (!aaWalletAddress) {
@@ -185,19 +196,19 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
       //   const fileExt = avatarFile.name.split('.').pop();
       //   const fileName = `${aaWalletAddress}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
       //   const filePath = `avatars/${fileName}`;
-        
+
       //   // Upload to Supabase Storage
       //   const { error: uploadError } = await supabase.storage
       //     .from('avatars')
       //     .upload(filePath, avatarFile);
-        
+
       //   if (uploadError) throw uploadError;
-        
+
       //   // Get public URL
       //   const { data: { publicUrl } } = supabase.storage
       //     .from('avatars')
       //     .getPublicUrl(filePath);
-          
+
       //   avatarUrl = publicUrl;
       // }
 
@@ -218,21 +229,28 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
 
       // Use the onboardUser function from useProfileStore
       const success = await onboardUser(aaWalletAddress, userData);
-      
       if (success) {
         // Call onComplete with the user data if needed by parent component
         onComplete(userData);
       } else {
         throw new Error('Failed to onboard user');
       }
-
-    } catch (error) {
-      console.error('Error creating profile:', error);
-      toast({
-        title: 'Error creating profile',
-        description: error instanceof Error ? error.message : 'Failed to create user profile',
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      // Handle duplicate username error from API
+      if (error?.code === '23505' || (error?.message && error.message.includes('duplicate key value'))) {
+        toast({
+          title: 'Username already exists',
+          description: 'Please choose a different username.',
+          variant: 'destructive',
+        });
+        setUsernameStatus('taken');
+      } else {
+        toast({
+          title: 'Error creating profile',
+          description: error instanceof Error ? error.message : 'Failed to create user profile',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSubmitting(false);
       setIsUploading(false);
@@ -273,7 +291,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
     if (!open) {
       // Only proceed if we're not in the middle of submission
       if (isSubmitting) return;
-      
+
       // If the form is complete and valid, submit it
       if (step === 'profile' && isFormValid()) {
         handleComplete();
@@ -315,11 +333,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
               <button
                 type="button"
                 onClick={() => setUserType('player')}
-                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${
-                  userType === 'player' 
-                    ? 'border-blue-500 bg-blue-500/10' 
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${userType === 'player'
+                    ? 'border-blue-500 bg-blue-500/10'
                     : 'border-white/10 hover:border-white/20'
-                }`}
+                  }`}
               >
                 <Gamepad2 className="h-8 w-8 mb-2 text-blue-400" />
                 <span className="font-medium text-white">Player</span>
@@ -329,11 +346,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
               <button
                 type="button"
                 onClick={() => setUserType('developer')}
-                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${
-                  userType === 'developer'
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${userType === 'developer'
                     ? 'border-purple-500 bg-purple-500/10'
                     : 'border-white/10 hover:border-white/20'
-                }`}
+                  }`}
               >
                 <Code className="h-8 w-8 mb-2 text-purple-400" />
                 <span className="font-medium text-white">Developer</span>
@@ -343,11 +359,10 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ isOpen, onComplete })
               <button
                 type="button"
                 onClick={() => setUserType('sponsor')}
-                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${
-                  userType === 'sponsor'
+                className={`flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-all ${userType === 'sponsor'
                     ? 'border-green-500 bg-green-500/10'
                     : 'border-white/10 hover:border-white/20'
-                }`}
+                  }`}
               >
                 <Gift className="h-8 w-8 mb-2 text-green-400" />
                 <span className="font-medium text-white">Sponsor</span>

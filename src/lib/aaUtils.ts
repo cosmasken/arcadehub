@@ -12,6 +12,10 @@ const API_KEY = import.meta.env.VITE_NEROCHAIN_API_KEY;
 // Cache variables to prevent redundant initialization
 let cachedClient: any = null;
 let cachedBuilder: any = null;
+
+// Per-wallet cache for AA client and builder
+const aaClientCache = new Map<string, any>();
+const aaBuilderCache = new Map<string, any>();
 let cachedWalletAddress: string | null = null;
 let tokenRequestCount = 0;
 
@@ -77,39 +81,49 @@ export const getSigner = async () => {
   return provider.getSigner();
 };
 
-// Initialize Account Abstraction Client with caching
+// Clear all AA caches (call on wallet disconnect)
+export const clearAACache = () => {
+  aaClientCache.clear();
+  aaBuilderCache.clear();
+  cachedWalletAddress = null;
+  if (API_OPTIMIZATION.debugLogs) console.log('Cleared all AA caches');
+};
+
+// Initialize Account Abstraction Client with per-wallet caching
 export const initAAClient = async (accountSigner: ethers.Signer) => {
   if (!accountSigner.provider) {
     throw new Error("Signer must be connected to a provider");
   }
-  if (cachedClient && API_OPTIMIZATION.enableCaching) {
-    console.log("Using cached AA client");
-    return cachedClient;
+  const signerAddress = await accountSigner.getAddress();
+  if (API_OPTIMIZATION.enableCaching && aaClientCache.has(signerAddress)) {
+    if (API_OPTIMIZATION.debugLogs) console.log("Using cached AA client for", signerAddress);
+    return aaClientCache.get(signerAddress);
   }
-  console.log("Initializing new AA client");
-  cachedClient = await Client.init(TESTNET_CONFIG.chain.rpcUrl, {
+  if (API_OPTIMIZATION.debugLogs) console.log("Initializing new AA client for", signerAddress);
+  const client = await Client.init(TESTNET_CONFIG.chain.rpcUrl, {
     overrideBundlerRpc: TESTNET_CONFIG.aaPlatform.bundlerRpc,
     entryPoint: TESTNET_CONFIG.contracts.entryPoint,
   });
-  return cachedClient;
+  aaClientCache.set(signerAddress, client);
+  return client;
 };
 
-// Initialize SimpleAccount Builder with caching
+// Initialize SimpleAccount Builder with per-wallet caching
 export const initAABuilder = async (accountSigner: ethers.Signer) => {
-  if (API_OPTIMIZATION.enableCaching) {
-    const signerAddress = await accountSigner.getAddress();
-    if (cachedBuilder && cachedWalletAddress === signerAddress) {
-      console.log("Using cached AA builder with updated API key");
-      const currentApiKey = API_KEY;
-      cachedBuilder.setPaymasterOptions({
-        apikey: currentApiKey,
-        rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
-        type: 0
-      });
-      return cachedBuilder;
-    }
+  const signerAddress = await accountSigner.getAddress();
+  if (API_OPTIMIZATION.enableCaching && aaBuilderCache.has(signerAddress)) {
+    if (API_OPTIMIZATION.debugLogs) console.log("Using cached AA builder for", signerAddress);
+    const builder = aaBuilderCache.get(signerAddress);
+    // Always update API key and paymaster options
+    const currentApiKey = API_KEY;
+    builder.setPaymasterOptions({
+      apikey: currentApiKey,
+      rpc: TESTNET_CONFIG.aaPlatform.paymasterRpc,
+      type: 0
+    });
+    return builder;
   }
-  console.log("Initializing new AA builder");
+  if (API_OPTIMIZATION.debugLogs) console.log("Initializing new AA builder for", signerAddress);
   const builder = await Presets.Builder.SimpleAccount.init(
     accountSigner,
     TESTNET_CONFIG.chain.rpcUrl,
@@ -132,22 +146,20 @@ export const initAABuilder = async (accountSigner: ethers.Signer) => {
   builder.setMaxFeePerGas(gasParams.maxFeePerGas);
   builder.setMaxPriorityFeePerGas(gasParams.maxPriorityFeePerGas);
   if (API_OPTIMIZATION.enableCaching) {
-    cachedBuilder = builder;
-    cachedWalletAddress = await accountSigner.getAddress();
+    aaBuilderCache.set(signerAddress, builder);
+    cachedWalletAddress = signerAddress;
   }
   return builder;
 };
 
-// Get the AA wallet address with caching
+// Get the AA wallet address with per-wallet caching
 export const getAAWalletAddress = async (accountSigner: ethers.Signer) => {
-  if (API_OPTIMIZATION.enableCaching) {
-    const signerAddress = await accountSigner.getAddress();
-    if (cachedWalletAddress === signerAddress && cachedBuilder) {
-      console.log("Using cached AA wallet address");
-      return cachedBuilder.getSender();
-    }
+  const signerAddress = await accountSigner.getAddress();
+  if (API_OPTIMIZATION.enableCaching && aaBuilderCache.has(signerAddress)) {
+    if (API_OPTIMIZATION.debugLogs) console.log("Using cached AA wallet address for", signerAddress);
+    return aaBuilderCache.get(signerAddress).getSender();
   }
-  console.log("Getting fresh AA wallet address");
+  if (API_OPTIMIZATION.debugLogs) console.log("Getting fresh AA wallet address for", signerAddress);
   const builder = await initAABuilder(accountSigner);
   return builder.getSender();
 };
@@ -1178,8 +1190,6 @@ export const submitGameAA = async (
     options
   );
 };
-
-
 
 // Apply for admin to AdminApplications
 export const applyForAdminAA = async (
@@ -2675,3 +2685,8 @@ export const setPointsToTokensRateAA = async (
     options
   );
 };
+
+// Dev helper to clear all AA caches from console
+if (typeof window !== 'undefined') {
+  (window as any).clearAACache = clearAACache;
+}

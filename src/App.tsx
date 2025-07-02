@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Outlet } from "react-router-dom";
 
 // Hooks & Stores
 import useWalletStore from "./stores/useWalletStore";
+import useProfileStore from "./stores/useProfileStore";
 import { supabase } from "./lib/supabase";
 
 // Types
@@ -43,85 +44,129 @@ import { error } from 'console';
 
 const queryClient = new QueryClient();
 
+// Extend Window interface for development helpers
+declare global {
+  interface Window {
+    forceOnboardingCheck?: () => void;
+    showOnboardingModal?: () => void;
+  }
+}
+
 const App = () => {
-  const { aaWalletAddress, initWeb3Auth } = useWalletStore();
+  const { aaWalletAddress, initWeb3Auth, isConnected } = useWalletStore();
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [userProfile, setUserProfile] = React.useState<User | null>(null);
+  const [lastCheckedAddress, setLastCheckedAddress] = React.useState<string | null>(null);
 
+  const initializeAuth = useCallback(async () => {
+    try {
+      await initWeb3Auth();
 
-const initializeAuth = async () => {
-  try {
-    await initWeb3Auth();
-   
-  } catch (error) {
-    console.error('Auth initialization error:', error);
-    throw error;
-  }
-};
-
-
-const checkUserProfile = async (walletAddress: string) => {
-  try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('wallet_address', walletAddress)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
+    } catch (error) {
+      console.error('Auth initialization error:', error);
       throw error;
     }
+  }, [initWeb3Auth]);
 
-    if (user) {
-      setUserProfile(user);
-      setShowOnboarding(false);
-    } else {
-      setShowOnboarding(true);
-    }
-  } catch (error) {
-    console.error('Profile check error:', error);
-    // Don't block the app if profile check fails
-  }
-};
-
-
-useEffect(() => {
-  let isMounted = true;
-
-  const init = async () => {
+  const checkUserProfile = useCallback(async (walletAddress: string, forceCheck = false) => {
     try {
-      // First initialize auth
-      await initializeAuth();
-      
-      // Only check profile if we have a wallet address
-      const { aaWalletAddress } = useWalletStore.getState();
-      if (aaWalletAddress) {
-        await checkUserProfile(aaWalletAddress);
+      // Skip if we already checked this address recently (unless forced)
+      if (!forceCheck && lastCheckedAddress === walletAddress) {
+        return;
+      }
+
+      console.log('Checking user profile for:', walletAddress);
+
+      const normalizedAddress = walletAddress.toLowerCase();
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('wallet_address', normalizedAddress)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      setLastCheckedAddress(walletAddress);
+
+      if (user) {
+        console.log('User profile found:', user);
+        setUserProfile(user);
+        setShowOnboarding(false);
+      } else {
+        console.log('No user profile found, showing onboarding');
+        setUserProfile(null);
+        setShowOnboarding(true);
       }
     } catch (error) {
-      console.error('Initialization error:', error);
-      // Handle auth error (but don't show for profile errors)
-      if (error instanceof Error && error.message.includes('auth')) {
+      console.error('Profile check error:', error);
+      // On error, still show onboarding to be safe
+      setShowOnboarding(true);
+    }
+  }, [lastCheckedAddress]);
+
+  // Initial setup effect
+  useEffect(() => {
+    let isMounted = true;
+
+    const init = async () => {
+      try {
+        await initializeAuth();
+      } catch (error) {
+        console.error('Initialization error:', error);
         toast({
           title: 'Connection Error',
           description: 'Failed to connect to wallet service',
           variant: 'destructive',
         });
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
       }
-    } finally {
-      if (isMounted) {
-        setIsInitializing(false);
-      }
+    };
+
+    init();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initializeAuth]);
+
+  // Profile check effect when wallet connects
+  useEffect(() => {
+    if (isConnected && aaWalletAddress && !isInitializing) {
+      // Force check when wallet connects
+      checkUserProfile(aaWalletAddress, true);
+    } else if (!isConnected) {
+      // Reset states when wallet disconnects
+      setUserProfile(null);
+      setShowOnboarding(false);
+      setLastCheckedAddress(null);
     }
-  };
+  }, [isConnected, aaWalletAddress, isInitializing, checkUserProfile]);
 
-  init();
+  // Development helper: expose function to force onboarding check
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.forceOnboardingCheck = () => {
+        if (aaWalletAddress) {
+          console.log('Forcing onboarding check for:', aaWalletAddress);
+          setLastCheckedAddress(null); // Reset to force check
+          checkUserProfile(aaWalletAddress, true);
+        } else {
+          console.log('No wallet address to check');
+        }
+      };
 
-  return () => {
-    isMounted = false;
-  };
-}, []);
+      window.showOnboardingModal = () => {
+        console.log('Forcing onboarding modal to show');
+        setShowOnboarding(true);
+      };
+    }
+  }, [aaWalletAddress, checkUserProfile]);
 
   return (
     <ErrorBoundary>
@@ -130,7 +175,7 @@ useEffect(() => {
           <div className="min-h-screen bg-background">
             <Toaster />
             <Sonner />
-            
+
             {isInitializing && (
               <LoadingModal
                 isOpen={true}
@@ -139,7 +184,7 @@ useEffect(() => {
                 transactionText="Setting up your wallet and secure Web3 connection..."
               />
             )}
-            
+
             <Routes>
               <Route path="/" element={<Layout userProfile={userProfile} />}>
                 <Route index element={<Index />} />
@@ -162,7 +207,7 @@ useEffect(() => {
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
-            
+
             <OnboardingModal
               isOpen={showOnboarding}
               onComplete={async (userData) => {
@@ -172,31 +217,35 @@ useEffect(() => {
                   }
 
                   const normalizedWalletAddress = aaWalletAddress.toLowerCase();
-                  
+
                   // Prepare user data for Supabase
                   const userProfileData = {
                     ...userData,
                     wallet_address: normalizedWalletAddress,
+                    created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                   };
-                  
+
                   // Remove any undefined values and the id field
                   Object.keys(userProfileData).forEach(key => {
                     if (userProfileData[key] === undefined || key === 'id') {
                       delete userProfileData[key];
                     }
                   });
-                  
+
+                  console.log('Creating/updating user profile:', userProfileData);
+
                   // First, check if user exists
                   const { data: existingUser } = await supabase
                     .from('users')
                     .select('*')
                     .eq('wallet_address', normalizedWalletAddress)
                     .single();
-                  
+
                   let user;
-                  
+
                   if (existingUser) {
+                    console.log('Updating existing user');
                     // Update existing user
                     const { data: updatedUser, error: updateError } = await supabase
                       .from('users')
@@ -204,36 +253,40 @@ useEffect(() => {
                       .eq('wallet_address', normalizedWalletAddress)
                       .select()
                       .single();
-                    
+
                     if (updateError) throw updateError;
                     user = updatedUser;
                   } else {
+                    console.log('Creating new user');
                     // Create new user
                     const { data: newUser, error: createError } = await supabase
                       .from('users')
                       .insert(userProfileData)
                       .select()
                       .single();
-                    
+
                     if (createError) throw createError;
                     user = newUser;
                   }
-                  
+
                   if (!user) {
                     throw new Error('No user data returned from database');
-                  }
-                  
+                  } console.log('Profile save successful:', user);
+
                   // Update the user profile in the app state
                   setUserProfile(user);
                   setShowOnboarding(false);
-                  
+                  setLastCheckedAddress(aaWalletAddress); // Update last checked
+
+                  // Also fetch the full profile through the profile store for consistency
+                  const profileStore = useProfileStore.getState();
+                  await profileStore.fetchProfile(aaWalletAddress);
+
                   toast({
-                    title: 'Profile updated',
-                    description: 'Your profile has been saved successfully.',
+                    title: 'Welcome to the arcade!',
+                    description: 'Your profile has been created successfully.',
                   });
-                  
-      
-                  
+
                 } catch (error) {
                   console.error('Error in onComplete:', error);
                   toast({
@@ -241,6 +294,7 @@ useEffect(() => {
                     description: error instanceof Error ? error.message : 'Failed to save profile',
                     variant: 'destructive',
                   });
+                  // Don't close onboarding on error
                 }
               }}
             />

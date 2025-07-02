@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet } from 'lucide-react';
 import { Input } from './ui/input';
+import { UserMenu } from './UserMenu';
 import { useWalletStore } from '../stores/useWalletStore';
 
 import type { User } from '../types/supabase';
@@ -95,7 +96,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               ))}
               
               {/* Connect Wallet Button */}
-              <button
+              {/* <button
                 onClick={() => useWalletStore.getState().connectWallet()}
                 className={`ml-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
                   isConnected
@@ -104,7 +105,10 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                 }`}
               >
                 {isConnected ? 'Connected' : 'Connect Wallet'}
-              </button>
+              </button> */}
+              <div className="flex items-center">
+                <UserMenu />
+              </div>
             </div>
           </div>
 
@@ -132,6 +136,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                 {category.name}
               </button>
             ))}
+
           </div>
         </div>
       </nav>
@@ -153,7 +158,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               <span className="text-xs mt-1">{link.label}</span>
             </Link>
           ))}
-          <button
+          {/* <button
             onClick={() => useWalletStore.getState().connectWallet()}
             className={`flex flex-col items-center justify-center py-3 px-4 ${
               isConnected ? 'text-green-400' : 'text-amber-400'
@@ -168,7 +173,8 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               </div>
             </div>
             <span className="text-xs mt-1">{isConnected ? 'Connected' : 'Connect'}</span>
-          </button>
+          </button> */}
+          <UserMenu />
         </div>
       </nav>
 

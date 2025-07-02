@@ -3,40 +3,54 @@ import { GameState, GameAction, GameContextType, Position, Direction } from './t
 import { GRID_SIZE, INITIAL_GAME_SPEED, DIRECTIONS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
 
 // Helper functions
-const getRandomPosition = (): Position => ({
+const getRandomPosition = (direction: Direction = 'RIGHT'): Position => ({
   x: Math.floor(Math.random() * GRID_SIZE),
   y: Math.floor(Math.random() * GRID_SIZE),
   dx: 0,
   dy: 0,
   targetX: 0,
   targetY: 0,
-  moving: false
+  moving: false,
+  direction
 });
 
 const getInitialState = (): GameState => {
   return {
+    // Game state
     snake: [{
-    x: 10,
-    y: 10,
-    dx: 0,
-    dy: 0,
-    targetX: 10,
-    targetY: 10,
-    moving: false
-  }],
+      x: 10,
+      y: 10,
+      dx: 0,
+      dy: 0,
+      targetX: 10,
+      targetY: 10,
+      moving: false,
+      direction: 'RIGHT'
+    }],
     food: getRandomPosition(),
     direction: DIRECTIONS.RIGHT,
     nextDirection: DIRECTIONS.RIGHT,
     gameOver: false,
     isPaused: false,
     isStarted: false,
+    
+    // UI state
+    isLoading: true, // Show splash screen by default
+    showMenu: true, // Show menu by default
+    menuType: 'start' as const, // Default to start menu
+    
+    // Scoring and progress
     score: 0,
     highScore: Number(localStorage.getItem('snake-highscore')) || 0,
     level: 1,
     linesCleared: 0,
+    
+    // Game economy
     coins: 0,
     inventory: {},
     achievements: [],
+    
+    // Settings
     settings: {
       gridSize: GRID_SIZE,
       cellSize: 20,
@@ -47,6 +61,7 @@ const getInitialState = (): GameState => {
       ghostPiece: false,
       wallCollision: true,
     },
+    
     // Tournament enhancements
     gameStartTime: 0,
     gameDuration: 0,
@@ -76,109 +91,59 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       const head = newSnake[0];
       const direction = state.nextDirection;
       
-      // If head is not currently moving, set up movement to next cell
-      if (!head.moving) {
-        // Calculate next position
-        let newX = head.x;
-        let newY = head.y;
-        
-        switch (direction) {
-          case 'UP': newY--; break;
-          case 'DOWN': newY++; break;
-          case 'LEFT': newX--; break;
-          case 'RIGHT': newX++; break;
-        }
-        
-        // Handle wall collision or wrap around
-        if (state.settings.wallCollision) {
-          if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) {
-            return { ...state, gameOver: true };
-          }
-        } else {
-          if (newX < 0) newX = GRID_SIZE - 1;
-          if (newX >= GRID_SIZE) newX = 0;
-          if (newY < 0) newY = GRID_SIZE - 1;
-          if (newY >= GRID_SIZE) newY = 0;
-        }
-        
-        // Check for self collision (only check current grid position, not sub-cell)
-        if (newSnake.some((segment, index) => 
-          index > 0 && segment.x === newX && segment.y === newY)) {
+      // Calculate next position
+      let newHeadX = head.x;
+      let newHeadY = head.y;
+      
+      // Update position based on direction
+      switch (direction) {
+        case 'UP': newHeadY--; break;
+        case 'DOWN': newHeadY++; break;
+        case 'LEFT': newHeadX--; break;
+        case 'RIGHT': newHeadX++; break;
+      }
+      
+      // Handle wall collision or wrap around
+      if (state.settings.wallCollision) {
+        if (newHeadX < 0 || newHeadX >= GRID_SIZE || newHeadY < 0 || newHeadY >= GRID_SIZE) {
           return { ...state, gameOver: true };
         }
-        
-        // Set up movement for the head
-        head.targetX = newX;
-        head.targetY = newY;
-        head.dx = 0;
-        head.dy = 0;
-        head.moving = true;
-        head.direction = direction;
+      } else {
+        // Wrap around if wall collision is off
+        if (newHeadX < 0) newHeadX = GRID_SIZE - 1;
+        if (newHeadX >= GRID_SIZE) newHeadX = 0;
+        if (newHeadY < 0) newHeadY = GRID_SIZE - 1;
+        if (newHeadY >= GRID_SIZE) newHeadY = 0;
       }
       
-      // Update movement for all segments
-      const moveSpeed = 0.1; // Adjust this value for faster/slower movement
-      let foodEaten = false;
-      
-      // Update head position
-      if (head.moving) {
-        // Calculate direction vector
-        const targetDx = head.x < head.targetX ? 1 : head.x > head.targetX ? -1 : 0;
-        const targetDy = head.y < head.targetY ? 1 : head.y > head.targetY ? -1 : 0;
-        
-        // Update sub-cell position
-        head.dx += targetDx * moveSpeed;
-        head.dy += targetDy * moveSpeed;
-        
-        // Check if reached target cell
-        if (Math.abs(head.dx) >= 1 || Math.abs(head.dy) >= 1) {
-          head.x = head.targetX;
-          head.y = head.targetY;
-          head.dx = 0;
-          head.dy = 0;
-          head.moving = false;
-          
-          // Check for food collision after moving to new cell
-          if (head.x === state.food.x && head.y === state.food.y) {
-            foodEaten = true;
-          }
-        } else if (head.x === state.food.x && head.y === state.food.y) {
-          // Also check for food during movement
-          foodEaten = true;
-        }
+      // Check for self collision (skip the head)
+      if (newSnake.some((segment, index) => index > 0 && segment.x === newHeadX && segment.y === newHeadY)) {
+        return { ...state, gameOver: true };
       }
       
-      // Update body segments to follow the head
+      // Check for food collision
+      const foodEaten = newHeadX === state.food.x && newHeadY === state.food.y;
+      
+      // Store previous positions for body segments
+      const prevPositions = newSnake.map(segment => ({
+        x: segment.x,
+        y: segment.y,
+        dx: segment.dx,
+        dy: segment.dy,
+        targetX: segment.targetX,
+        targetY: segment.targetY,
+        moving: segment.moving,
+        direction: segment.direction
+      }));
+      
+      // Move the head
+      head.x = newHeadX;
+      head.y = newHeadY;
+      head.direction = direction;
+      
+      // Update body segments to follow the head with a one-cell delay
       for (let i = 1; i < newSnake.length; i++) {
-        const current = newSnake[i];
-        const prev = newSnake[i - 1];
-        
-        // If previous segment is moving, start moving this segment
-        if (!current.moving && (prev.moving || prev.x !== current.x || prev.y !== current.y)) {
-          current.targetX = prev.x;
-          current.targetY = prev.y;
-          current.dx = 0;
-          current.dy = 0;
-          current.moving = true;
-        }
-        
-        // Update position if moving
-        if (current.moving) {
-          const targetDx = current.x < current.targetX ? 1 : current.x > current.targetX ? -1 : 0;
-          const targetDy = current.y < current.targetY ? 1 : current.y > current.targetY ? -1 : 0;
-          
-          current.dx += targetDx * moveSpeed;
-          current.dy += targetDy * moveSpeed;
-          
-          // Check if reached target cell
-          if (Math.abs(current.dx) >= 1 || Math.abs(current.dy) >= 1) {
-            current.x = current.targetX;
-            current.y = current.targetY;
-            current.dx = 0;
-            current.dy = 0;
-            current.moving = false;
-          }
-        }
+        newSnake[i] = { ...prevPositions[i - 1] };
       }
       
       // Handle food collection and growth
@@ -251,27 +216,103 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         return state;
       }
       
+      // Update direction immediately
       return {
         ...state,
-        nextDirection: action.direction,
+        direction: action.direction,
+        nextDirection: action.direction
+      };
+    
+    case 'START_GAME':
+      return {
+        ...state,
+        isLoading: false,
+        showMenu: false,
+        menuType: null,
+        isStarted: true,
+        gameOver: false,
+        isPaused: false,
+      };
+      
+    case 'PAUSE_GAME':
+      return {
+        ...state,
+        isPaused: action.isPaused,
+        showMenu: action.isPaused,
+        menuType: 'pause',
+      };
+      
+    case 'RESET_GAME':
+      return {
+        ...getInitialState(),
+        isLoading: false,
+        showMenu: true,
+        menuType: 'start',
+        highScore: state.highScore, // Preserve high score
+      };
+      
+    case 'RETURN_TO_MENU':
+      return {
+        ...getInitialState(),
+        isLoading: false,
+        showMenu: true,
+        menuType: 'start',
+        highScore: state.highScore, // Preserve high score
+      };
+      
+    case 'SPLASH_COMPLETE':
+      console.log('Reducer: Handling SPLASH_COMPLETE action');
+      // Only update if we're actually loading
+      if (!state.isLoading) {
+        console.log('Reducer: Not in loading state, ignoring SPLASH_COMPLETE');
+        return state;
+      }
+      return {
+        ...state,
+        isLoading: false,
+        showMenu: true,
+        menuType: 'start',
+        isPaused: false,
+      };
+      
+    case 'TOGGLE_MENU':
+      return {
+        ...state,
+        showMenu: action.show,
+        menuType: action.menuType || state.menuType,
+        isPaused: action.show,
       };
       
     case 'GAME_OVER':
       return {
         ...state,
         gameOver: true,
+        showMenu: true,
+        menuType: 'gameOver',
         isStarted: false,
         highScore: Math.max(state.score, state.highScore),
       };
       
     case 'PAUSE':
-      return { ...state, isPaused: !state.isPaused };
+      return { 
+        ...state, 
+        isPaused: !state.isPaused,
+        showMenu: !state.isPaused,
+        menuType: 'pause'
+      };
       
     case 'RESET':
       return getInitialState();
       
     case 'START':
-      return { ...state, isStarted: true, gameOver: false };
+      return { 
+        ...state, 
+        isStarted: true, 
+        gameOver: false,
+        showMenu: false,
+        menuType: null,
+        isPaused: false
+      };
       
     case 'INCREASE_SCORE':
       return { ...state, score: state.score + action.points };
@@ -365,7 +406,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const pauseGame = useCallback(() => {
-    dispatch({ type: 'PAUSE' });
+    dispatch({ type: 'PAUSE', isPaused: true });
   }, []);
 
   const resetGame = useCallback(() => {
@@ -377,7 +418,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const buyItem = useCallback((itemId: string) => {
-    dispatch({ type: 'BUY_ITEM', itemId });
+    const item = SHOP_ITEMS.find(item => item.id === itemId);
+    if (item) {
+      dispatch({ type: 'BUY_ITEM', itemId, cost: item.price });
+    }
   }, []);
 
   const claimAchievement = useCallback((achievementId: string) => {

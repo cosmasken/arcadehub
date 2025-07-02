@@ -2,9 +2,11 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useGame } from '../hooks/useGame';
 import { useGameState } from '../context/GameStateContext';
 import { GRID_SIZE } from '../constants';
+import GameMenu from './GameMenu';
+import SplashScreen from './SplashScreen';
 
 const GameBoard: React.FC = () => {
-  const { state, changeDirection } = useGame();
+  const { state, dispatch, changeDirection } = useGame();
   const { state: gameState } = useGameState();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -308,24 +310,92 @@ const GameBoard: React.FC = () => {
 
 
 
+  // Handle menu actions
+  const handleStart = useCallback(() => {
+    if (state.menuType === 'start') {
+      // Start a new game
+      dispatch({ type: 'START_GAME' });
+    } else if (state.menuType === 'pause') {
+      // Resume the game
+      dispatch({ type: 'PAUSE_GAME', isPaused: false });
+    }
+  }, [state.menuType, dispatch]);
+
+  const handleRestart = useCallback(() => {
+    // Reset the game
+    dispatch({ type: 'RESET_GAME' });
+  }, [dispatch]);
+
+  const handleSave = useCallback(() => {
+    // Save game state
+    // This would be implemented to save to local storage or backend
+    console.log('Game saved');
+  }, []);
+
+  const handleQuit = useCallback(() => {
+    // Return to main menu
+    dispatch({ type: 'RETURN_TO_MENU' });
+  }, [dispatch]);
+
+  // Handle splash screen completion
+  const handleSplashComplete = useCallback(() => {
+    console.log('Splash screen completed, dispatching SPLASH_COMPLETE');
+    try {
+      dispatch({ type: 'SPLASH_COMPLETE' });
+    } catch (error) {
+      console.error('Error in handleSplashComplete:', error);
+    }
+  }, [dispatch]);
+  
+  // Debug log when isLoading changes
+  useEffect(() => {
+    console.log('isLoading state changed:', state.isLoading);
+  }, [state.isLoading]);
+
+  // Initialize canvas after component mounts
+  useEffect(() => {
+    if (canvasRef.current && containerRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        // Set up canvas context here if needed
+        ctx.imageSmoothingEnabled = false;
+      }
+    }
+  }, []);
+
   return (
     <div ref={containerRef} className="w-full h-full flex items-center justify-center p-4 overflow-hidden bg-black">
-      <div className="relative w-full h-full flex items-center justify-center">
+      {/* Game Canvas */}
+      <div className="relative w-full h-full max-w-4xl max-h-[80vh] bg-gray-900 rounded-lg overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="border-2 border-cyan-400 rounded-lg shadow-lg"
-          style={{
-            boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            aspectRatio: '1 / 1',
-            backgroundColor: 'transparent'
-          }}
+          width={800}
+          height={600}
+          className="w-full h-full"
+          tabIndex={0}
         />
+        
+        {/* Splash Screen */}
+        {state.isLoading && (
+          <SplashScreen onComplete={handleSplashComplete} />
+        )}
+        
+        {/* Game Menu */}
+        {state.showMenu && state.menuType && (
+          <GameMenu 
+            type={state.menuType}
+            score={state.score}
+            highScore={state.highScore}
+            onStart={handleStart}
+            onRestart={handleRestart}
+            onSave={handleSave}
+            onQuit={handleQuit}
+          />
+        )}
       </div>
     </div>
   );
-
 };
 
 export default GameBoard;

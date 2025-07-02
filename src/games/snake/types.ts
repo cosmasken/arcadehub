@@ -8,30 +8,41 @@ export interface Position {
   targetX: number;     // Target grid x position
   targetY: number;     // Target grid y position
   moving: boolean;     // Whether the segment is currently moving
-  direction?: Direction; // Current movement direction (for head only)
+  direction: Direction; // Current movement direction
 }
 
 export interface GameState {
+  // Core game state
   snake: Position[];
   food: Position;
   direction: Direction;
   nextDirection: Direction;
   gameOver: boolean;
-  isPaused: boolean;
   isStarted: boolean;
+  isPaused: boolean;
+  
+  // Scoring and progress
   score: number;
   highScore: number;
   level: number;
   linesCleared: number;
+  foodEaten: number;
+  moveCount: number;
+  
+  // UI state
+  isLoading: boolean; // For splash screen
+  showMenu: boolean;  // For menu visibility
+  menuType: 'start' | 'pause' | 'gameOver' | null; // Menu type
+  
+  // Game economy
   coins: number;
   inventory: Record<string, number>;
   achievements: string[];
   settings: GameSettings;
+  
   // Tournament enhancements
   gameStartTime: number;
   gameDuration: number;
-  moveCount: number;
-  foodEaten: number;
   comboMultiplier: number;
   maxCombo: number;
   perfectMoves: number;
@@ -102,16 +113,24 @@ export type GameAction =
   | { type: 'CHANGE_DIRECTION'; direction: Direction }
   | { type: 'EAT_FOOD' }
   | { type: 'GAME_OVER' }
-  | { type: 'PAUSE' }
+  | { type: 'PAUSE'; isPaused: boolean }
   | { type: 'RESET' }
   | { type: 'START' }
   | { type: 'INCREASE_SCORE'; points: number }
-  | { type: 'BUY_ITEM'; itemId: string }
+  | { type: 'BUY_ITEM'; itemId: string; cost: number }
   | { type: 'UNLOCK_ACHIEVEMENT'; achievementId: string }
-  | { type: 'START_TOURNAMENT'; gameMode: 'classic' | 'timeAttack' | 'survival' | 'targetScore'; config?: TournamentConfig }
-  | { type: 'UPDATE_COMBO'; increment: boolean }
+  // Tournament enhancements
+  | { type: 'START_TOURNAMENT'; duration: number; mode: 'timeAttack' | 'survival' | 'targetScore' }
+  | { type: 'UPDATE_COMBO'; isPerfect: boolean }
   | { type: 'PERFECT_MOVE' }
-  | { type: 'TIME_TICK' };
+  | { type: 'TIME_TICK' }
+  // New actions for menu and UI
+  | { type: 'START_GAME' }
+  | { type: 'PAUSE_GAME'; isPaused: boolean }
+  | { type: 'RESET_GAME' }
+  | { type: 'RETURN_TO_MENU' }
+  | { type: 'SPLASH_COMPLETE' }
+  | { type: 'TOGGLE_MENU'; show: boolean; menuType?: 'start' | 'pause' | 'gameOver' };
 
 export interface ShopItem {
   id: string;

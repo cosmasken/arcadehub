@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet } from 'lucide-react';
+import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet, Menu } from 'lucide-react';
 import { Input } from './ui/input';
 import { UserMenu } from './UserMenu';
 import { useWalletStore } from '../stores/useWalletStore';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from './ui/sheet';
+import { Button } from './ui/button';
 
 import type { User } from '../types/supabase';
 
@@ -64,8 +66,8 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               </Link>
             </div>
 
-            {/* Search Bar */}
-            <div className="flex-1 max-w-2xl mx-4">
+            {/* Search Bar (Desktop) */}
+            <div className="flex-1 max-w-2xl mx-4 hidden md:block">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -76,7 +78,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               </div>
             </div>
 
-            {/* Navigation Links */}
+            {/* Desktop Navigation Links and User Menu */}
             <div className="hidden md:flex items-center space-x-4">
               {navLinks.map((link) => (
                 <Link
@@ -94,26 +96,88 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                   </div>
                 </Link>
               ))}
-              
-              {/* Connect Wallet Button */}
-              {/* <button
-                onClick={() => useWalletStore.getState().connectWallet()}
-                className={`ml-2 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
-                  isConnected
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/20'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 hover:shadow-lg hover:shadow-cyan-500/20'
-                }`}
-              >
-                {isConnected ? 'Connected' : 'Connect Wallet'}
-              </button> */}
               <div className="flex items-center">
                 <UserMenu />
               </div>
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden flex items-center">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[250px] sm:w-[300px] bg-gray-900 border-l border-gray-800 p-4">
+                  <div className="flex flex-col items-center space-y-6 mt-8">
+                    {/* Search Bar (Mobile) */}
+                    <div className="w-full relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search games..."
+                        className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Mobile Navigation Links */}
+                    <nav className="flex flex-col space-y-2 w-full">
+                      {navLinks.map((link) => (
+                        <SheetClose asChild key={link.to}>
+                          <Link
+                            to={link.to}
+                            className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${
+                              location.pathname === link.to
+                                ? 'bg-gray-800 text-white'
+                                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                            }`}
+                          >
+                            <link.icon className="h-5 w-5 mr-3" />
+                            {link.label}
+                          </Link>
+                        </SheetClose>
+                      ))}
+                    </nav>
+
+                    {/* Categories (Mobile) */}
+                    <div className="flex flex-wrap justify-center gap-2 w-full">
+                      {categories.map((category) => (
+                        <SheetClose asChild key={category.id}>
+                          <button
+                            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-full ${
+                              location.search.includes(`category=${category.id}`)
+                                ? 'bg-cyan-600 text-white'
+                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                            }`}
+                            onClick={() => {
+                              const searchParams = new URLSearchParams(location.search);
+                              if (category.id === 'all') {
+                                searchParams.delete('category');
+                              } else {
+                                searchParams.set('category', category.id);
+                              }
+                              window.location.search = searchParams.toString();
+                            }}
+                          >
+                            {category.name}
+                          </button>
+                        </SheetClose>
+                      ))}
+                    </div>
+
+                    {/* User Menu (Mobile) */}
+                    <div className="w-full flex justify-center">
+                      <UserMenu />
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
 
-          {/* Categories */}
-          <div className="flex items-center space-x-4 py-2 overflow-x-auto hide-scrollbar">
+          {/* Categories (Desktop) */}
+          <div className="hidden md:flex items-center space-x-4 py-2 overflow-x-auto hide-scrollbar">
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -136,7 +200,6 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                 {category.name}
               </button>
             ))}
-
           </div>
         </div>
       </nav>
@@ -158,22 +221,6 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               <span className="text-xs mt-1">{link.label}</span>
             </Link>
           ))}
-          {/* <button
-            onClick={() => useWalletStore.getState().connectWallet()}
-            className={`flex flex-col items-center justify-center py-3 px-4 ${
-              isConnected ? 'text-green-400' : 'text-amber-400'
-            }`}
-          >
-            <div className="relative">
-              <div className={`absolute -inset-1 rounded-full ${
-                isConnected ? 'bg-green-500/20' : 'bg-amber-500/20'
-              } blur-sm`}></div>
-              <div className="relative">
-                {isConnected ? '✅' : '🔌'}
-              </div>
-            </div>
-            <span className="text-xs mt-1">{isConnected ? 'Connected' : 'Connect'}</span>
-          </button> */}
           <UserMenu />
         </div>
       </nav>

@@ -9,9 +9,7 @@ import type { CustomChainConfig } from "@web3auth/base";
 import type { IProvider } from "@web3auth/base";
 import {  getAAWalletAddress } from '../lib/aaUtils';
 import useTokenStore from './useTokenStore';
-
-
-//custom chain is described as 
+ 
 const customChain :CustomChainConfig = {
       chainNamespace: CHAIN_NAMESPACES.EIP155,
       chainId: "0x2b1",
@@ -123,10 +121,8 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
         const address = await signer.getAddress();
   
         set({
-          provider: web3auth.provider,
-          aaProvider: provider,
-          aaSigner: signer,
-          aaWalletAddress: address,
+          provider:web3auth.provider,
+          aaWalletAddress: address.toLowerCase(),
           isConnected: true,
           isLoading: false,
         });
@@ -144,13 +140,19 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
       const aaSigner = await aaProvider.getSigner();
       const address = await aaSigner.getAddress();
   
-      set({ 
-        provider: web3authProvider,
-        aaProvider,
-        aaSigner,
-        aaWalletAddress: address,
+      // set({ 
+      //   provider: web3authProvider,
+      //   aaProvider,
+      //   aaSigner,
+      //   aaWalletAddress: address,
+      //   isConnected: true,
+      //   isInitialized: true,
+      //   isLoading: false,
+      // });
+      set({
+        provider:web3authProvider,
         isConnected: true,
-        isInitialized: true,
+        aaWalletAddress: address.toLowerCase(),
         isLoading: false,
       });
   

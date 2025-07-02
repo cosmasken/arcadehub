@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Outlet } from "react-router-dom";
 
@@ -39,6 +39,7 @@ import SponsorAnalytics from "./components/SponsorAnalytics";
 import SnakeGame from "./games/snake/SnakeGame";
 import Tetris from "./games/tetris";
 import WalletPage from "./pages/WalletPage";
+import { error } from 'console';
 
 const queryClient = new QueryClient();
 
@@ -49,65 +50,138 @@ const App = () => {
   const [userProfile, setUserProfile] = React.useState<User | null>(null);
 
   // Initialize Web3Auth and check user status when the app loads or wallet connects
-  React.useEffect(() => {
-    let isMounted = true;
+  // React.useEffect(() => {
+  //   let isMounted = true;
     
-    const initAndCheckUser = async () => {
-      try {
-        // Initialize Web3Auth
-        await initializeWeb3Auth();
+  //   const initAndCheckUser = async () => {
+  //     try {
+  //       // Initialize Web3Auth
+  //       await initializeWeb3Auth();
         
-        if (!isMounted) return;
+  //       if (!isMounted) return;
         
-        // If wallet is connected, check user profile
-        if (aaWalletAddress) {
-          try {
-            const { data: user, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('wallet_address', aaWalletAddress)
-              .single();
+  //       // If wallet is connected, check user profile
+  //       if (aaWalletAddress) {
+  //         try {
+  //           const { data: user, error } = await supabase
+  //             .from('users')
+  //             .select('*')
+  //             .eq('wallet_address', aaWalletAddress)
+  //             .single();
 
-            if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-              throw error;
-            }
+  //           if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+  //             throw error;
+  //           }
 
-            if (user) {
-              setUserProfile(user);
-              setShowOnboarding(false);
-            } else {
-              setShowOnboarding(true);
-            }
-          } catch (error) {
-            console.error('Error fetching user profile:', error);
-            toast({
-              title: 'Error',
-              description: 'Failed to load user profile',
-              variant: 'destructive',
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Failed to initialize Web3Auth:', error);
+  //           if (user) {
+  //             setUserProfile(user);
+  //             setShowOnboarding(false);
+  //           } else {
+  //             setShowOnboarding(true);
+  //           }
+  //         } catch (error) {
+  //           console.error('Error fetching user profile:', error);
+  //           toast({
+  //             title: 'Error',
+  //             description: 'Failed to load user profile',
+  //             variant: 'destructive',
+  //           });
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.error('Failed to initialize Web3Auth:', error);
+  //       toast({
+  //         title: 'Connection Error',
+  //         description: 'Failed to connect to wallet. Please try again.',
+  //         variant: 'destructive',
+  //       });
+  //     } finally {
+  //       if (isMounted) {
+  //         setIsInitializing(false);
+  //       }
+  //     }
+  //   };
+
+  //   initAndCheckUser();
+
+  //   // Clean up on unmount
+  //   return () => {
+  //     isMounted = false;
+  //   };
+  // }, [initializeWeb3Auth, aaWalletAddress]);
+ // 1. Separate auth initialization
+const initializeAuth = async () => {
+  try {
+    await initializeWeb3Auth();
+   
+  } catch (error) {
+    console.error('Auth initialization error:', error);
+    throw error;
+  }
+};
+
+// 2. Separate profile check
+const checkUserProfile = async (walletAddress: string) => {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('wallet_address', walletAddress)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    if (user) {
+      setUserProfile(user);
+      setShowOnboarding(false);
+    } else {
+      setShowOnboarding(true);
+    }
+  } catch (error) {
+    console.error('Profile check error:', error);
+    // Don't block the app if profile check fails
+  }
+};
+
+// 3. Main initialization effect
+useEffect(() => {
+  let isMounted = true;
+
+  const init = async () => {
+    try {
+      // First initialize auth
+      await initializeAuth();
+      
+      // Only check profile if we have a wallet address
+      const { aaWalletAddress } = useWalletStore.getState();
+      if (aaWalletAddress) {
+        await checkUserProfile(aaWalletAddress);
+      }
+    } catch (error) {
+      console.error('Initialization error:', error);
+      // Handle auth error (but don't show for profile errors)
+      if (error instanceof Error && error.message.includes('auth')) {
         toast({
           title: 'Connection Error',
-          description: 'Failed to connect to wallet. Please try again.',
+          description: 'Failed to connect to wallet service',
           variant: 'destructive',
         });
-      } finally {
-        if (isMounted) {
-          setIsInitializing(false);
-        }
       }
-    };
+    } finally {
+      if (isMounted) {
+        setIsInitializing(false);
+      }
+    }
+  };
 
-    initAndCheckUser();
+  init();
 
-    // Clean up on unmount
-    return () => {
-      isMounted = false;
-    };
-  }, [initializeWeb3Auth, aaWalletAddress]);
+  return () => {
+    isMounted = false;
+  };
+}, []);
 
   return (
     <ErrorBoundary>
@@ -136,8 +210,8 @@ const App = () => {
                 <Route path="collections/:id" element={<CollectionDetail />} />
                 <Route path="developer-profile/:id" element={<DeveloperProfile />} />
                 <Route path="honey-clicker" element={<HoneyClicker />} />
-                <Route path="snake" element={<SnakeGame />} />
-                <Route path="tetris" element={<Tetris />} />
+                <Route path="games/snake" element={<SnakeGame />} />
+                <Route path="games/tetris" element={<Tetris />} />
                 <Route path="sponsors" element={<Sponsors />} />
                 <Route path="sponsor-login" element={<SponsorLogin />} />
                 <Route path="sponsor-dashboard" element={<SponsorDashboard />} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Outlet } from "react-router-dom";
+import { Routes, Route, Outlet, useNavigate } from "react-router-dom";
 
 // Hooks & Stores
 import useWalletStore from "./stores/useWalletStore";
@@ -144,6 +144,8 @@ const App = () => {
     };
   }, [initializeAuth]);
 
+  const navigate = useNavigate();
+
   // Profile check effect when wallet connects
   useEffect(() => {
     if (isConnected && aaWalletAddress && !isInitializing) {
@@ -154,8 +156,10 @@ const App = () => {
       setUserProfile(null);
       setShowOnboarding(false);
       setLastCheckedAddress(null);
+      // Navigate to home route when disconnecting
+      navigate('/');
     }
-  }, [isConnected, aaWalletAddress, isInitializing, checkUserProfile]);
+  }, [isConnected, aaWalletAddress, isInitializing, checkUserProfile, navigate]);
 
   // Development helper: expose function to force onboarding check
   useEffect(() => {

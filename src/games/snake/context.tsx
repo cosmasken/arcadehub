@@ -9,16 +9,6 @@ const getRandomPosition = (): Position => ({
 });
 
 const getInitialState = (): GameState => {
-  const savedState = localStorage.getItem('snake-save');
-  
-  if (savedState) {
-    try {
-      return JSON.parse(savedState);
-    } catch (e) {
-      console.error('Failed to parse saved game state', e);
-    }
-  }
-
   return {
     snake: [{ x: 10, y: 10 }],
     food: getRandomPosition(),
@@ -203,13 +193,26 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // Game loop
   useEffect(() => {
+    // Clear any existing game loop
+    if (gameLoopRef.current) {
+      clearInterval(gameLoopRef.current);
+      gameLoopRef.current = undefined;
+    }
+
     if (!state.isStarted || state.gameOver || state.isPaused) return;
     
     const gameLoop = setInterval(() => {
       dispatch({ type: 'MOVE' });
     }, state.settings.gameSpeed);
+
+    gameLoopRef.current = gameLoop;
     
-    return () => clearInterval(gameLoop);
+    return () => {
+      if (gameLoopRef.current) {
+        clearInterval(gameLoopRef.current);
+        gameLoopRef.current = undefined;
+      }
+    };
   }, [state.isStarted, state.gameOver, state.isPaused, state.settings.gameSpeed]);
   
   // Save game state when it changes
@@ -217,6 +220,9 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Only save if the game has started and not game over
     if (state.isStarted && !state.gameOver) {
       localStorage.setItem('snake-save', JSON.stringify(state));
+    } else if (!state.isStarted && !state.gameOver) {
+      // Clear saved state when game is not started and not game over
+      localStorage.removeItem('snake-save');
     }
   }, [state]); // Using state as a dependency since we're using multiple properties
   

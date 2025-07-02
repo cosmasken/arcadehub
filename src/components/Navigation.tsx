@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet, Menu } from 'lucide-react';
 import { Input } from './ui/input';
 import { UserMenu } from './UserMenu';
-import useWalletStore  from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from './ui/sheet';
 import { Button } from './ui/button';
 
@@ -19,31 +19,40 @@ interface NavigationProps {
   userProfile?: User | null;
 }
 
+const getNavLinks = (userProfile: User | null | undefined, isConnected: boolean): NavLink[] => {
+  const baseLinks: NavLink[] = [
+    { to: '/', icon: Home, label: 'Home', exact: true },
+    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard', exact: false },
+  ];
+  if (isConnected) {
+    baseLinks.push({ to: '/wallet', icon: Wallet, label: 'Wallet', exact: false });
+  }
+  if (!userProfile) return baseLinks;
+
+  // Always show profile for logged-in users
+  baseLinks.push({ to: '/profile', icon: UserIcon, label: 'Profile', exact: false });
+
+  switch (userProfile.user_type) {
+    case 'developer':
+      baseLinks.push({ to: '/developer', icon: Gamepad2, label: 'Developer', exact: false });
+      break;
+    case 'sponsor':
+      baseLinks.push({ to: '/sponsor/dashboard', icon: Gift, label: 'Sponsor', exact: false });
+      baseLinks.push({ to: '/sponsor/create-tournament', icon: Trophy, label: 'Create Tournament', exact: false });
+      break;
+    case 'admin':
+      baseLinks.push({ to: '/admin', icon: Settings, label: 'Admin', exact: false });
+      break;
+    // Add more user types as needed
+  }
+  return baseLinks;
+};
+
 const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
   const location = useLocation();
   const { isConnected } = useWalletStore();
 
-  const navLinks: NavLink[] = [
-    { to: '/', icon: Home, label: 'Home', exact: true },
-    { to: '/leaderboard', icon: Trophy, label: 'Leaderboard', exact: false },
-  ];
-
-  // Add Wallet link if user is connected
-  if (isConnected) {
-    navLinks.push({ to: '/wallet', icon: Wallet, label: 'Wallet', exact: false });
-  }
-
-  if (userProfile) {
-    navLinks.push({ to: '/profile', icon: UserIcon, label: 'Profile', exact: false });
-    if (userProfile.user_type === 'developer') {
-      navLinks.push({ to: '/developer', icon: Gamepad2, label: 'Developer', exact: false });
-    } else if (userProfile.user_type === 'sponsor') {
-      navLinks.push({ to: '/sponsor/dashboard', icon: Gift, label: 'Sponsor', exact: false });
-      navLinks.push({ to: '/sponsor/create-tournament', icon: Trophy, label: 'Create Tournament', exact: false });
-    } else if (userProfile.user_type === 'admin') {
-      navLinks.push({ to: '/admin', icon: Settings, label: 'Admin', exact: false });
-    }
-  }
+  const navLinks = getNavLinks(userProfile, isConnected);
 
   const categories = [
     { id: 'all', name: 'All Games' },
@@ -84,11 +93,10 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                 <Link
                   key={link.to}
                   to={link.to}
-                  className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    location.pathname === link.to
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${location.pathname === link.to
                       ? 'bg-gray-800 text-white'
                       : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center">
                     <link.icon className="h-5 w-5 mr-2" />
@@ -127,11 +135,10 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                         <SheetClose asChild key={link.to}>
                           <Link
                             to={link.to}
-                            className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${
-                              location.pathname === link.to
+                            className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${location.pathname === link.to
                                 ? 'bg-gray-800 text-white'
                                 : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                            }`}
+                              }`}
                           >
                             <link.icon className="h-5 w-5 mr-3" />
                             {link.label}
@@ -145,11 +152,10 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                       {categories.map((category) => (
                         <SheetClose asChild key={category.id}>
                           <button
-                            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-full ${
-                              location.search.includes(`category=${category.id}`)
+                            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-full ${location.search.includes(`category=${category.id}`)
                                 ? 'bg-cyan-600 text-white'
                                 : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                            }`}
+                              }`}
                             onClick={() => {
                               const searchParams = new URLSearchParams(location.search);
                               if (category.id === 'all') {
@@ -181,11 +187,10 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
             {categories.map((category) => (
               <button
                 key={category.id}
-                className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-full ${
-                  location.search.includes(`category=${category.id}`)
+                className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-full ${location.search.includes(`category=${category.id}`)
                     ? 'bg-cyan-600 text-white'
                     : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                }`}
+                  }`}
                 onClick={() => {
                   // Handle category filter
                   const searchParams = new URLSearchParams(location.search);
@@ -211,11 +216,10 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
             <Link
               key={link.to}
               to={link.to}
-              className={`flex flex-col items-center justify-center py-3 px-4 ${
-                location.pathname === link.to
+              className={`flex flex-col items-center justify-center py-3 px-4 ${location.pathname === link.to
                   ? 'text-cyan-400'
                   : 'text-gray-400 hover:text-white'
-              }`}
+                }`}
             >
               <link.icon className="h-6 w-6" />
               <span className="text-xs mt-1">{link.label}</span>

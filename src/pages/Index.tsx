@@ -121,22 +121,22 @@ const Index = () => {
 
   const filteredGames = useMemo(() => {
     let result = [...allGames];
-    
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(game => 
-        game.title.toLowerCase().includes(query) || 
+      result = result.filter(game =>
+        game.title.toLowerCase().includes(query) ||
         game.description.toLowerCase().includes(query)
       );
     }
-    
+
     // Filter by category
     const category = searchParams.get('category');
     if (category && category !== 'all') {
       result = result.filter(game => game.category === category);
     }
-    
+
     // Filter by status
     const status = searchParams.get('status') as GameStatus | null;
     if (status) {
@@ -145,14 +145,14 @@ const Index = () => {
       // By default, only show live games
       result = result.filter(game => game.status === 'live');
     }
-    
+
     return result;
   }, [allGames, searchQuery, searchParams]);
-  
+
   const sortedGames = useMemo(() => {
     const games = [...filteredGames];
-    
-    switch(sortBy) {
+
+    switch (sortBy) {
       case 'popularity':
         return [...games].sort((a, b) => b.players - a.players);
       case 'rating':
@@ -164,7 +164,7 @@ const Index = () => {
           return isNaN(prizeA) || isNaN(prizeB) ? 0 : prizeB - prizeA;
         });
       case 'newest':
-        return [...games].sort((a, b) => 
+        return [...games].sort((a, b) =>
           new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
         );
       default:
@@ -197,10 +197,10 @@ const Index = () => {
   };
 
   const hasActiveFilters = useMemo(() => {
-    return searchQuery || 
-           searchParams.get('category') || 
-           searchParams.get('status') ||
-           sortBy !== 'popularity';
+    return searchQuery ||
+      searchParams.get('category') ||
+      searchParams.get('status') ||
+      sortBy !== 'popularity';
   }, [searchQuery, searchParams, sortBy]);
 
   const clearFilters = () => {
@@ -211,231 +211,203 @@ const Index = () => {
 
   return (
     <Layout>
-      
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
-      <Navigation />
-      <WelcomeModal />
-      <HowToPlay />
-      <Breadcrumbs />
-      
-      <main className="container mx-auto px-4 py-8">
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div className="relative flex-1 max-w-2xl">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-300" />
-              <Input
-                type="text"
-                placeholder="Search games..."
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="pl-10 w-full bg-gray-800 border-purple-700 text-white placeholder-purple-400 focus:ring-2 focus:ring-purple-500"
-              />
-              {searchQuery && (
+
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
+        <Navigation />
+        <WelcomeModal />
+        <HowToPlay />
+        <Breadcrumbs />
+
+        {/* <div className="container mx-auto px-4 pt-6 pb-2 flex flex-wrap gap-4 justify-center">
+          <button
+            onClick={() => navigate('/tournaments')}
+            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-green-400 to-emerald-300 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 hover:scale-105"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="text-xl">🏆</span>
+              <span>Tournaments</span>
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+          <button
+            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-cyan-300 to-blue-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="text-xl">💰</span>
+              <span>Rewards</span>
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-yellow-300 to-amber-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/30 hover:scale-105"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              <span className="text-xl">📈</span>
+              <span>Leaderboards</span>
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+        </div> */}
+
+        <main className="container mx-auto px-4 py-8">
+          {/* Search and Filters */}
+          <div className="mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-300" />
+                <Input
+                  type="text"
+                  placeholder="Search games..."
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="pl-10 w-full bg-gray-800 border-purple-700 text-white placeholder-purple-400 focus:ring-2 focus:ring-purple-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-4 py-2 rounded-md border border-purple-700 bg-gray-800 text-purple-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="popularity">Sort by: Most Popular</option>
+                <option value="rating">Sort by: Highest Rated</option>
+                <option value="prize">Sort by: Highest Prize</option>
+                <option value="newest">Sort by: Newest</option>
+              </select>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleCategoryFilter('all')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${!searchParams.get('category')
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
+                  }`}
+              >
+                All Games
+              </button>
+
+              {categories.map((category) => (
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  key={category}
+                  onClick={() => handleCategoryFilter(category)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${searchParams.get('category') === category
+                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
+                    : 'bg-gray-800 text-red-200 hover:bg-gray-700 hover:text-white border border-red-700/50 hover:border-red-500'
+                    }`}
                 >
-                  <X className="h-5 w-5" />
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </button>
+              ))}
+
+              <div className="ml-2 flex items-center gap-2">
+                <span className="text-sm font-medium text-purple-200">Status:</span>
+                <button
+                  onClick={() => handleStatusFilter('all')}
+                  className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${!searchParams.get('status')
+                    ? 'bg-purple-600 text-white font-medium shadow-lg shadow-purple-500/30'
+                    : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
+                    }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => handleStatusFilter('live')}
+                  className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${searchParams.get('status') === 'live'
+                    ? 'bg-green-500 text-black font-medium shadow-lg shadow-green-500/30'
+                    : 'bg-gray-800 text-green-300 hover:bg-gray-700 hover:text-white border border-green-700/50 hover:border-green-500'
+                    }`}
+                >
+                  Live
+                </button>
+                <button
+                  onClick={() => handleStatusFilter('upcoming')}
+                  className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${searchParams.get('status') === 'upcoming'
+                    ? 'bg-yellow-500 text-black font-medium shadow-lg shadow-yellow-500/30'
+                    : 'bg-gray-800 text-yellow-300 hover:bg-gray-700 hover:text-white border border-yellow-700/50 hover:border-yellow-500'
+                    }`}
+                >
+                  Coming Soon
+                </button>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="ml-auto flex items-center text-sm text-purple-300 hover:text-white bg-gray-800/50 hover:bg-gray-800 px-3 py-1.5 rounded-full border border-purple-700/50 hover:border-purple-500 transition-all duration-200"
+                >
+                  <X size={16} className="mr-1" />
+                  Clear all filters
                 </button>
               )}
             </div>
-            
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 rounded-md border border-purple-700 bg-gray-800 text-purple-200 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="popularity">Sort by: Most Popular</option>
-              <option value="rating">Sort by: Highest Rated</option>
-              <option value="prize">Sort by: Highest Prize</option>
-              <option value="newest">Sort by: Newest</option>
-            </select>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => handleCategoryFilter('all')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                !searchParams.get('category')
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                  : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
-              }`}
-            >
-              All Games
-            </button>
-            
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryFilter(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  searchParams.get('category') === category
-                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/30'
-                    : 'bg-gray-800 text-red-200 hover:bg-gray-700 hover:text-white border border-red-700/50 hover:border-red-500'
-                }`}
-              >
-                {category.charAt(0).toUpperCase() + category.slice(1)}
-              </button>
-            ))}
-            
-            <div className="ml-2 flex items-center gap-2">
-              <span className="text-sm font-medium text-purple-200">Status:</span>
-              <button
-                onClick={() => handleStatusFilter('all')}
-                className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
-                  !searchParams.get('status')
-                    ? 'bg-purple-600 text-white font-medium shadow-lg shadow-purple-500/30'
-                    : 'bg-gray-800 text-purple-200 hover:bg-gray-700 hover:text-white border border-purple-700/50 hover:border-purple-500'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => handleStatusFilter('live')}
-                className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
-                  searchParams.get('status') === 'live'
-                    ? 'bg-green-500 text-black font-medium shadow-lg shadow-green-500/30'
-                    : 'bg-gray-800 text-green-300 hover:bg-gray-700 hover:text-white border border-green-700/50 hover:border-green-500'
-                }`}
-              >
-                Live
-              </button>
-              <button
-                onClick={() => handleStatusFilter('upcoming')}
-                className={`px-3 py-1 text-sm rounded-full transition-all duration-200 ${
-                  searchParams.get('status') === 'upcoming'
-                    ? 'bg-yellow-500 text-black font-medium shadow-lg shadow-yellow-500/30'
-                    : 'bg-gray-800 text-yellow-300 hover:bg-gray-700 hover:text-white border border-yellow-700/50 hover:border-yellow-500'
-                }`}
-              >
-                Coming Soon
-              </button>
+          {/* Stats Banner */}
+          <div className="bg-gradient-to-r from-purple-900/80 to-blue-900/80 border-b-2 border-purple-500/30 mb-8 shadow-lg">
+            <div className="container mx-auto px-6 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {stats.map((stat, index) => (
+                  <div key={index} className="flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm rounded-lg border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300">
+                    <div className="relative">
+                      <div className="absolute -inset-1 bg-purple-500/20 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
+                      {/* {stat.icon} */}
+                    </div>
+                    <div>
+                      <p className="text-sm text-purple-200 font-mono">{stat.title}</p>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-white bg-clip-text text-transparent">{stat.value}</p>
+                      <p className="text-xs text-gray-500">{stat.change}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="ml-auto flex items-center text-sm text-purple-300 hover:text-white bg-gray-800/50 hover:bg-gray-800 px-3 py-1.5 rounded-full border border-purple-700/50 hover:border-purple-500 transition-all duration-200"
-              >
-                <X size={16} className="mr-1" />
-                Clear all filters
-              </button>
-            )}
           </div>
-        </div>
 
-        {/* Stats Banner */}
-        <div className="bg-gradient-to-r from-purple-900/80 to-blue-900/80 border-b-2 border-purple-500/30 mb-8 shadow-lg">
-          <div className="container mx-auto px-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {stats.map((stat, index) => (
-                <div key={index} className="flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm rounded-lg border border-purple-500/20 hover:border-purple-400/40 transition-all duration-300">
-                  <div className="relative">
-                    <div className="absolute -inset-1 bg-purple-500/20 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-200"></div>
-                    {/* {stat.icon} */}
-                  </div>
-                  <div>
-                    <p className="text-sm text-purple-200 font-mono">{stat.title}</p>
-                    <p className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-white bg-clip-text text-transparent">{stat.value}</p>
-                    <p className="text-xs text-gray-500">{stat.change}</p>
-                  </div>
+          {/* Games Grid */}
+          {sortedGames.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {sortedGames.map((game) => (
+                <div
+                  key={game.id}
+                  className="transform transition-all duration-300 hover:scale-105 hover:z-10"
+                  style={{
+                    perspective: '1000px',
+                    transformStyle: 'preserve-3d',
+                  }}
+                >
+                  <GameCard game={game} />
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Games Grid */}
-        {sortedGames.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {sortedGames.map((game) => (
-              <div 
-                key={game.id}
-                className="transform transition-all duration-300 hover:scale-105 hover:z-10"
-                style={{
-                  perspective: '1000px',
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                <GameCard game={game} />
+          ) : (
+            <div className="col-span-full text-center py-16 bg-gray-900/50 rounded-xl border-2 border-dashed border-purple-900/50">
+              <div className="inline-block p-4 bg-gray-800/80 rounded-full mb-4">
+                <Search className="h-8 w-8 text-purple-400" />
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="col-span-full text-center py-16 bg-gray-900/50 rounded-xl border-2 border-dashed border-purple-900/50">
-            <div className="inline-block p-4 bg-gray-800/80 rounded-full mb-4">
-              <Search className="h-8 w-8 text-purple-400" />
+              <h3 className="text-xl font-bold text-purple-100 mb-2">No Games Found</h3>
+              <p className="text-purple-300 mb-4 max-w-md mx-auto">We couldn't find any games matching your search criteria.</p>
+              {hasActiveFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-medium hover:from-purple-500 hover:to-blue-500 transition-all duration-300 shadow-lg hover:shadow-purple-500/30"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
-            <h3 className="text-xl font-bold text-purple-100 mb-2">No Games Found</h3>
-            <p className="text-purple-300 mb-4 max-w-md mx-auto">We couldn't find any games matching your search criteria.</p>
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-medium hover:from-purple-500 hover:to-blue-500 transition-all duration-300 shadow-lg hover:shadow-purple-500/30"
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* CTA Section */}
-        <Card className="relative mt-16 p-8 md:p-12 bg-gradient-to-r from-purple-900/30 via-black/50 to-blue-900/30 border-2 border-purple-500/20 rounded-xl overflow-hidden text-center">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 overflow-hidden opacity-30">
-            <div className="absolute -top-20 -left-20 w-40 h-40 bg-purple-500 rounded-full filter blur-3xl opacity-40"></div>
-            <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-blue-500 rounded-full filter blur-3xl opacity-40"></div>
-          </div>
-          
-          <div className="relative z-10">
-            <h3 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-blue-300 mb-4 tracking-tight">
-              READY TO DOMINATE?
-            </h3>
-            <p className="text-purple-200 text-lg mb-8 max-w-2xl mx-auto leading-relaxed">
-              Join thousands of players competing for glory, rewards, and eternal fame in the ultimate gaming arena.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <button 
-                onClick={() => navigate('/tournaments')}
-                className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-green-400 to-emerald-300 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 hover:scale-105"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <span className="text-xl">🏆</span>
-                  <span>Tournaments</span>
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </button>
-              
-              <button 
-                className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-cyan-300 to-blue-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <span className="text-xl">💰</span>
-                  <span>Rewards</span>
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </button>
-              
-              <button
-                onClick={() => navigate('/leaderboard')}
-                className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-yellow-300 to-amber-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/30 hover:scale-105"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-2">
-                  <span className="text-xl">📈</span>
-                  <span>Leaderboards</span>
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </button>
-            </div>
-            
-            <p className="mt-6 text-sm text-purple-400/80">
-              New tournaments starting daily • No entry fees • Play to earn
-            </p>
-          </div>
-        </Card>
-      </main>
-    </div>
+          )}
+        </main>
+      </div>
 
     </Layout>
   );

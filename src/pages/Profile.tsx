@@ -1,5 +1,5 @@
 import Layout from "../components/Layout";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Navigation from '../components/Navigation';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -22,6 +22,9 @@ import {
 import useProfileStore from '../stores/useProfileStore';
 import useWalletStore from '../stores/useWalletStore';
 import { Link } from "react-router-dom";
+import { WalletBalanceCard } from '../components/wallet/WalletBalanceCard';
+import { supabase } from '../lib/supabase';
+import { ERC20Balance } from '../stores/useWalletRewardsStore';
 
 const Profile = () => {
   const {
@@ -40,6 +43,8 @@ const Profile = () => {
   } = useProfileStore();
 
   const { aaWalletAddress, isConnected } = useWalletStore();
+  const [erc20Balances, setErc20Balances] = useState<Record<string, ERC20Balance> | null>(null);
+  const [balancesLoading, setBalancesLoading] = useState(false);
 
   // Fetch profile when component mounts or wallet address changes
   useEffect(() => {
@@ -48,6 +53,34 @@ const Profile = () => {
       fetchProfile(aaWalletAddress);
     }
   }, [isConnected, aaWalletAddress, fetchProfile]);
+
+  // Fetch ERC20 balances from Supabase for the connected wallet
+  const fetchErc20Balances = useCallback(async () => {
+    if (!aaWalletAddress) return;
+    setBalancesLoading(true);
+    const { data, error } = await supabase
+      .from('wallet_balances')
+      .select('token_symbol, balance, token_address, decimals')
+      .eq('user_id', aaWalletAddress);
+    if (!error && data) {
+      const balances: Record<string, ERC20Balance> = {};
+      data.forEach((row: any) => {
+        balances[row.token_symbol] = {
+          balance: row.balance,
+          address: row.token_address,
+          decimals: row.decimals || 18
+        };
+      });
+      setErc20Balances(balances);
+    }
+    setBalancesLoading(false);
+  }, [aaWalletAddress]);
+
+  useEffect(() => {
+    if (isConnected && aaWalletAddress) {
+      fetchErc20Balances();
+    }
+  }, [isConnected, aaWalletAddress, fetchErc20Balances]);
 
   // Fallback UI while loading
   if (loading) {
@@ -141,6 +174,9 @@ const Profile = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Stats Column */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Wallet Balances Card */}
+            <WalletBalanceCard balances={erc20Balances} isLoading={balancesLoading} />
+
             {/* Quick Stats - Different based on role */}
             <Card className="bg-black border-cyan-400 border-2 p-6">
               <h2 className="text-xl font-bold text-cyan-400 mb-4">

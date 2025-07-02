@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { WalletSummary, WalletBalance, PendingReward, WalletTransaction } from '../types/supabase';
 import useWalletStore from './useWalletStore';
+import { getAllERC20Balances } from '../lib/ethUtils';
+import { CONFIG } from '../config';
+
+export interface ERC20Balance {
+  balance: string;
+  address: string;
+  decimals: number;
+}
 
 interface WalletRewardsStore {
   // State
@@ -17,6 +25,7 @@ interface WalletRewardsStore {
   claimReward: (rewardId: string) => Promise<{ success: boolean; error?: string }>;
   refreshData: () => Promise<void>;
   clearError: () => void;
+  fetchAndSyncERC20Balances: (provider: unknown, userAddress: string) => Promise<Record<string, ERC20Balance> | null>;
 }
 
 export const useWalletRewardsStore = create<WalletRewardsStore>((set, get) => ({
@@ -217,6 +226,27 @@ export const useWalletRewardsStore = create<WalletRewardsStore>((set, get) => ({
       return { success: false, error: errorMessage };
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  // Fetch all ERC20 token balances for a user and update Supabase
+  fetchAndSyncERC20Balances: async (provider: unknown, userAddress: string) => {
+    try {
+      const balances = await getAllERC20Balances(provider, userAddress, CONFIG.erc20);
+      for (const symbol of Object.keys(balances)) {
+        const { balance, address, decimals } = balances[symbol] as ERC20Balance;
+        await supabase.from('wallet_balances').upsert({
+          user_id: userAddress,
+          token_symbol: symbol,
+          token_address: address,
+          balance,
+          decimals
+        }, { onConflict: 'user_id,token_address' });
+      }
+      return balances;
+    } catch (err) {
+      console.error('Error syncing ERC20 balances:', err);
+      return null;
     }
   },
 

@@ -1,18 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Skeleton } from '../ui/skeleton';
-import { WalletBalance } from '../../types/supabase';
 import { formatCurrency } from '../../lib/utils/format';
+import { ERC20Balance } from '../../stores/useWalletRewardsStore';
 
 interface WalletBalanceCardProps {
-  balance: WalletBalance | null;
+  balances: Record<string, ERC20Balance> | null;
   isLoading: boolean;
 }
 
-export function WalletBalanceCard({ balance, isLoading }: WalletBalanceCardProps) {
+export function WalletBalanceCard({ balances, isLoading }: WalletBalanceCardProps) {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Wallet Balance</CardTitle>
+        <CardTitle>Wallet Balances</CardTitle>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -20,15 +20,18 @@ export function WalletBalanceCard({ balance, isLoading }: WalletBalanceCardProps
             <Skeleton className="h-8 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
           </div>
-        ) : (
+        ) : balances ? (
           <div className="space-y-2">
-            <div className="text-3xl font-bold">
-              {formatCurrency(balance?.total_balance || '0')} NERO
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {formatCurrency(balance?.available_balance || '0')} available • {formatCurrency(balance?.locked_balance || '0')} locked
-            </div>
+            {Object.entries(balances).map(([symbol, { balance, address }]) => (
+              <div key={symbol} className="flex items-center justify-between border-b border-gray-700 py-1">
+                <span className="font-bold text-cyan-400">{symbol}</span>
+                <span className="text-yellow-400 font-mono">{formatCurrency(balance)} {symbol}</span>
+                {/* <span className="text-xs text-gray-500">{address.slice(0, 6)}...{address.slice(-4)}</span> */}
+              </div>
+            ))}
           </div>
+        ) : (
+          <div className="text-gray-400">No balances found.</div>
         )}
       </CardContent>
     </Card>

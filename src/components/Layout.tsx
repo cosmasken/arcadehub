@@ -12,7 +12,7 @@ const Layout: React.FC<LayoutProps> = ({ children, userProfile }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
       <Navigation userProfile={userProfile} />
-      <main className="container mx-auto px-4 py-12 md:py-6">
+      <main className="container mx-auto">
         {children || <Outlet context={{ userProfile }} />}
       </main>
     </div>

@@ -23,6 +23,8 @@ const getNavLinks = (userProfile: User | null | undefined, isConnected: boolean)
   const baseLinks: NavLink[] = [
     { to: '/', icon: Home, label: 'Home', exact: true },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard', exact: false },
+    { to: '/tournaments', icon: Trophy, label: 'Tournaments', exact: false },
+
   ];
   if (isConnected) {
     baseLinks.push({ to: '/wallet', icon: Wallet, label: 'Wallet', exact: false });
@@ -54,14 +56,6 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
 
   const navLinks = getNavLinks(userProfile, isConnected);
 
-  const categories = [
-    { id: 'all', name: 'All Games' },
-    { id: 'action', name: 'Action' },
-    { id: 'puzzle', name: 'Puzzle' },
-    { id: 'arcade', name: 'Arcade' },
-    { id: 'strategy', name: 'Strategy' },
-  ];
-
   return (
     <>
       {/* Top Navigation Bar */}
@@ -71,7 +65,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-                RetroArcade
+                ArcadeHUb
               </Link>
             </div>
 
@@ -94,8 +88,8 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                   key={link.to}
                   to={link.to}
                   className={`px-3 py-2 text-sm font-medium rounded-md ${location.pathname === link.to
-                      ? 'bg-gray-800 text-white'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    ? 'bg-gray-800 text-white'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                     }`}
                 >
                   <div className="flex items-center">
@@ -136,8 +130,8 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                           <Link
                             to={link.to}
                             className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${location.pathname === link.to
-                                ? 'bg-gray-800 text-white'
-                                : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                              ? 'bg-gray-800 text-white'
+                              : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                               }`}
                           >
                             <link.icon className="h-5 w-5 mr-3" />
@@ -147,30 +141,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
                       ))}
                     </nav>
 
-                    {/* Categories (Mobile) */}
-                    <div className="flex flex-wrap justify-center gap-2 w-full">
-                      {categories.map((category) => (
-                        <SheetClose asChild key={category.id}>
-                          <button
-                            className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-full ${location.search.includes(`category=${category.id}`)
-                                ? 'bg-cyan-600 text-white'
-                                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                              }`}
-                            onClick={() => {
-                              const searchParams = new URLSearchParams(location.search);
-                              if (category.id === 'all') {
-                                searchParams.delete('category');
-                              } else {
-                                searchParams.set('category', category.id);
-                              }
-                              window.location.search = searchParams.toString();
-                            }}
-                          >
-                            {category.name}
-                          </button>
-                        </SheetClose>
-                      ))}
-                    </div>
+
 
                     {/* User Menu (Mobile) */}
                     <div className="w-full flex justify-center">
@@ -182,30 +153,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
             </div>
           </div>
 
-          {/* Categories (Desktop) */}
-          <div className="hidden md:flex items-center space-x-4 py-2 overflow-x-auto hide-scrollbar">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                className={`px-3 py-1 text-sm font-medium whitespace-nowrap rounded-full ${location.search.includes(`category=${category.id}`)
-                    ? 'bg-cyan-600 text-white'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                onClick={() => {
-                  // Handle category filter
-                  const searchParams = new URLSearchParams(location.search);
-                  if (category.id === 'all') {
-                    searchParams.delete('category');
-                  } else {
-                    searchParams.set('category', category.id);
-                  }
-                  window.location.search = searchParams.toString();
-                }}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
+
         </div>
       </nav>
 
@@ -217,8 +165,8 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               key={link.to}
               to={link.to}
               className={`flex flex-col items-center justify-center py-3 px-4 ${location.pathname === link.to
-                  ? 'text-cyan-400'
-                  : 'text-gray-400 hover:text-white'
+                ? 'text-cyan-400'
+                : 'text-gray-400 hover:text-white'
                 }`}
             >
               <link.icon className="h-6 w-6" />

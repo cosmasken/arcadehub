@@ -6,6 +6,8 @@ import { PendingRewards } from '../components/wallet/PendingRewards';
 import { TransactionHistory } from '../components/wallet/TransactionHistory';
 import { useToast } from '../components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+import useWalletStore from '../stores/useWalletStore';
+import { ethers } from 'ethers';
 
 export default function WalletPage() {
   const navigate = useNavigate();
@@ -14,14 +16,40 @@ export default function WalletPage() {
     isLoading,
     error,
     fetchWalletSummary,
-    getTransactionHistory
+    getTransactionHistory,
+    fetchAndSyncERC20Balances
   } = useWalletRewardsStore();
   const { toast } = useToast();
+  const { aaWalletAddress, isConnected } = useWalletStore();
 
-  // Fetch initial data
+  // Add type for window.ethereum
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getEthereum = (): any => (window as any).ethereum;
+
+  // Fetch initial data and trigger ERC20 sync
   useEffect(() => {
     fetchWalletSummary();
-  }, [fetchWalletSummary]);
+    // Only sync if wallet is connected and ethers is available
+    if (isConnected && aaWalletAddress && getEthereum()) {
+      const provider = new ethers.BrowserProvider(getEthereum());
+      fetchAndSyncERC20Balances(provider, aaWalletAddress)
+        .then((balances) => {
+          if (balances) {
+            toast({
+              title: 'Token Balances Synced',
+              description: 'Your ERC20 token balances have been updated.',
+            });
+          }
+        })
+        .catch((err) => {
+          toast({
+            title: 'Token Sync Error',
+            description: err?.message || 'Failed to sync token balances',
+            variant: 'destructive',
+          });
+        });
+    }
+  }, [fetchWalletSummary, fetchAndSyncERC20Balances, isConnected, aaWalletAddress, toast]);
 
   // Show error toast if there's an error
   useEffect(() => {

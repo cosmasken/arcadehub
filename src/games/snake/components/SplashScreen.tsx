@@ -13,7 +13,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
     let animationFrameId: number;
-    const TOTAL_DURATION = 8000; // 3 seconds total
+    const TOTAL_DURATION = 3000; // 3 seconds total
     let startTime: number;
     
     const animate = (timestamp: number) => {

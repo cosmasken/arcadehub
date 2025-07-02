@@ -381,18 +381,21 @@ const GameBoard: React.FC = () => {
           <SplashScreen onComplete={handleSplashComplete} />
         )}
         
-        {/* Game Menu */}
-        {state.showMenu && state.menuType && (
-          <GameMenu 
-            type={state.menuType}
-            score={state.score}
-            highScore={state.highScore}
-            onStart={handleStart}
-            onRestart={handleRestart}
-            onSave={handleSave}
-            onQuit={handleQuit}
-          />
-        )}
+        {/* Game Menu - Always render but control visibility with state */}
+        <div className={`absolute inset-0 transition-opacity duration-300 ${state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          {state.menuType && (
+            <GameMenu 
+              type={state.menuType}
+              score={state.score}
+              highScore={state.highScore}
+              level={state.level}
+              onStart={handleStart}
+              onRestart={handleRestart}
+              onSave={handleSave}
+              onQuit={handleQuit}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

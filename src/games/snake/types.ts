@@ -33,9 +33,7 @@ export interface GameState {
   isLoading: boolean; // For splash screen
   showMenu: boolean;  // For menu visibility
   menuType: 'start' | 'pause' | 'gameOver' | null; // Menu type
-  showTooltip: boolean; // For tooltip visibility
-  tooltipMessage: string; // Current tooltip message
-  tooltipDuration: number; // Duration in ms
+  // Removed tooltip related fields
   
   // Game economy
   coins: number;
@@ -133,8 +131,7 @@ export type GameAction =
   | { type: 'RESET_GAME' }
   | { type: 'RETURN_TO_MENU' }
   | { type: 'SPLASH_COMPLETE' }
-  | { type: 'SHOW_TOOLTIP'; message: string; duration?: number }
-  | { type: 'HIDE_TOOLTIP' }
+  // Removed tooltip related actions
   | { type: 'TOGGLE_MENU'; show: boolean; menuType?: 'start' | 'pause' | 'gameOver' };
 
 export interface ShopItem {

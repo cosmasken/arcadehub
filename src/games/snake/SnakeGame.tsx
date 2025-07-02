@@ -172,34 +172,17 @@ const GameUI: React.FC = () => {
             </div>
           </div>
 
-          {/* Main Game Area */}
+          {/* Main Game Area - Let GameBoard handle all menu states */}
           <div className="lg:col-span-6 xl:col-span-8 h-full">
-            <div className="bg-black/30 rounded-lg shadow-lg overflow-hidden h-full flex items-center justify-center border border-cyan-400/20 relative transition-all duration-300"
-              style={{ filter: gameState.ui.shopOpen || gameState.ui.settingsOpen ? 'blur(2px)' : 'none' }}>
-              {!gameState.ui.isInitialized ? (
+            <div 
+              className="bg-black/30 rounded-lg shadow-lg overflow-hidden h-full flex items-center justify-center border border-cyan-400/20"
+              style={{ filter: gameState.ui.shopOpen || gameState.ui.settingsOpen ? 'blur(2px)' : 'none' }}
+            >
+              {!gameState.ui.isInitialized && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
                   <div className="animate-pulse text-cyan-400">Loading...</div>
                 </div>
-              ) : !state.isStarted ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10 transition-all duration-300">
-                  <div className="text-center p-6 bg-gray-900/90 rounded-lg border border-cyan-400/30 shadow-xl transform transition-all duration-300 hover:scale-105">
-                    <h2 className="text-2xl font-bold text-cyan-400 mb-4">SNAKE GAME</h2>
-                    <p className="text-gray-300 mb-6">Use {gameState.settings.useWASD ? 'WASD' : 'arrow keys'} to move. Eat the food to grow!</p>
-                    <button
-                      onClick={() => { handleStartGame(); playSound('click'); }}
-                      className="px-6 py-2 bg-gradient-to-r from-green-500 to-cyan-500 text-white font-bold rounded-lg hover:opacity-90 transition-all duration-200 transform hover:scale-105"
-                    >
-                      {state.gameOver ? 'PLAY AGAIN' : 'START GAME'}
-                    </button>
-                    {state.highScore > 0 && (
-                      <p className="mt-4 text-sm text-gray-400">High Score: {state.highScore}</p>
-                    )}
-                    <div className="mt-4 text-xs text-gray-500">
-                      <p>Press S for Shop | Press A for Achievements | Press Esc for Settings</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              )}
               {gameState.ui.showLoginPrompt && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20 transition-all duration-300">
                   <div className="bg-gray-900/90 p-8 rounded-lg border border-cyan-400/30 max-w-sm w-full mx-4 transform transition-all duration-300 scale-100 animate-in">

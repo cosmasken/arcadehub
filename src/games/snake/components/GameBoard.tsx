@@ -313,35 +313,43 @@ const GameBoard: React.FC = () => {
   // Handle splash screen completion
   const handleSplashComplete = useCallback(() => {
     dispatch({ type: 'SPLASH_COMPLETE' });
-    // Show initial tooltip after splash
-    setTimeout(() => {
-      dispatch({ 
-        type: 'SHOW_TOOLTIP',
-        message: 'Use arrow keys or WASD to control the snake',
-        duration: 4000
-      });
-    }, 1000);
-  }, [dispatch]);
-
-  // Handle tooltip completion
-  const handleTooltipComplete = useCallback(() => {
-    dispatch({ type: 'HIDE_TOOLTIP' });
+    // Show start menu after splash
+    dispatch({ 
+      type: 'TOGGLE_MENU', 
+      show: true, 
+      menuType: 'start' 
+    });
+    // Make sure game is paused when menu is shown
+    dispatch({ type: 'PAUSE_GAME', isPaused: true });
   }, [dispatch]);
 
   // Handle menu actions
   const handleStart = useCallback(() => {
     if (state.menuType === 'start') {
-      // Start a new game
+      // Start a new game - reset everything first
+      dispatch({ type: 'RESET_GAME' });
+      // Then start the game
       dispatch({ type: 'START_GAME' });
+      // Make sure menu is hidden
+      dispatch({ type: 'TOGGLE_MENU', show: false });
     } else if (state.menuType === 'pause') {
-      // Resume the game
+      // Just resume the game - the PAUSE_GAME action will handle the rest
       dispatch({ type: 'PAUSE_GAME', isPaused: false });
+    } else if (state.menuType === 'gameOver') {
+      // For game over, we want to reset and start a new game
+      dispatch({ type: 'RESET_GAME' });
+      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'TOGGLE_MENU', show: false });
     }
   }, [state.menuType, dispatch]);
 
   const handleRestart = useCallback(() => {
-    // Reset the game
+    // Reset the game completely
     dispatch({ type: 'RESET_GAME' });
+    // Start a new game immediately
+    dispatch({ type: 'START_GAME' });
+    // Hide menu after restart
+    dispatch({ type: 'TOGGLE_MENU', show: false });
   }, [dispatch]);
 
   const handleSave = useCallback(() => {
@@ -351,9 +359,20 @@ const GameBoard: React.FC = () => {
   }, []);
 
   const handleQuit = useCallback(() => {
-    // Return to main menu
-    dispatch({ type: 'RETURN_TO_MENU' });
-  }, [dispatch]);
+    if (state.menuType === 'pause') {
+      // If quitting from pause, return to main menu
+      dispatch({ type: 'RETURN_TO_MENU' });
+      // Show start menu
+      dispatch({ 
+        type: 'TOGGLE_MENU', 
+        show: true, 
+        menuType: 'start' 
+      });
+    } else {
+      // If already in main menu, just close the menu
+      dispatch({ type: 'TOGGLE_MENU', show: false });
+    }
+  }, [state.menuType, dispatch]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-gray-900 p-4">
@@ -361,49 +380,40 @@ const GameBoard: React.FC = () => {
         ref={containerRef}
         className="relative w-full h-full max-w-4xl max-h-[90vh] flex items-center justify-center"
       >
+        {/* Game Canvas */}
         <canvas
           ref={canvasRef}
           className="bg-gray-800 rounded-lg shadow-lg"
           style={{
             width: `${dimensions.width}px`,
             height: `${dimensions.height}px`,
+            display: state.isStarted && !state.gameOver ? 'block' : 'none'
           }}
         />
         
-        {/* Splash Screen */}
+        {/* Splash Screen - Shows during initial load */}
         {state.isLoading && (
           <SplashScreen 
-            type="splash"
             message="Loading..."
             onComplete={handleSplashComplete} 
           />
         )}
         
-        {/* Tooltip - Only show when menu is not open and not showing login prompt */}
-        {state.showTooltip && !state.showMenu && !gameState.ui.showLoginPrompt && (
-          <SplashScreen
-            type="tooltip"
-            message={state.tooltipMessage}
-            duration={state.tooltipDuration}
-            onComplete={handleTooltipComplete}
-          />
-        )}
-        
-        {/* Game Menu - Only show if not showing login prompt */}
-        {!gameState.ui.showLoginPrompt && (
-          <div className={`absolute inset-0 transition-opacity duration-300 ${state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            {state.menuType && (
-              <GameMenu 
-                type={state.menuType}
-                score={state.score}
-                highScore={state.highScore}
-                level={state.level}
-                onStart={handleStart}
-                onRestart={handleRestart}
-                onSave={handleSave}
-                onQuit={handleQuit}
-              />
-            )}
+        {/* Game Menu - Shows when game is not started or is paused/over */}
+        {!state.isLoading && !gameState.ui.showLoginPrompt && (
+          <div className={`absolute inset-0 transition-opacity duration-300 ${
+            !state.isStarted || state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}>
+            <GameMenu 
+              type={state.gameOver ? 'gameOver' : state.isPaused ? 'pause' : 'start'}
+              score={state.score}
+              highScore={state.highScore}
+              level={state.level}
+              onStart={handleStart}
+              onRestart={handleRestart}
+              onSave={handleSave}
+              onQuit={handleQuit}
+            />
           </div>
         )}
       </div>

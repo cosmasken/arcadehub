@@ -36,7 +36,16 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       // Handle wall collision or wrap around
       if (state.settings.wallCollision) {
         if (newHeadX < 0 || newHeadX >= GRID_SIZE || newHeadY < 0 || newHeadY >= GRID_SIZE) {
-          return { ...state, gameOver: true };
+          // Game over - show menu
+          return {
+            ...state,
+            gameOver: true,
+            isStarted: false,
+            isPaused: true,
+            showMenu: true,
+            menuType: 'gameOver',
+            highScore: Math.max(state.score, state.highScore)
+          };
         }
       } else {
         // Wrap around if wall collision is off
@@ -206,29 +215,23 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
       
     case 'TOGGLE_MENU':
-      return {
-        ...state,
+      return { 
+        ...state, 
         showMenu: action.show,
         menuType: action.menuType || state.menuType,
-        isPaused: action.show,
+        // Pause the game when showing menu, unless it's the game over menu
+        isPaused: action.show && action.menuType !== 'gameOver' ? true : state.isPaused
       };
       
     case 'GAME_OVER':
       return {
         ...state,
         gameOver: true,
+        isStarted: false,
+        isPaused: true,
         showMenu: true,
         menuType: 'gameOver',
-        isStarted: false,
-        highScore: Math.max(state.score, state.highScore),
-      };
-      
-    case 'PAUSE':
-      return { 
-        ...state, 
-        isPaused: !state.isPaused,
-        showMenu: !state.isPaused,
-        menuType: 'pause'
+        highScore: Math.max(state.score, state.highScore)
       };
       
     case 'RESET':
@@ -269,31 +272,15 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       const achievement = ACHIEVEMENTS.find(a => a.id === action.achievementId);
       if (!achievement) return state;
       
-      // Show tooltip when achievement is unlocked
-      const tooltipMessage = `Achievement Unlocked: ${achievement.name}! +${achievement.reward} coins`;
+      // Achievement unlocked
+      console.log(`Achievement Unlocked: ${achievement.name}! +${achievement.reward} coins`);
       
       return {
         ...state,
         achievements: [...state.achievements, action.achievementId],
         coins: state.coins + achievement.reward,
-        showTooltip: true,
-        tooltipMessage,
       };
     }
-    
-    case 'SHOW_TOOLTIP':
-      return {
-        ...state,
-        showTooltip: true,
-        tooltipMessage: action.message,
-        tooltipDuration: action.duration || 3000,
-      };
-      
-    case 'HIDE_TOOLTIP':
-      return {
-        ...state,
-        showTooltip: false,
-      };
     
     default:
       return state;

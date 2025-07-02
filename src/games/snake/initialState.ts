@@ -36,9 +36,7 @@ export const getInitialState = (): GameState => {
     isLoading: true, // Show splash screen by default
     showMenu: true, // Show menu by default
     menuType: 'start' as const, // Default to start menu
-    showTooltip: false, // Hide tooltip by default
-    tooltipMessage: '', // Empty tooltip message
-    tooltipDuration: 3000, // Default tooltip duration
+    // Removed tooltip related state
     
     // Scoring and progress
     score: 0,

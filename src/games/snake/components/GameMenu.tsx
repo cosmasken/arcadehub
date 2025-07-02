@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameState } from '../types';
 
 interface GameMenuProps {
@@ -22,93 +23,130 @@ const GameMenu: React.FC<GameMenuProps> = ({
   onSave,
   onQuit,
 }) => {
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const navigate = useNavigate();
   if (!type) return null;
 
   const title = type === 'start' ? 'SNAKE' : 
                 type === 'pause' ? 'PAUSED' : 'GAME OVER';
 
-  // Determine which buttons to show based on menu type
-  const getButtons = () => {
-    switch (type) {
-      case 'start':
-        return (
-          <>
-            <button
-              onClick={onStart}
-              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded text-sm font-medium transition-colors mb-2"
-            >
-              Start Game
-            </button>
-            <button
-              onClick={onQuit}
-              className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded text-sm font-medium transition-colors"
-            >
-              Quit
-            </button>
-          </>
-        );
-      case 'pause':
-        return (
-          <>
-            <button
-              onClick={onStart}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded text-sm font-medium transition-colors mb-2"
-            >
-              Resume
-            </button>
-            <button
-              onClick={onRestart}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded text-sm font-medium transition-colors mb-2"
-            >
-              Restart
-            </button>
-            <button
-              onClick={onQuit}
-              className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded text-sm font-medium transition-colors"
-            >
-              Quit to Menu
-            </button>
-          </>
-        );
-      case 'gameOver':
-        return (
-          <>
-            <button
-              onClick={onRestart}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded text-sm font-medium transition-colors mb-2"
-            >
-              Play Again
-            </button>
-            <button
-              onClick={onQuit}
-              className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded text-sm font-medium transition-colors"
-            >
-              Main Menu
-            </button>
-          </>
-        );
-      default:
-        return null;
+  // Handle exit to home
+  const handleExit = () => {
+    navigate('/'); // Navigate to home page
+  };
+
+  // Get the appropriate action button based on menu type
+  const getActionButton = () => {
+    if (type === 'start') {
+      return (
+        <button
+          onClick={onStart}
+          className="w-full bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
+        >
+          Start Game
+        </button>
+      );
+    } else if (type === 'pause') {
+      return (
+        <button
+          onClick={onStart}
+          className="w-full bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
+        >
+          Continue Playing
+        </button>
+      );
+    } else { // gameOver
+      return (
+        <button
+          onClick={onRestart}
+          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
+        >
+          Play Again
+        </button>
+      );
     }
   };
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center z-50">
-      <div className="bg-gray-900 bg-opacity-90 p-4 rounded-lg shadow-xl border border-cyan-400 w-64">
-        <h2 className="text-xl font-bold text-center mb-3 text-cyan-400 uppercase tracking-wider">
+    <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+      <div className="bg-gray-900/95 p-8 rounded-xl border border-cyan-400/20 shadow-2xl w-full max-w-sm transform transition-all duration-300 hover:shadow-cyan-500/20">
+        <h2 className="text-3xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400 mb-2">
           {title}
         </h2>
         
-        {(type === 'gameOver' || type === 'pause') && (
-          <div className="mb-4 text-center text-xs space-y-1">
-            <p className="text-gray-300">Score: <span className="text-yellow-400 font-medium">{score}</span></p>
-            <p className="text-gray-300">High Score: <span className="text-yellow-400 font-medium">{highScore}</span></p>
-            <p className="text-gray-300">Level: <span className="text-yellow-400 font-medium">{level}</span></p>
+        {/* Score Display */}
+        {(type === 'pause' || type === 'gameOver') && (
+          <div className="text-center mb-6">
+            <p className="text-lg text-gray-300">
+              Score: <span className="text-cyan-400 font-bold">{score}</span>
+            </p>
+            {highScore > 0 && (
+              <p className="text-sm text-gray-400 mt-1">
+                High Score: <span className="text-yellow-400 font-bold">{highScore}</span>
+              </p>
+            )}
           </div>
         )}
-        
-        <div className="space-y-2">
-          {getButtons()}
+
+        {/* Game Instructions */}
+        {type === 'start' && (
+          <div className="bg-gray-800/50 p-4 rounded-lg mb-6 border border-gray-700/50">
+            <p className="text-sm text-gray-300 text-center">
+              Use {window.innerWidth < 640 ? 'swipe' : 'arrow keys'} to move
+            </p>
+            <p className="text-xs text-gray-400 text-center mt-1">
+              Eat food to grow and set a new high score!
+            </p>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          {getActionButton()}
+          
+          {/* Additional options */}
+          {(type === 'pause' || type === 'gameOver') && (
+            <button
+              onClick={onRestart}
+              className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+            >
+              New Game
+            </button>
+          )}
+          
+          <button
+            onClick={() => setShowExitConfirm(true)}
+            className="w-full bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white py-2 px-4 rounded-lg text-sm font-medium border border-gray-600 hover:border-gray-500 transition-colors"
+          >
+            Exit
+          </button>
+          
+          {/* Exit Confirmation Modal */}
+          {showExitConfirm && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+              <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+                <h3 className="text-xl font-bold text-cyan-400 mb-3">Exit Game?</h3>
+                <p className="text-gray-300 mb-5">Are you sure you want to exit? Your progress will be saved automatically.</p>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      handleExit();
+                      setShowExitConfirm(false);
+                    }}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                  >
+                    Exit to Home
+                  </button>
+                  <button
+                    onClick={() => setShowExitConfirm(false)}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

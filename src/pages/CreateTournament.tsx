@@ -21,7 +21,7 @@ import {
 import { createTournamentAA, approveTokenForContractAA, getProvider } from '../lib/aaUtils';
 import { ethers } from 'ethers';
 import { TESTNET_CONFIG } from '../config';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 // import supabase from '../hooks/use-supabase';
 
 const CreateTournament = () => {

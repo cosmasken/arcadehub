@@ -1,6 +1,6 @@
 // src/components/UserMenu.tsx
 import { useState } from 'react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import {
@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 import useProfileStore from '../stores/useProfileStore';
 
 export function UserMenu() {
-  const { isConnected, aaWalletAddress, connectWallet, disconnectWallet } = useWalletStore();
+  const { isConnected, aaWalletAddress, connect, disconnect } = useWalletStore();
   const { role } = useProfileStore();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
@@ -25,7 +25,7 @@ export function UserMenu() {
 
   const handleConnect = async () => {
     try {
-      await connectWallet();
+      await connect();
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       toast({
@@ -39,7 +39,7 @@ export function UserMenu() {
   const handleDisconnect = async () => {
     try {
       setIsLoggingOut(true);
-      await disconnectWallet();
+      await disconnect();
       toast({
         title: 'Logged out',
         description: 'You have been successfully logged out.',

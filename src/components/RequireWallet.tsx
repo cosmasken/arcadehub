@@ -1,5 +1,5 @@
 import React from "react";
-import { useWalletStore } from "../stores/useWalletStore";
+import useWalletStore from "../stores/useWalletStore";
 import LoadingModal from "./LoadingModal";
 import { Button } from './ui/button';
 import { Wallet } from 'lucide-react'; // Assuming you have a Wallet icon in lucide-react

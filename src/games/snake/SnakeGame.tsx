@@ -1,14 +1,13 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { GameProvider, useGame } from './context';
-import { useWalletStore } from '../../stores/useWalletStore';
+import useWalletStore from '../../stores/useWalletStore';
 import { GameBoard, StatsPanel, Shop, Achievements } from './components';
 
 // Inner component to handle game UI
 const GameUI: React.FC = () => {
   const { state, startGame, pauseGame, resetGame } = useGame();
   const { isConnected, connectWallet } = useWalletStore();
-  const navigate = useNavigate();
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = React.useState(false);
 
@@ -72,7 +71,7 @@ const GameUI: React.FC = () => {
   }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame, isInitialized, handleStartGame]);
   
   const handleBack = () => {
-    navigate('/');
+    window.location.href = '/';
   };
 
   return (

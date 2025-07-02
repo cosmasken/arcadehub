@@ -27,7 +27,7 @@ import {
 
 import TokenSelector from './TokenSelector';
 import TokenApproval from './TokenApproval';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { useTokenStore } from '../stores/useTokenStore';
 import { useToast } from './ui/use-toast';
 import { mintNFT, checkAAWalletTokenAllowance } from '../lib/aaUtils';

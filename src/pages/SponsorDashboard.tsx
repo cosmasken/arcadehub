@@ -9,7 +9,7 @@ import { Plus, Trophy, Coins, Users, Eye, Calendar, BarChart3, Settings, Target 
 import { ethers } from 'ethers';
 import ViewTournamentModal from '../components/ViewTournamentModal';
 import ManageTournamentModal from '../components/ManageTournamentModal';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import {
   getUserCreatedTournaments,
   getTournamentInfo,

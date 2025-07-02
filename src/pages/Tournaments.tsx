@@ -15,7 +15,7 @@ import {
   Clock
 } from 'lucide-react';
 import { ethers } from 'ethers';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { getProvider, joinTournamentAA } from '../lib/aaUtils';
 import { TESTNET_CONFIG } from '../config';
 import TournamentHubABI from '../abi/TournamentHub.json';

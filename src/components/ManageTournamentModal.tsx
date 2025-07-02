@@ -9,7 +9,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useToast } from '../hooks/use-toast';
 import { Settings, Coins, Users, Calendar, Trophy, Plus, Edit, Square } from 'lucide-react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { addFundsAA, forceEndTournamentAA, finalizeTournamentAA } from '../lib/aaUtils';
 import { ethers } from 'ethers';
 import { decodeError } from '../lib/utils';

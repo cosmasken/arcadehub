@@ -24,7 +24,7 @@ import PointsSystem from '../abi/PointsSystem.json';
 import TokenSelector from './TokenSelector';
 import { ethers } from 'ethers';
 import { approvePointsClaimAA, rejectPointsClaimAA, getProvider, setPointsToTokensRateAA, addAdminAA, removeAdminAA } from '../lib/aaUtils';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 
 interface AdminUser {
   username: string;

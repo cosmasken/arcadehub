@@ -6,7 +6,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Play, Users, Trophy, Star, Wallet, Info } from 'lucide-react';
 import Tooltip from './Tooltip';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 
 interface GameCardProps {
   game: {

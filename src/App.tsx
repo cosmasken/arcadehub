@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Outlet } from "react-router-dom";
 
 // Hooks & Stores
-import { useWalletStore } from "./stores/useWalletStore";
+import useWalletStore from "./stores/useWalletStore";
 import { supabase } from "./lib/supabase";
 
 // Types
@@ -44,75 +44,15 @@ import { error } from 'console';
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { aaWalletAddress, initializeWeb3Auth } = useWalletStore();
+  const { aaWalletAddress, initWeb3Auth } = useWalletStore();
   const [isInitializing, setIsInitializing] = React.useState(true);
   const [showOnboarding, setShowOnboarding] = React.useState(false);
   const [userProfile, setUserProfile] = React.useState<User | null>(null);
 
-  // Initialize Web3Auth and check user status when the app loads or wallet connects
-  // React.useEffect(() => {
-  //   let isMounted = true;
-    
-  //   const initAndCheckUser = async () => {
-  //     try {
-  //       // Initialize Web3Auth
-  //       await initializeWeb3Auth();
-        
-  //       if (!isMounted) return;
-        
-  //       // If wallet is connected, check user profile
-  //       if (aaWalletAddress) {
-  //         try {
-  //           const { data: user, error } = await supabase
-  //             .from('users')
-  //             .select('*')
-  //             .eq('wallet_address', aaWalletAddress)
-  //             .single();
 
-  //           if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-  //             throw error;
-  //           }
-
-  //           if (user) {
-  //             setUserProfile(user);
-  //             setShowOnboarding(false);
-  //           } else {
-  //             setShowOnboarding(true);
-  //           }
-  //         } catch (error) {
-  //           console.error('Error fetching user profile:', error);
-  //           toast({
-  //             title: 'Error',
-  //             description: 'Failed to load user profile',
-  //             variant: 'destructive',
-  //           });
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error('Failed to initialize Web3Auth:', error);
-  //       toast({
-  //         title: 'Connection Error',
-  //         description: 'Failed to connect to wallet. Please try again.',
-  //         variant: 'destructive',
-  //       });
-  //     } finally {
-  //       if (isMounted) {
-  //         setIsInitializing(false);
-  //       }
-  //     }
-  //   };
-
-  //   initAndCheckUser();
-
-  //   // Clean up on unmount
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, [initializeWeb3Auth, aaWalletAddress]);
- // 1. Separate auth initialization
 const initializeAuth = async () => {
   try {
-    await initializeWeb3Auth();
+    await initWeb3Auth();
    
   } catch (error) {
     console.error('Auth initialization error:', error);
@@ -120,7 +60,7 @@ const initializeAuth = async () => {
   }
 };
 
-// 2. Separate profile check
+
 const checkUserProfile = async (walletAddress: string) => {
   try {
     const { data: user, error } = await supabase
@@ -145,7 +85,7 @@ const checkUserProfile = async (walletAddress: string) => {
   }
 };
 
-// 3. Main initialization effect
+
 useEffect(() => {
   let isMounted = true;
 

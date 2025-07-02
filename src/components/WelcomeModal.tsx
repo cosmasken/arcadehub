@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { X } from 'lucide-react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 
 const WelcomeModal = () => {
   const [isOpen, setIsOpen] = useState(false);

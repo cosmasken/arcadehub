@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet, Menu } from 'lucide-react';
 import { Input } from './ui/input';
 import { UserMenu } from './UserMenu';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore  from '../stores/useWalletStore';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from './ui/sheet';
 import { Button } from './ui/button';
 

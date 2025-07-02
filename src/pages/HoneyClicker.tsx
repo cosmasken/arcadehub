@@ -18,7 +18,7 @@ import { useGameState } from '../hooks/useGameState';
 import { achievements as achievementsMap } from '../data/achievements';
 import { shopItems } from '../data/shopItems';
 import supabase from '../hooks/use-supabase';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { submitTournamentScoreAA, getProvider } from '../lib/aaUtils';
 import { useToast } from '../hooks/use-toast';
 import { ethers } from 'ethers';

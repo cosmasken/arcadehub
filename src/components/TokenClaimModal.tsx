@@ -8,7 +8,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { useState } from 'react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { useToast } from '../hooks/use-toast';
 import { submitPointsClaimSponsored } from '../lib/aaUtils'
 import { CheckCircle, XCircle } from 'lucide-react';

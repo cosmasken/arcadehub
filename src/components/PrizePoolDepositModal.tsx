@@ -19,7 +19,7 @@ import {
   Heart,
   Gift
 } from 'lucide-react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { TESTNET_CONFIG } from '../config';
 import { ethers } from 'ethers';
 import { getProvider } from '../lib/aaUtils';

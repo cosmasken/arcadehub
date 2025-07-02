@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { useWalletStore } from "../stores/useWalletStore";
+import useWalletStore from "../stores/useWalletStore";
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { DialogFooter } from "../components/ui/dialog";

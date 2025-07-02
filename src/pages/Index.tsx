@@ -10,7 +10,7 @@ import { Badge } from '../components/ui/badge';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { GamepadIcon, Users, Wallet as WalletIcon, Search, X, Star } from 'lucide-react';
-import { useWalletStore } from '../stores/useWalletStore';
+import useWalletStore from '../stores/useWalletStore';
 import { Input } from '../components/ui/input';
 import Tooltip from '../components/Tooltip';
 

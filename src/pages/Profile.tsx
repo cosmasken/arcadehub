@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import useProfileStore from '../stores/useProfileStore';
 import useWalletStore from '../stores/useWalletStore';
+import { Link } from "react-router-dom";
 
 const Profile = () => {
   const {
@@ -107,8 +108,7 @@ const Profile = () => {
 
   return (
     <Layout>
-
-      <div className="container mx-auto max-w-6xl">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern container mx-auto max-w-6xl">
         {/* Profile Header */}
         <Card className="bg-black border-cyan-400 border-2 p-8 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
@@ -120,9 +120,9 @@ const Profile = () => {
                 <h1 className="text-3xl font-bold text-cyan-400 mb-2">{username || "USER"}</h1>
                 <div className="flex items-center space-x-4">
                   <Badge className={`${role === 'admin' ? 'bg-red-400 text-black' :
-                      role === 'sponsor' ? 'bg-yellow-400 text-black' :
-                        role === 'developer' ? 'bg-purple-400 text-black' :
-                          'bg-green-400 text-black'
+                    role === 'sponsor' ? 'bg-yellow-400 text-black' :
+                      role === 'developer' ? 'bg-purple-400 text-black' :
+                        'bg-green-400 text-black'
                     }`}>
                     {role?.toUpperCase() || 'PLAYER'}
                   </Badge>
@@ -250,13 +250,13 @@ const Profile = () => {
             {/* Role-specific action buttons */}
             {role === 'admin' && (
               <Card className="bg-black border-red-400 border-2 p-6">
-                <h2 className="text-xl font-bold text-red-400 mb-4">⚡ ADMIN ACTIONS</h2>
+                <h2 className="text-xl font-bold text-red-400 mb-4 font-mono tracking-tight">⚡ ADMIN ACTIONS</h2>
                 <div className="space-y-3">
-                  <Button className="w-full bg-red-400 text-black hover:bg-red-300 font-mono">
+                  <Button variant="destructive" className="w-full font-mono">
                     <Shield className="w-4 h-4 mr-2" />
                     ADMIN PANEL
                   </Button>
-                  <Button variant="outline" className="w-full border-red-400 text-red-400 hover:bg-red-400 hover:text-black font-mono">
+                  <Button variant="outline" className="w-full border-red-400 text-red-400 hover:bg-red-400 hover:text-black font-mono focus-visible:ring-2 focus-visible:ring-red-400">
                     <Users className="w-4 h-4 mr-2" />
                     MANAGE USERS
                   </Button>
@@ -266,15 +266,19 @@ const Profile = () => {
 
             {role === 'sponsor' && (
               <Card className="bg-black border-yellow-400 border-2 p-6">
-                <h2 className="text-xl font-bold text-yellow-400 mb-4">💰 SPONSOR ACTIONS</h2>
+                <h2 className="text-xl font-bold text-yellow-400 mb-4 font-mono tracking-tight">💰 SPONSOR ACTIONS</h2>
                 <div className="space-y-3">
-                  <Button className="w-full bg-yellow-400 text-black hover:bg-yellow-300 font-mono">
-                    <Trophy className="w-4 h-4 mr-2" />
-                    CREATE TOURNAMENT
+                  <Button asChild variant="default" className="w-full bg-yellow-400 text-black hover:bg-yellow-300 font-mono focus-visible:ring-2 focus-visible:ring-yellow-400">
+                    <Link to="/create-tournament">
+                      <Trophy className="w-4 h-4 mr-2" />
+                      CREATE TOURNAMENT
+                    </Link>
                   </Button>
-                  <Button variant="outline" className="w-full border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black font-mono">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    VIEW ANALYTICS
+                  <Button asChild variant="outline" className="w-full border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black font-mono focus-visible:ring-2 focus-visible:ring-yellow-400">
+                    <Link to="/sponsor-analytics">
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      VIEW ANALYTICS
+                    </Link>
                   </Button>
                 </div>
               </Card>

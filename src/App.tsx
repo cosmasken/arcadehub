@@ -198,10 +198,10 @@ const App = () => {
                 <Route path="games/snake" element={<SnakeGame />} />
                 <Route path="games/tetris" element={<Tetris />} />
                 <Route path="sponsors" element={<Sponsors />} />
-                <Route path="sponsor-login" element={<SponsorLogin />} />
-                <Route path="sponsor-dashboard" element={<SponsorDashboard />} />
-                <Route path="create-tournament" element={<CreateTournament />} />
-                <Route path="sponsor-analytics" element={<SponsorAnalytics />} />
+                <Route path="sponsor/login" element={<SponsorLogin />} />
+                <Route path="sponsor/dashboard" element={<SponsorDashboard />} />
+                <Route path="sponosr/create-tournament" element={<CreateTournament />} />
+                <Route path="sponsor/analytics" element={<SponsorAnalytics />} />
                 <Route path="wallet" element={<WalletPage />} />
                 <Route path="admin" element={<Admin />} />
                 <Route path="*" element={<NotFound />} />

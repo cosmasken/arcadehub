@@ -6,11 +6,24 @@ import { GRID_SIZE, INITIAL_GAME_SPEED, DIRECTIONS, LEVELS, SHOP_ITEMS, ACHIEVEM
 const getRandomPosition = (): Position => ({
   x: Math.floor(Math.random() * GRID_SIZE),
   y: Math.floor(Math.random() * GRID_SIZE),
+  dx: 0,
+  dy: 0,
+  targetX: 0,
+  targetY: 0,
+  moving: false
 });
 
 const getInitialState = (): GameState => {
   return {
-    snake: [{ x: 10, y: 10 }],
+    snake: [{
+    x: 10,
+    y: 10,
+    dx: 0,
+    dy: 0,
+    targetX: 10,
+    targetY: 10,
+    moving: false
+  }],
     food: getRandomPosition(),
     direction: DIRECTIONS.RIGHT,
     nextDirection: DIRECTIONS.RIGHT,
@@ -34,6 +47,18 @@ const getInitialState = (): GameState => {
       ghostPiece: false,
       wallCollision: true,
     },
+    // Tournament enhancements
+    gameStartTime: 0,
+    gameDuration: 0,
+    moveCount: 0,
+    foodEaten: 0,
+    comboMultiplier: 1,
+    maxCombo: 0,
+    perfectMoves: 0,
+    gameMode: 'classic',
+    timeLimit: undefined,
+    targetScore: undefined,
+    gameSeed: Math.random().toString(36).substring(2, 15), // Random seed
   };
 };
 
@@ -46,53 +71,137 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     case 'MOVE': {
       if (state.gameOver || !state.isStarted || state.isPaused) return state;
       
-      const head = { ...state.snake[0] };
+      // Create a deep copy of the snake
+      const newSnake = state.snake.map(segment => ({ ...segment }));
+      const head = newSnake[0];
       const direction = state.nextDirection;
       
-      // Update head position based on direction
-      switch (direction) {
-        case 'UP': head.y -= 1; break;
-        case 'DOWN': head.y += 1; break;
-        case 'LEFT': head.x -= 1; break;
-        case 'RIGHT': head.x += 1; break;
+      // If head is not currently moving, set up movement to next cell
+      if (!head.moving) {
+        // Calculate next position
+        let newX = head.x;
+        let newY = head.y;
+        
+        switch (direction) {
+          case 'UP': newY--; break;
+          case 'DOWN': newY++; break;
+          case 'LEFT': newX--; break;
+          case 'RIGHT': newX++; break;
+        }
+        
+        // Handle wall collision or wrap around
+        if (state.settings.wallCollision) {
+          if (newX < 0 || newX >= GRID_SIZE || newY < 0 || newY >= GRID_SIZE) {
+            return { ...state, gameOver: true };
+          }
+        } else {
+          if (newX < 0) newX = GRID_SIZE - 1;
+          if (newX >= GRID_SIZE) newX = 0;
+          if (newY < 0) newY = GRID_SIZE - 1;
+          if (newY >= GRID_SIZE) newY = 0;
+        }
+        
+        // Check for self collision (only check current grid position, not sub-cell)
+        if (newSnake.some((segment, index) => 
+          index > 0 && segment.x === newX && segment.y === newY)) {
+          return { ...state, gameOver: true };
+        }
+        
+        // Set up movement for the head
+        head.targetX = newX;
+        head.targetY = newY;
+        head.dx = 0;
+        head.dy = 0;
+        head.moving = true;
+        head.direction = direction;
       }
       
-      // Check for wall collision if enabled
-      if (state.settings.wallCollision && 
-          (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE)) {
-        return { ...state, gameOver: true };
+      // Update movement for all segments
+      const moveSpeed = 0.1; // Adjust this value for faster/slower movement
+      let foodEaten = false;
+      
+      // Update head position
+      if (head.moving) {
+        // Calculate direction vector
+        const targetDx = head.x < head.targetX ? 1 : head.x > head.targetX ? -1 : 0;
+        const targetDy = head.y < head.targetY ? 1 : head.y > head.targetY ? -1 : 0;
+        
+        // Update sub-cell position
+        head.dx += targetDx * moveSpeed;
+        head.dy += targetDy * moveSpeed;
+        
+        // Check if reached target cell
+        if (Math.abs(head.dx) >= 1 || Math.abs(head.dy) >= 1) {
+          head.x = head.targetX;
+          head.y = head.targetY;
+          head.dx = 0;
+          head.dy = 0;
+          head.moving = false;
+          
+          // Check for food collision after moving to new cell
+          if (head.x === state.food.x && head.y === state.food.y) {
+            foodEaten = true;
+          }
+        }
       }
       
-      // Wrap around if wall collision is off
-      if (!state.settings.wallCollision) {
-        if (head.x < 0) head.x = GRID_SIZE - 1;
-        if (head.x >= GRID_SIZE) head.x = 0;
-        if (head.y < 0) head.y = GRID_SIZE - 1;
-        if (head.y >= GRID_SIZE) head.y = 0;
+      // Update body segments to follow the head
+      for (let i = 1; i < newSnake.length; i++) {
+        const current = newSnake[i];
+        const prev = newSnake[i - 1];
+        
+        // If previous segment is moving, start moving this segment
+        if (!current.moving && (prev.moving || prev.x !== current.x || prev.y !== current.y)) {
+          current.targetX = prev.x;
+          current.targetY = prev.y;
+          current.dx = 0;
+          current.dy = 0;
+          current.moving = true;
+        }
+        
+        // Update position if moving
+        if (current.moving) {
+          const targetDx = current.x < current.targetX ? 1 : current.x > current.targetX ? -1 : 0;
+          const targetDy = current.y < current.targetY ? 1 : current.y > current.targetY ? -1 : 0;
+          
+          current.dx += targetDx * moveSpeed;
+          current.dy += targetDy * moveSpeed;
+          
+          // Check if reached target cell
+          if (Math.abs(current.dx) >= 1 || Math.abs(current.dy) >= 1) {
+            current.x = current.targetX;
+            current.y = current.targetY;
+            current.dx = 0;
+            current.dy = 0;
+            current.moving = false;
+          }
+        }
       }
       
-      // Check for self collision
-      if (state.snake.some((segment, index) => 
-        index > 0 && segment.x === head.x && segment.y === head.y)) {
-        return { ...state, gameOver: true };
-      }
-      
-      const newSnake = [head, ...state.snake];
-      let newScore = state.score;
-      let newLinesCleared = state.linesCleared;
-      let newLevel = state.level;
-      
-      // Check if food is eaten
-      if (head.x === state.food.x && head.y === state.food.y) {
-        newScore += 10 * newLevel;
-        newLinesCleared += 1;
+      // Handle food collection and growth
+      if (foodEaten) {
+        // Add new segment at the end of the snake
+        const tail = newSnake[newSnake.length - 1];
+        newSnake.push({
+          ...tail,
+          x: tail.targetX,
+          y: tail.targetY,
+          dx: 0,
+          dy: 0,
+          targetX: tail.targetX,
+          targetY: tail.targetY,
+          moving: false
+        });
+        
+        // Update score and level
+        const newScore = state.score + 10 * state.level;
+        const newLinesCleared = state.linesCleared + 1;
+        let newLevel = state.level;
         
         // Level up check
-        const currentLevel = LEVELS.find(l => l.level === newLevel);
         const nextLevel = LEVELS.find(l => l.level === newLevel + 1);
-        
         if (nextLevel && newLinesCleared >= nextLevel.linesNeeded) {
-          newLevel += 1;
+          newLevel++;
         }
         
         return {
@@ -103,16 +212,15 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
           linesCleared: newLinesCleared,
           level: newLevel,
           direction: state.nextDirection,
+          foodEaten: state.foodEaten + 1,
         };
       }
-      
-      // Remove tail if no food was eaten
-      newSnake.pop();
       
       return {
         ...state,
         snake: newSnake,
         direction: state.nextDirection,
+        moveCount: state.moveCount + 1,
       };
     }
     
@@ -189,7 +297,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
 // Context provider component
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, undefined, getInitialState);
-  const gameLoopRef = useRef<number>();
+  const gameLoopRef = useRef<NodeJS.Timeout>();
   
   // Game loop
   useEffect(() => {

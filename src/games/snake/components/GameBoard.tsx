@@ -193,82 +193,105 @@ const GameBoard: React.FC = () => {
     );
     ctx.fill();
 
-    // Draw snake
+    // Draw snake with smooth transitions
     state.snake.forEach((segment, index) => {
+      // Calculate position with sub-cell offset
+      const renderX = (segment.x + segment.dx) * cellSize;
+      const renderY = (segment.y + segment.dy) * cellSize;
+      
       // Head is a different color
       if (index === 0) {
-        ctx.fillStyle = '#2ed573'; // Head color
+        // Head color with glow effect
+        const gradient = ctx.createRadialGradient(
+          renderX + cellSize / 2,
+          renderY + cellSize / 2,
+          0,
+          renderX + cellSize / 2,
+          renderY + cellSize / 2,
+          cellSize * 0.8
+        );
+        gradient.addColorStop(0, '#2ed573');
+        gradient.addColorStop(1, '#1a8a3a');
+        ctx.fillStyle = gradient;
       } else {
         // Body color with slight gradient
         const intensity = 200 - Math.min(150, index * 2);
-        ctx.fillStyle = `rgb(46, 213, 115, ${intensity / 255})`;
+        ctx.fillStyle = `rgba(46, 213, 115, ${intensity / 255})`;
       }
 
-      ctx.fillRect(
-        segment.x * cellSize + 1,
-        segment.y * cellSize + 1,
+      // Draw rounded rectangle for the segment
+      const cornerRadius = cellSize * 0.2;
+      ctx.beginPath();
+      ctx.roundRect(
+        renderX + 1,
+        renderY + 1,
         cellSize - 2,
-        cellSize - 2
+        cellSize - 2,
+        cornerRadius
       );
+      ctx.fill();
 
       // Add eyes to the head
       if (index === 0) {
         const eyeSize = cellSize * 0.15;
-        const eyeOffset = cellSize * 0.25;
+        const eyeOffsetX = cellSize * 0.25;
+        const eyeOffsetY = cellSize * 0.25;
         const pupilOffset = cellSize * 0.1;
+        
+        // Determine eye positions based on direction
+        let leftEyeX, leftEyeY, rightEyeX, rightEyeY;
+        const direction = state.direction;
+        
+        if (direction === 'RIGHT' || direction === 'LEFT') {
+          leftEyeX = renderX + (direction === 'RIGHT' ? cellSize * 0.6 : cellSize * 0.4);
+          leftEyeY = renderY + eyeOffsetY;
+          rightEyeX = leftEyeX;
+          rightEyeY = renderY + cellSize - eyeOffsetY;
+        } else {
+          leftEyeX = renderX + eyeOffsetX;
+          leftEyeY = renderY + (direction === 'DOWN' ? cellSize * 0.6 : cellSize * 0.4);
+          rightEyeX = renderX + cellSize - eyeOffsetX;
+          rightEyeY = leftEyeY;
+        }
 
         // Left eye
         ctx.fillStyle = 'white';
         ctx.beginPath();
-        ctx.arc(
-          (segment.x + 0.3) * cellSize,
-          (segment.y + 0.3) * cellSize,
-          eyeSize,
-          0,
-          Math.PI * 2
-        );
+        ctx.arc(leftEyeX, leftEyeY, eyeSize, 0, Math.PI * 2);
         ctx.fill();
 
         // Right eye
         ctx.beginPath();
+        ctx.arc(rightEyeX, rightEyeY, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pupils - look in the direction of movement
+        ctx.fillStyle = 'black';
+        const pupilSize = eyeSize * 0.6;
+        
+        // Left pupil
+        ctx.beginPath();
         ctx.arc(
-          (segment.x + 0.7) * cellSize,
-          (segment.y + 0.3) * cellSize,
-          eyeSize,
+          leftEyeX + (direction === 'LEFT' ? -pupilOffset : direction === 'RIGHT' ? pupilOffset : 0),
+          leftEyeY + (direction === 'UP' ? -pupilOffset : direction === 'DOWN' ? pupilOffset : 0),
+          pupilSize,
           0,
           Math.PI * 2
         );
         ctx.fill();
-
-        // Pupils
-        ctx.fillStyle = 'black';
+        
+        // Right pupil
         ctx.beginPath();
         ctx.arc(
-          (segment.x + 0.3) * cellSize + pupilOffset * (state.direction === 'LEFT' ? -1 : state.direction === 'RIGHT' ? 1 : 0),
-          (segment.y + 0.3) * cellSize + pupilOffset * (state.direction === 'UP' ? -1 : state.direction === 'DOWN' ? 1 : 0),
-          eyeSize * 0.5,
+          rightEyeX + (direction === 'LEFT' ? -pupilOffset : direction === 'RIGHT' ? pupilOffset : 0),
+          rightEyeY + (direction === 'UP' ? -pupilOffset : direction === 'DOWN' ? pupilOffset : 0),
+          pupilSize,
           0,
           Math.PI * 2
         );
         ctx.fill();
       }
     });
-
-    // Draw the food
-    drawFood(ctx, state.food);
-
-    // Draw game over message if needed
-    if (state.gameOver) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-      ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      ctx.fillStyle = '#fff';
-      ctx.font = '24px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('Game Over', canvasRef.current.width / 2, canvasRef.current.height / 2 - 30);
-      ctx.font = '16px Arial';
-      ctx.fillText(`Score: ${state.score}`, canvasRef.current.width / 2, canvasRef.current.height / 2 + 10);
-      ctx.fillText('Press R to restart', canvasRef.current.width / 2, canvasRef.current.height / 2 + 40);
-    }
 
     requestRef.current = requestAnimationFrame(render);
   }, [state]);

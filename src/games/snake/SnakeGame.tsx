@@ -122,7 +122,7 @@ const GameUI: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-2 relative">
+    <div className="min-h-screen bg-gray-900 relative">
       <div className="absolute top-4 left-4">
         <button
           onClick={handleBack}
@@ -268,7 +268,7 @@ const GameUI: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Sidebar - Achievements & How to Play */}
+          {/* Right Sidebar How to Play */}
           <div className="lg:col-span-3 xl:col-span-2 flex flex-col gap-3 h-full min-w-[200px] max-w-[300px]">
 
             <div className="bg-gray-800/50 p-3 rounded-lg border border-cyan-400/20">

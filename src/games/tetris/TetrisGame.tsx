@@ -245,7 +245,7 @@ const GameUI: React.FC = () => {
               <div className="bg-gray-800/50 rounded-xl p-4">
                 <h3 className="text-sm font-medium text-gray-300 mb-3">Next</h3>
                 <div className="space-y-4">
-                  <NextPieces count={3} />
+                  <NextPieces />
                 </div>
               </div>
               
@@ -254,8 +254,7 @@ const GameUI: React.FC = () => {
                 <div className="space-y-2.5">
                   {[
                     { label: 'Score', value: state.stats.score.toLocaleString() },
-                    { label: 'Level', value: state.stats.level },
-                    { label: 'Lines', value: state.stats.lines }
+                    { label: 'Level', value: state.stats.level }
                   ].map((stat, index) => (
                     <div key={index} className="flex justify-between items-center py-1.5 px-2 rounded-lg hover:bg-gray-700/50">
                       <span className="text-xs text-gray-400">{stat.label}</span>
@@ -278,10 +277,6 @@ const GameUI: React.FC = () => {
             <div className="bg-gray-800/50 rounded-lg p-3 flex flex-col items-center">
               <span className="text-xs text-gray-400 mb-1">Level</span>
               <span className="text-white font-mono text-lg">{state.stats.level}</span>
-            </div>
-            <div className="bg-gray-800/50 rounded-lg p-3 flex flex-col items-center">
-              <span className="text-xs text-gray-400 mb-1">Lines</span>
-              <span className="text-white font-mono text-lg">{state.stats.lines}</span>
             </div>
           </div>
 

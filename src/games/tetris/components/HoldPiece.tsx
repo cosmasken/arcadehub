@@ -1,14 +1,17 @@
 import React, { useRef, useEffect } from 'react';
 import { useGame } from '../context';
 import { drawBlock } from '../utils/draw';
-import { COLS } from '../constants';
+import { COLS, SHAPES } from '../constants';
+
+// Define the shape of our tetromino pieces
+type TetrominoType = 1 | 2 | 3 | 4 | 5 | 6 | 7; // The possible tetromino types
 
 const HoldPiece: React.FC = () => {
   const { state } = useGame();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
-    if (!canvasRef.current || !state.holdPiece) return;
+    if (!canvasRef.current || state.holdPiece === null) return;
     
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -17,17 +20,27 @@ const HoldPiece: React.FC = () => {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw the held piece
-    const pieceType = state.holdPiece;
-    const shape = SHAPES[pieceType][0]; // Get the first rotation
+    // Get the shape for the held piece
+    const pieceType = state.holdPiece as TetrominoType;
+    const shape = SHAPES[pieceType];
+    
+    if (!shape || shape.length === 0) return; // Skip if no shape found
+    
     const blockSize = 20;
     
+    // The shape is already a 2D array, no need to get the first rotation
+    const pieceShape = shape as number[][];
+    
+    // Calculate shape dimensions
+    const shapeHeight = pieceShape.length;
+    const shapeWidth = pieceShape[0].length;
+    
     // Calculate offset to center the piece
-    const offsetX = Math.floor((COLS * blockSize - shape[0].length * blockSize) / 2);
-    const offsetY = 10;
+    const offsetX = Math.floor((canvas.width - shapeWidth * blockSize) / 2);
+    const offsetY = Math.floor((canvas.height - shapeHeight * blockSize) / 2);
     
     // Draw the piece
-    shape.forEach((row, y) => {
+    pieceShape.forEach((row, y) => {
       row.forEach((value, x) => {
         if (value) {
           drawBlock(ctx, x * blockSize + offsetX, y * blockSize + offsetY, pieceType, blockSize);
@@ -37,14 +50,13 @@ const HoldPiece: React.FC = () => {
   }, [state.holdPiece]);
   
   return (
-    <div className="bg-gray-800 p-4 rounded-lg">
-      <h3 className="text-lg font-bold mb-2">Hold</h3>
+    <div className="w-full">
       <div className="flex justify-center">
         <canvas
           ref={canvasRef}
           width={COLS * 20}
           height={80}
-          className="bg-gray-900 rounded"
+          className="bg-gray-900/30 rounded-lg border border-gray-700"
         />
       </div>
     </div>

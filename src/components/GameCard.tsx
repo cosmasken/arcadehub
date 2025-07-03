@@ -24,14 +24,14 @@ interface GameCardProps {
 
 const GameCard: React.FC<GameCardProps> = ({ game }) => {
   const navigate = useNavigate();
-  const { isConnected, connectWallet } = useWalletStore();
+  const { isConnected, connect } = useWalletStore();
   
   const handlePlayClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isConnected) {
       navigate(`/games/${game.id}`);
     } else {
-      connectWallet();
+      connect();
     }
   };
   const getStatusColor = (status: string) => {

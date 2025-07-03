@@ -1,14 +1,20 @@
 import React, { createContext, useReducer, useCallback, useRef, useEffect } from 'react';
 import { GameState, GameAction, GameContextType, Direction } from './types';
-import { getInitialState, getRandomPosition } from './initialState';
-import { GRID_SIZE, INITIAL_GAME_SPEED, DIRECTIONS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
+import { getInitialState, getRandomPosition, generateObstacles } from './initialState';
+import { GRID_SIZE, DIRECTIONS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
+import { Position } from './types';
 
 // Helper functions
 // Re-export for backward compatibility
-export { getInitialState, getRandomPosition };
+export { getInitialState, getRandomPosition, generateObstacles };
 
 // Game context
 const GameContext = createContext<GameContextType | undefined>(undefined);
+
+// Helper function to check if a position is occupied by an obstacle
+const isPositionOccupied = (x: number, y: number, obstacles: Position[]): boolean => {
+  return obstacles.some(obstacle => obstacle.x === x && obstacle.y === y);
+};
 
 // Game reducer
 const gameReducer = (state: GameState, action: GameAction): GameState => {
@@ -16,10 +22,11 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     case 'MOVE': {
       if (state.gameOver || !state.isStarted || state.isPaused) return state;
       
-      // Create a deep copy of the snake
+      // Create a deep copy of the snake and obstacles
       const newSnake = state.snake.map(segment => ({ ...segment }));
       const head = newSnake[0];
       const direction = state.nextDirection;
+      const currentLevel = LEVELS[state.level - 1];
       
       // Calculate next position
       let newHeadX = head.x;
@@ -34,7 +41,14 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       }
       
       // Handle wall collision or wrap around
-      if (state.settings.wallCollision) {
+      if (currentLevel.allowWallPass) {
+        // Wrap around if wall passing is allowed
+        if (newHeadX < 0) newHeadX = GRID_SIZE - 1;
+        else if (newHeadX >= GRID_SIZE) newHeadX = 0;
+        if (newHeadY < 0) newHeadY = GRID_SIZE - 1;
+        else if (newHeadY >= GRID_SIZE) newHeadY = 0;
+      } else {
+        // Check for wall collision
         if (newHeadX < 0 || newHeadX >= GRID_SIZE || newHeadY < 0 || newHeadY >= GRID_SIZE) {
           // Game over - show menu
           return {
@@ -47,12 +61,19 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
             highScore: Math.max(state.score, state.highScore)
           };
         }
-      } else {
-        // Wrap around if wall collision is off
-        if (newHeadX < 0) newHeadX = GRID_SIZE - 1;
-        if (newHeadX >= GRID_SIZE) newHeadX = 0;
-        if (newHeadY < 0) newHeadY = GRID_SIZE - 1;
-        if (newHeadY >= GRID_SIZE) newHeadY = 0;
+      }
+      
+      // Check for obstacle collision
+      if (isPositionOccupied(newHeadX, newHeadY, state.obstacles)) {
+        return {
+          ...state,
+          gameOver: true,
+          isStarted: false,
+          isPaused: true,
+          showMenu: true,
+          menuType: 'gameOver',
+          highScore: Math.max(state.score, state.highScore)
+        };
       }
       
       // Check for self collision (skip the head)
@@ -162,7 +183,20 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         nextDirection: action.direction
       };
     
-    case 'START_GAME':
+    case 'START_GAME': {
+      const newFood = getRandomPosition();
+      const newSnake = [{
+        x: 10,
+        y: 10,
+        dx: 0,
+        dy: 0,
+        targetX: 10,
+        targetY: 10,
+        moving: false,
+        direction: 'RIGHT' as const
+      }];
+      const obstacles = generateObstacles(state.level, newSnake, newFood);
+      
       return {
         ...state,
         isLoading: false,
@@ -171,7 +205,22 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         isStarted: true,
         gameOver: false,
         isPaused: false,
+        snake: newSnake,
+        food: newFood,
+        obstacles,
+        direction: DIRECTIONS.RIGHT,
+        nextDirection: DIRECTIONS.RIGHT,
+        score: 0,
+        linesCleared: 0,
+        foodEaten: 0,
+        moveCount: 0,
+        gameStartTime: Date.now(),
+        gameDuration: 0,
+        comboMultiplier: 1,
+        perfectMoves: 0,
+        timeLimit: LEVELS[state.level - 1]?.timeLimit
       };
+    }
       
     case 'PAUSE_GAME':
       return {
@@ -183,7 +232,7 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       
     case 'RESET_GAME':
       return {
-        ...getInitialState(),
+        ...getInitialState(1), // Reset to level 1
         isLoading: false,
         showMenu: true,
         menuType: 'start',

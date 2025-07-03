@@ -15,6 +15,7 @@ export interface GameState {
   // Core game state
   snake: Position[];
   food: Position;
+  obstacles: Position[]; // Added obstacles array
   direction: Direction;
   nextDirection: Direction;
   gameOver: boolean;
@@ -73,6 +74,19 @@ export interface GameContextType {
   changeDirection: (direction: Direction) => void;
   buyItem: (itemId: string) => void;
   claimAchievement: (achievementId: string) => void;
+}
+
+export interface LevelConfig {
+  level: number;              // Level number (1-based)
+  speed: number;              // Game speed in milliseconds (lower is faster)
+  linesNeeded: number;        // Lines needed to advance to next level
+  hasObstacles: boolean;      // Whether the level has obstacles
+  obstacleCount: number;      // Number of obstacles to generate
+  timeLimit?: number;         // Time limit in seconds (optional)
+  description: string;        // Description shown to player
+  foodValue: number;          // Points per food in this level
+  speedIncrement: number;     // Speed increase per food (0-1)
+  allowWallPass: boolean;     // Whether snake can pass through walls
 }
 
 export interface TournamentConfig {

@@ -146,23 +146,27 @@ const App = () => {
 
   const navigate = useNavigate();
 
-  // Profile check effect when wallet connects
+  // Profile check effect when wallet connects or disconnects
   useEffect(() => {
     if (isConnected && aaWalletAddress && !isInitializing) {
       // Force check when wallet connects
       checkUserProfile(aaWalletAddress, true);
-    } else if (!isConnected && lastCheckedAddress !== null) {
-      // Only reset states if we had a previous connection
-      setUserProfile(null);
-      setShowOnboarding(false);
-      setLastCheckedAddress(null);
+    } else if (!isConnected) {
+      // Only reset states if we had a previous connection or are initializing
+      const hadPreviousConnection = lastCheckedAddress !== null || isInitializing;
       
-      // Use a timeout to prevent navigation during render
-      const timer = setTimeout(() => {
-        navigate('/', { replace: true });
-      }, 0);
-      
-      return () => clearTimeout(timer);
+      if (hadPreviousConnection) {
+        setUserProfile(null);
+        setShowOnboarding(false);
+        setLastCheckedAddress(null);
+        
+        // Navigate to home page after state updates
+        const timer = setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 0);
+        
+        return () => clearTimeout(timer);
+      }
     }
   }, [isConnected, aaWalletAddress, isInitializing, lastCheckedAddress, checkUserProfile, navigate]);
 

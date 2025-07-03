@@ -1,4 +1,4 @@
-import { ShopItem, Achievement } from './types';
+import { ShopItem, Achievement, LevelConfig } from './types';
 
 export const GRID_SIZE = 20;
 export const CELL_SIZE = 20;
@@ -109,11 +109,75 @@ export const ACHIEVEMENTS: Achievement[] = [
   },
 ];
 
-export const LEVELS = [
-  { level: 1, speed: 150, linesNeeded: 0 },
-  { level: 2, speed: 130, linesNeeded: 10 },
-  { level: 3, speed: 110, linesNeeded: 25 },
-  { level: 4, speed: 90, linesNeeded: 50 },
-  { level: 5, speed: 70, linesNeeded: 100 },
-  { level: 6, speed: 50, linesNeeded: 200 },
+export const LEVELS: LevelConfig[] = [
+  {
+    level: 1,
+    speed: 180,           // Slower speed for beginners
+    linesNeeded: 5,       // 5 foods to advance
+    hasObstacles: false,  // No obstacles in first level
+    obstacleCount: 0,     // No obstacles
+    timeLimit: undefined, // No time limit
+    description: 'Learn the basics - Collect 5 apples to advance',
+    foodValue: 10,        // Standard points per food
+    speedIncrement: 0,    // No speed increase
+    allowWallPass: true   // Can pass through walls
+  },
+  {
+    level: 2,
+    speed: 150,           // Slightly faster
+    linesNeeded: 8,       // 8 foods to advance
+    hasObstacles: true,   // Add obstacles
+    obstacleCount: 5,     // 5 obstacles
+    timeLimit: 120,       // 2 minutes to complete
+    description: 'Watch out for walls! - Collect 8 apples in 2 minutes',
+    foodValue: 15,        // Slightly more points
+    speedIncrement: 0.02, // Slight speed increase per food
+    allowWallPass: false  // Cannot pass through walls
+  },
+  {
+    level: 3,
+    speed: 120,           // Even faster
+    linesNeeded: 12,      // 12 foods to advance
+    hasObstacles: true,   // More obstacles
+    obstacleCount: 10,    // 10 obstacles
+    timeLimit: 150,       // 2.5 minutes to complete
+    description: 'Speed challenge! - Collect 12 apples quickly',
+    foodValue: 20,        // More points per food
+    speedIncrement: 0.03, // Noticeable speed increase
+    allowWallPass: false  // Cannot pass through walls
+  },
+  // Keeping higher levels simpler for now
+  { 
+    level: 4, 
+    speed: 90, 
+    linesNeeded: 20,
+    hasObstacles: true,
+    obstacleCount: 15,
+    description: 'Expert mode - No time limit',
+    foodValue: 25,
+    speedIncrement: 0.04,
+    allowWallPass: false
+  },
+  { 
+    level: 5, 
+    speed: 70, 
+    linesNeeded: 30,
+    hasObstacles: true,
+    obstacleCount: 20,
+    description: 'Master level - Extreme challenge',
+    foodValue: 30,
+    speedIncrement: 0.05,
+    allowWallPass: false
+  },
+  { 
+    level: 6, 
+    speed: 50, 
+    linesNeeded: 50,
+    hasObstacles: true,
+    obstacleCount: 25,
+    description: 'Impossible mode - For the truly skilled',
+    foodValue: 50,
+    speedIncrement: 0.1,
+    allowWallPass: false
+  },
 ];

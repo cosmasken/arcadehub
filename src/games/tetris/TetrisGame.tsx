@@ -10,7 +10,7 @@ import BackButton from './components/BackButton';
 import useWalletStore from '../../stores/useWalletStore';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { GameState } from './types';
-
+import { useNavigate } from 'react-router-dom';
 // Local game status for the UI
 enum GameStatus {
   START = 'start',
@@ -34,7 +34,7 @@ const GameUI: React.FC = () => {
   const { state, dispatch } = useGame();
   const [showHelp, setShowHelp] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-
+  const navigate = useNavigate();
   // Default controls
   const defaultControls = useMemo<ControlSettings>(() => ({
     moveLeft: 'ArrowLeft',
@@ -145,7 +145,7 @@ const GameUI: React.FC = () => {
   const currentStatus = getGameStatus();
 
   return (
-    <div className="relative w-full h-full bg-gray-900 overflow-hidden">
+    <div className="relative w-full h-screen bg-gray-900 overflow-hidden">
       {showSplash ? (
         <SplashScreen
           message="Loading TETRIS..."
@@ -153,123 +153,137 @@ const GameUI: React.FC = () => {
           onComplete={() => setShowSplash(false)}
         />
       ) : (
-        <div className="flex h-full w-full">
-          {/* Left Sidebar */}
-          <div className="w-48 bg-gray-900/80 border-r border-gray-800 p-4 flex flex-col">
-            <div className="mb-8">
-              <BackButton 
-                onClick={() => window.location.href = '/games'}
-                className="w-full justify-center"
-              />
+        <div className="flex flex-col h-full w-full">
+          {/* Top Bar - Mobile */}
+          <div className="lg:hidden bg-gray-900/90 backdrop-blur-sm p-3 border-b border-gray-800 flex justify-between items-center">
+            <BackButton 
+              onClick={() => navigate('/')}
+              className="text-sm px-3 py-1.5"
+            />
+            <div className="flex items-center space-x-4">
+              <div className="text-white font-mono text-sm">
+                <span className="text-gray-400">Score: </span>
+                {state.stats.score.toLocaleString()}
+              </div>
+              <button
+                onClick={() => setShowHelp(true)}
+                className="p-1.5 text-gray-400 hover:text-white rounded-full hover:bg-gray-800"
+                aria-label="Help"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
             </div>
-            
-            <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Hold</h3>
-              <div className="flex justify-center">
+          </div>
+
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Desktop */}
+            <div className="hidden lg:flex flex-col w-56 xl:w-64 bg-gray-900/80 border-r border-gray-800 p-4 space-y-4">
+              <div className="bg-gray-800/50 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-300 mb-3">Hold</h3>
+                <div className="flex justify-center min-h-[80px]">
+                  <HoldPiece />
+                </div>
+              </div>
+              
+              <div className="bg-gray-800/50 rounded-xl p-4 flex-1 overflow-y-auto">
+                <h3 className="text-sm font-medium text-gray-300 mb-3">Controls</h3>
+                <div className="space-y-2.5 text-sm text-gray-300">
+                  {[
+                    { label: 'Move Left', key: controls.moveLeft },
+                    { label: 'Move Right', key: controls.moveRight },
+                    { label: 'Rotate', key: controls.rotate },
+                    { label: 'Soft Drop', key: controls.softDrop },
+                    { label: 'Hard Drop', key: controls.hardDrop },
+                    { label: 'Hold', key: controls.hold },
+                    { label: 'Pause', key: controls.pause }
+                  ].map((item, index) => (
+                    <div key={index} className="flex justify-between items-center py-1.5 px-2 rounded-lg hover:bg-gray-700/50">
+                      <span className="text-gray-300">{item.label}</span>
+                      <kbd className="px-2.5 py-1 bg-gray-700/80 rounded-md text-xs font-mono">
+                        {item.key}
+                      </kbd>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Game Area */}
+            <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-auto">
+              <div className="relative w-full max-w-md mx-auto">
+                <div className="aspect-square w-full max-h-[90vh] flex items-center justify-center">
+                  <Board />
+                </div>
+                {currentStatus !== 'playing' && (
+                  <GameMenu
+                    type={currentStatus === 'paused' ? 'pause' : currentStatus === 'gameOver' ? 'gameOver' : 'start'}
+                    score={state.stats.score}
+                    highScore={state.stats.highScore}
+                    level={state.stats.level}
+                    onStart={() => {
+                      if (currentStatus === GameStatus.START) {
+                        dispatch({ type: 'START_GAME' });
+                      } else {
+                        dispatch({ type: 'RESET' });
+                      }
+                    }}
+                    onResume={() => dispatch({ type: 'RESET' })}
+                    onRestart={() => {
+                      dispatch({ type: 'RESET_GAME' });
+                      dispatch({ type: 'START_GAME' });
+                    }}
+                    onQuit={() => navigate('/')}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Right Sidebar - Desktop */}
+            <div className="hidden lg:flex flex-col w-56 xl:w-64 bg-gray-900/80 border-l border-gray-800 p-4 space-y-4">
+              <div className="bg-gray-800/50 rounded-xl p-4">
+                <h3 className="text-sm font-medium text-gray-300 mb-3">Next</h3>
+                <div className="space-y-4">
+                  <NextPieces count={3} />
+                </div>
+              </div>
+              
+              <div className="bg-gray-800/50 rounded-xl p-4 space-y-3">
+                <h3 className="text-sm font-medium text-gray-300">Stats</h3>
+                <div className="space-y-2.5">
+                  {[
+                    { label: 'Score', value: state.stats.score.toLocaleString() },
+                    { label: 'Level', value: state.stats.level },
+                    { label: 'Lines', value: state.stats.lines }
+                  ].map((stat, index) => (
+                    <div key={index} className="flex justify-between items-center py-1.5 px-2 rounded-lg hover:bg-gray-700/50">
+                      <span className="text-xs text-gray-400">{stat.label}</span>
+                      <span className="text-white font-mono text-sm">{stat.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Bottom Bar */}
+          <div className="lg:hidden bg-gray-900/90 backdrop-blur-sm p-3 border-t border-gray-800 grid grid-cols-3 gap-2">
+            <div className="bg-gray-800/50 rounded-lg p-3 flex flex-col items-center">
+              <span className="text-xs text-gray-400 mb-1">Hold</span>
+              <div className="h-8 flex items-center">
                 <HoldPiece />
               </div>
             </div>
-            
-            <div className="bg-gray-800/50 rounded-lg p-4 flex-1">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Controls</h3>
-              <div className="space-y-2 text-xs text-gray-300">
-                <div className="flex justify-between">
-                  <span>Move Left:</span>
-                  <kbd className="px-2 py-0.5 bg-gray-700 rounded">{controls.moveLeft}</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span>Move Right:</span>
-                  <kbd className="px-2 py-0.5 bg-gray-700 rounded">{controls.moveRight}</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span>Rotate:</span>
-                  <kbd className="px-2 py-0.5 bg-gray-700 rounded">{controls.rotate}</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span>Soft Drop:</span>
-                  <kbd className="px-2 py-0.5 bg-gray-700 rounded">{controls.softDrop}</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span>Hard Drop:</span>
-                  <kbd className="px-2 py-0.5 bg-gray-700 rounded">{controls.hardDrop}</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span>Hold:</span>
-                  <kbd className="px-2 py-0.5 bg-gray-700 rounded">{controls.hold}</kbd>
-                </div>
-                <div className="flex justify-between">
-                  <span>Pause:</span>
-                  <kbd className="px-2 py-0.5 bg-gray-700 rounded">{controls.pause}</kbd>
-                </div>
-              </div>
+            <div className="bg-gray-800/50 rounded-lg p-3 flex flex-col items-center">
+              <span className="text-xs text-gray-400 mb-1">Level</span>
+              <span className="text-white font-mono text-lg">{state.stats.level}</span>
+            </div>
+            <div className="bg-gray-800/50 rounded-lg p-3 flex flex-col items-center">
+              <span className="text-xs text-gray-400 mb-1">Lines</span>
+              <span className="text-white font-mono text-lg">{state.stats.lines}</span>
             </div>
           </div>
-
-          {/* Main Game Area */}
-          <div className="flex-1 flex flex-col items-center justify-center p-4">
-            <div className="relative">
-              <Board />
-              {currentStatus !== 'playing' && (
-                <GameMenu
-                  type={currentStatus === 'paused' ? 'pause' : currentStatus === 'gameOver' ? 'gameOver' : 'start'}
-                  score={state.stats.score}
-                  highScore={state.stats.highScore}
-                  level={state.stats.level}
-                  onStart={() => {
-                    if (currentStatus === GameStatus.START) {
-                      dispatch({ type: 'START_GAME' });
-                    } else {
-                      dispatch({ type: 'RESET' });
-                    }
-                  }}
-                  onResume={() => dispatch({ type: 'RESET' })}
-                  onRestart={() => {
-                    dispatch({ type: 'RESET_GAME' });
-                    dispatch({ type: 'START_GAME' });
-                  }}
-                  onQuit={() => {
-                    window.location.href = '/games';
-                  }}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="w-48 bg-gray-900/80 border-l border-gray-800 p-4">
-            <div className="bg-gray-800/50 rounded-lg p-4 h-full">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Next</h3>
-              <div className="space-y-4">
-                <NextPieces count={3} />
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-gray-700">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-gray-400">Score</span>
-                  <span className="text-white font-mono">{state.stats.score.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-xs text-gray-400">Level</span>
-                  <span className="text-white font-mono">{state.stats.level}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400">Lines</span>
-                  <span className="text-white font-mono">{state.stats.lines}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Help Button */}
-          <button
-            onClick={() => setShowHelp(true)}
-            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white"
-            aria-label="Help"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </button>
 
           {/* Help Sidebar */}
           <HelpSidebar

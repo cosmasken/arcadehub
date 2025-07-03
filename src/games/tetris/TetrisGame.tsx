@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useGame, GameProvider } from './context';
 import Board from './components/Board';
 import GameMenu from './components/GameMenu';
 import HelpSidebar from './components/HelpSidebar';
+import SplashScreen from './components/SplashScreen';
 import useWalletStore from '../../stores/useWalletStore';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { GameState } from './types';
@@ -29,9 +30,10 @@ interface ControlSettings {
 const GameUI: React.FC = () => {
   const { state, dispatch } = useGame();
   const [showHelp, setShowHelp] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Default controls
-  const defaultControls: ControlSettings = {
+  const defaultControls = useMemo<ControlSettings>(() => ({
     moveLeft: 'ArrowLeft',
     moveRight: 'ArrowRight',
     rotate: 'ArrowUp',
@@ -39,7 +41,7 @@ const GameUI: React.FC = () => {
     hardDrop: 'Space',
     hold: 'KeyC',
     pause: 'KeyP'
-  };
+  }), []);
 
   // Load controls from localStorage or use defaults
   const [controls, setControls] = useLocalStorage<ControlSettings>('tetris-controls', defaultControls);
@@ -141,49 +143,59 @@ const GameUI: React.FC = () => {
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4 bg-gray-900">
-      <Board />
-      {currentStatus !== 'playing' && (
-        <GameMenu
-          type={currentStatus === 'paused' ? 'pause' : currentStatus === 'gameOver' ? 'gameOver' : 'start'}
-          score={state.stats.score}
-          highScore={state.stats.highScore}
-          level={state.stats.level}
-          onStart={() => {
-            if (currentStatus === GameStatus.START) {
-              dispatch({ type: 'START_GAME' });
-            } else {
-              dispatch({ type: 'RESET' });
-            }
-          }}
-          onResume={() => dispatch({ type: 'RESET' })}
-          onRestart={() => {
-            dispatch({ type: 'RESET_GAME' });
-            dispatch({ type: 'START_GAME' });
-          }}
-          onQuit={() => {
-            // Handle quit to menu
-            window.location.href = '/games';
-          }}
+      {showSplash ? (
+        <SplashScreen
+          message="Loading TETRIS..."
+          duration={2500}
+          onComplete={() => setShowSplash(false)}
         />
+      ) : (
+        <>
+          <Board />
+          {currentStatus !== 'playing' && (
+            <GameMenu
+              type={currentStatus === 'paused' ? 'pause' : currentStatus === 'gameOver' ? 'gameOver' : 'start'}
+              score={state.stats.score}
+              highScore={state.stats.highScore}
+              level={state.stats.level}
+              onStart={() => {
+                if (currentStatus === GameStatus.START) {
+                  dispatch({ type: 'START_GAME' });
+                } else {
+                  dispatch({ type: 'RESET' });
+                }
+              }}
+              onResume={() => dispatch({ type: 'RESET' })}
+              onRestart={() => {
+                dispatch({ type: 'RESET_GAME' });
+                dispatch({ type: 'START_GAME' });
+              }}
+              onQuit={() => {
+                // Handle quit to menu
+                window.location.href = '/games';
+              }}
+            />
+          )}
+
+          {/* Help Button */}
+          <button
+            onClick={() => setShowHelp(true)}
+            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white"
+            aria-label="Help"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+
+          {/* Help Sidebar */}
+          <HelpSidebar
+            isOpen={showHelp}
+            onClose={() => setShowHelp(false)}
+            controls={controls}
+          />
+        </>
       )}
-
-      {/* Help Button */}
-      <button
-        onClick={() => setShowHelp(true)}
-        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white"
-        aria-label="Help"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </button>
-
-      {/* Help Sidebar */}
-      <HelpSidebar
-        isOpen={showHelp}
-        onClose={() => setShowHelp(false)}
-        controls={controls}
-      />
     </div>
   );
 };

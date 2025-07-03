@@ -53,11 +53,15 @@ export interface GameSettings {
 }
 
 // Union of all possible effect types
-type ShopItemEffect = 
-  | { ghostPiece: boolean }
-  | { holdPiece: boolean }
-  | { nextPieces: number }
-  | { theme: string };
+type ShopItemEffect = Partial<{
+  ghostPiece: boolean;
+  holdPiece: boolean;
+  nextPiecesCount: number;
+  theme: string;
+  softDropMultiplier: number;
+  hardDropMultiplier: number;
+  comboMultiplier: number;
+}>;
 
 export type ShopItem = {
   id: string;

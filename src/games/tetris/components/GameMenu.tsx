@@ -1,38 +1,20 @@
 import React, { useState, useCallback } from 'react';
-import { Button } from '../../../components/ui/button';
-import { Play, RotateCcw, Home, Settings, Award, ShoppingCart, X, HelpCircle } from 'lucide-react';
-import useWalletStore from '../../../stores/useWalletStore';
+import { Award, Settings, ShoppingCart, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
-import HelpSidebar from './HelpSidebar';
-
-interface ControlSettings {
-  moveLeft: string;
-  moveRight: string;
-  rotate: string;
-  softDrop: string;
-  hardDrop: string;
-  hold: string;
-  pause: string;
-}
+import Achievements from './Achievements';
+import Shop from './Shop';
 
 type TabType = 'main' | 'achievements' | 'upgrades' | 'settings';
 
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  unlocked: boolean;
-  icon: string;
-}
-
-interface Upgrade {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  purchased: boolean;
-  icon: string;
-  effect: string;
+interface GameMenuProps {
+  type: 'start' | 'pause' | 'gameOver';
+  score: number;
+  highScore: number;
+  level: number;
+  onStart: () => void;
+  onResume: () => void;
+  onRestart: () => void;
+  onQuit: () => void;
 }
 
 const TabButton: React.FC<{
@@ -44,27 +26,16 @@ const TabButton: React.FC<{
   <button
     onClick={onClick}
     className={cn(
-      'flex items-center justify-center p-2 rounded-lg transition-colors',
-      active ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+      'flex items-center px-4 py-2 rounded-lg transition-all duration-200 font-medium',
+      active
+        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
     )}
   >
     <span className="mr-2">{icon}</span>
     {label}
   </button>
 );
-
-interface GameMenuProps {
-  type: 'start' | 'pause' | 'gameOver';
-  score: number;
-  highScore: number;
-  level: number;
-  onStart: () => void;
-  onResume: () => void;
-  onRestart: () => void;
-  onQuit: () => void;
-  controls: ControlSettings;
-  onControlsChange: (controls: ControlSettings) => void;
-}
 
 const GameMenu: React.FC<GameMenuProps> = ({
   type,
@@ -77,321 +48,216 @@ const GameMenu: React.FC<GameMenuProps> = ({
   onQuit,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('main');
-  const [showHelp, setShowHelp] = useState(false);
-  const { isConnected, connect } = useWalletStore();
 
-  const toggleHelp = useCallback(() => {
-    setShowHelp(prev => !prev);
-  }, []);
+  const title = type === 'start' ? 'TETRIS' :
+    type === 'pause' ? 'PAUSED' : 'GAME OVER';
 
-  const [coins, setCoins] = useState(100); // Example coin balance
-  
-  // Example achievements
-  const [achievements, setAchievements] = useState<Achievement[]>([
-    {
-      id: 'first_10_lines',
-      title: 'Line Master',
-      description: 'Clear 10 lines',
-      unlocked: false,
-      icon: '🏆'
-    },
-    {
-      id: 'first_100_points',
-      title: 'Centurion',
-      description: 'Score 100 points',
-      unlocked: false,
-      icon: '🎯'
-    },
-    {
-      id: 'clear_4_lines',
-      title: 'Tetris Pro',
-      description: 'Clear 4 lines at once',
-      unlocked: false,
-      icon: '🧩'
-    }
-  ]);
-  
-  // Example controls configuration - should come from game settings
-  const [controls, setControls] = useState<ControlSettings>({
-    moveLeft: 'ArrowLeft',
-    moveRight: 'ArrowRight',
-    rotate: 'ArrowUp',
-    softDrop: 'ArrowDown',
-    hardDrop: ' ',
-    hold: 'c',
-    pause: 'p'
-  });
-
-  const handleControlChange = (control: string, key: string) => {
-    setControls(prev => ({
-      ...prev,
-      [control]: key
-    }));
-  };
-
-  // Example upgrades data - replace with actual game state
-  const [upgrades, setUpgrades] = useState<Upgrade[]>([
-    {
-      id: 'ghost_piece',
-      name: 'Ghost Piece',
-      description: 'Show where the piece will land',
-      price: 50,
-      purchased: false,
-      icon: '👻',
-      effect: 'Shows ghost piece'
-    },
-    {
-      id: 'hold_piece',
-      name: 'Hold Piece',
-      description: 'Store a piece for later use',
-      price: 100,
-      purchased: true, // This one is already purchased
-      icon: '✋',
-      effect: 'Hold one piece'
-    },
-    {
-      id: 'next_3_pieces',
-      name: 'Next 3 Pieces',
-      description: 'See the next 3 pieces in queue',
-      price: 150,
-      purchased: false,
-      icon: '🔮',
-      effect: 'Shows next 3 pieces'
-    }
-  ]);
-  
-  if (!type) return null;
-
-  const title = type === 'start' ? 'TETRIS' : 
-                type === 'pause' ? 'PAUSED' : 'GAME OVER';
-                
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'achievements':
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Achievements</h2>
-              <button 
-                onClick={() => setActiveTab('main')}
-                className="text-gray-400 hover:text-white"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-              {achievements.map((achievement) => (
-                <div 
-                  key={achievement.id}
-                  className={`p-3 rounded-lg border ${achievement.unlocked ? 'border-yellow-400 bg-yellow-400/10' : 'border-gray-700 bg-gray-800/50'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{achievement.icon}</span>
-                    <div>
-                    </div>
-                    <div>
-                      <div className="font-medium">{achievement.title}</div>
-                      <div className="text-sm text-gray-400">{achievement.description}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'upgrades':
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">Upgrades</h3>
-              <div className="flex items-center bg-yellow-600/20 text-yellow-400 px-3 py-1 rounded-full text-sm">
-                🪙 {coins}
-              </div>
-            </div>
-            <div className="space-y-3">
-              {upgrades.map((upgrade) => (
-                <div
-                  key={upgrade.id}
-                  className={`p-3 rounded-lg ${
-                    upgrade.purchased ? 'bg-green-900/30' : 'bg-gray-800/50'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="font-medium">{upgrade.name}</div>
-                      <div className="text-sm text-gray-400">{upgrade.description}</div>
-                      <div className="text-xs text-blue-400 mt-1">{upgrade.effect}</div>
-                    </div>
-                    <Button
-                      size="sm"
-                      disabled={upgrade.purchased || coins < upgrade.price}
-                      onClick={() => {
-                        if (coins >= upgrade.price) {
-                          setUpgrades(prev =>
-                            prev.map(u =>
-                              u.id === upgrade.id
-                                ? { ...u, purchased: true }
-                                : u
-                            )
-                          );
-                          setCoins(prev => prev - upgrade.price);
-                        }
-                      }}
-                      className={`${
-                        upgrade.purchased
-                          ? 'bg-green-600 hover:bg-green-600'
-                          : 'bg-blue-600 hover:bg-blue-700'
-                      }`}
-                    >
-                      {upgrade.purchased ? 'Purchased' : `${upgrade.price} 🪙`}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'settings':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Controls</h3>
-              <div className="space-y-3">
-                {Object.entries({
-                  moveLeft: 'Move Left',
-                  moveRight: 'Move Right',
-                  rotate: 'Rotate',
-                  softDrop: 'Soft Drop',
-                  hardDrop: 'Hard Drop',
-                  hold: 'Hold Piece',
-                  pause: 'Pause'
-                }).map(([key, label]) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <span className="text-gray-300">{label}</span>
-                    <input
-                      type="text"
-                      value={controls[key as keyof ControlSettings]}
-                      onChange={(e) => handleControlChange(key, e.target.value)}
-                      className="w-20 bg-gray-800/50 p-1 rounded text-gray-300 text-center"
-                      maxLength={1}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="pt-4 border-t border-gray-700">
-              <h3 className="text-lg font-semibold mb-4">Game Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Sound Effects</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Music</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300">Ghost Piece</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
-                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const handleStartWithConnection = async () => {
-    if (!isConnected) {
-      try {
-        await connect();
-        // Auto-start after successful connection
-        onStart();
-      } catch (error) {
-        console.error('Failed to connect wallet:', error);
-      }
-    } else {
-      onStart();
-    }
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
   };
 
   const getActionButton = () => {
     if (type === 'start') {
       return (
-        <Button
-          onClick={handleStartWithConnection}
-          className="w-full py-6 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-          size="lg"
+        <button
+          onClick={onStart}
+          className="w-full bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
         >
-          <Play className="mr-2 h-5 w-5" />
-          {isConnected ? 'Start Game' : 'Connect Wallet'}
-        </Button>
+          Start Game
+        </button>
       );
     } else if (type === 'pause') {
       return (
-        <>
-          <Button
-            onClick={onResume}
-            className="w-full py-6 text-lg bg-green-600 hover:bg-green-700 text-white mb-3"
-            size="lg"
-          >
-            Resume Game
-          </Button>
-          <Button
-            onClick={onRestart}
-            variant="outline"
-            className="w-full py-6 text-lg mb-3"
-            size="lg"
-          >
-            <RotateCcw className="mr-2 h-5 w-5" />
-            Restart
-          </Button>
-        </>
-      );
-    } else { // gameOver
-      return (
-        <Button
-          onClick={onRestart}
-          className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 text-white mb-3"
-          size="lg"
+        <button
+          onClick={onResume}
+          className="w-full bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
         >
-          <RotateCcw className="mr-2 h-5 w-5" />
+          Continue Playing
+        </button>
+      );
+    } else {
+      return (
+        <button
+          onClick={onRestart}
+          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
+        >
           Play Again
-        </Button>
+        </button>
       );
     }
   };
 
-  return (
-    <>
-      <HelpSidebar 
-        isOpen={showHelp} 
-        onClose={toggleHelp} 
-        controls={controls}
-      />
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
-          <div className="text-center">
-            {renderContent()}
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'achievements':
+        return <Achievements />;
+      case 'upgrades':
+        return <Shop />;
+      case 'settings':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-white mb-4">Controls</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <p className="text-gray-400 text-sm">Move Left</p>
+                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">←</kbd>
+              </div>
+              <div className="space-y-2">
+                <p className="text-gray-400 text-sm">Move Right</p>
+                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">→</kbd>
+              </div>
+              <div className="space-y-2">
+                <p className="text-gray-400 text-sm">Rotate</p>
+                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↑</kbd>
+              </div>
+              <div className="space-y-2">
+                <p className="text-gray-400 text-sm">Soft Drop</p>
+                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↓</kbd>
+              </div>
+              <div className="space-y-2">
+                <p className="text-gray-400 text-sm">Hard Drop</p>
+                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">Space</kbd>
+              </div>
+              <div className="space-y-2">
+                <p className="text-gray-400 text-sm">Hold Piece</p>
+                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">C</kbd>
+              </div>
+            </div>
+            <div className="mt-6 pt-4 border-t border-gray-700">
+              <p className="text-sm text-gray-400">Keyboard Shortcuts:</p>
+              <ul className="mt-2 space-y-1 text-sm text-gray-400">
+                <li>• P: Pause/Resume Game</li>
+                <li>• R: Restart Game</li>
+                <li>• A: View Achievements</li>
+                <li>• S: Open Shop</li>
+                <li>• Esc: Settings</li>
+              </ul>
+            </div>
           </div>
+        );
+      default:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-green-400 mb-2">
+                {title}
+              </h2>
+
+              {(type === 'pause' || type === 'gameOver') && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-2xl text-gray-200">
+                    Score: <span className="text-cyan-400">{score}</span>
+                  </p>
+                  {highScore > 0 && (
+                    <p className="text-lg text-gray-400">
+                      High Score: <span className="text-yellow-400">{highScore}</span>
+                    </p>
+                  )}
+                  <p className="text-gray-400">
+                    Level: <span className="text-purple-400">{level}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {type === 'start' && (
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
+                <p className="text-sm text-gray-300 text-center">
+                  Use arrow keys to move and rotate pieces
+                </p>
+                <p className="text-xs text-gray-400 text-center mt-1">
+                  Fill complete rows to score points and level up!
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {getActionButton()}
+
+              {(type === 'pause' || type === 'gameOver') && (
+                <button
+                  onClick={onRestart}
+                  className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+                >
+                  New Game
+                </button>
+              )}
+
+              <button
+                onClick={onQuit}
+                className="w-full bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white py-2 px-4 rounded-lg text-sm font-medium border border-gray-600 hover:border-gray-500 transition-colors"
+              >
+                Exit to Menu
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <button
+                onClick={() => handleTabChange('achievements')}
+                className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-500/30 hover:border-yellow-500/50 transition-all duration-200"
+              >
+                <Award className="w-6 h-6 text-yellow-400 mb-1" />
+                <span className="text-xs text-gray-300">Achievements</span>
+              </button>
+              <button
+                onClick={() => handleTabChange('upgrades')}
+                className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30 hover:border-purple-500/50 transition-all duration-200"
+              >
+                <ShoppingCart className="w-6 h-6 text-purple-400 mb-1" />
+                <span className="text-xs text-gray-300">Shop</span>
+              </button>
+              <button
+                onClick={() => handleTabChange('settings')}
+                className="flex flex-col items-center justify-center p-3 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-lg border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200"
+              >
+                <Settings className="w-6 h-6 text-blue-400 mb-1" />
+                <span className="text-xs text-gray-300">Settings</span>
+              </button>
+            </div>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10">
+      <div className="bg-gray-900/95 p-8 rounded-xl border border-cyan-400/20 shadow-2xl w-full max-w-md transform transition-all duration-300 hover:shadow-cyan-500/20">
+        {activeTab !== 'main' && (
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex space-x-2">
+              <TabButton
+                active={activeTab === 'achievements'}
+                onClick={() => handleTabChange('achievements')}
+                icon={<Award className="w-5 h-5" />}
+                label="Achievements"
+              />
+              <TabButton
+                active={activeTab === 'upgrades'}
+                onClick={() => handleTabChange('upgrades')}
+                icon={<ShoppingCart className="w-5 h-5" />}
+                label="Shop"
+              />
+              <TabButton
+                active={activeTab === 'settings'}
+                onClick={() => handleTabChange('settings')}
+                icon={<Settings className="w-5 h-5" />}
+                label="Settings"
+              />
+            </div>
+            <button
+              onClick={() => handleTabChange('main')}
+              className="text-gray-400 hover:text-gray-200"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        )}
+
+        <div className="max-h-[70vh] overflow-y-auto pr-2">
+          {renderContent()}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

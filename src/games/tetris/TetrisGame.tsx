@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useGame } from './context';
+import { useGame, GameProvider } from './context';
 import Board from './components/Board';
 import GameMenu from './components/GameMenu';
 import HelpSidebar from './components/HelpSidebar';
@@ -24,10 +24,12 @@ interface ControlSettings {
   hold: string;
   pause: string;
 }
-const TetrisGame: React.FC = () => {
+
+// Separate GameUI component that uses the hooks
+const GameUI: React.FC = () => {
   const { state, dispatch } = useGame();
   const [showHelp, setShowHelp] = useState(false);
-  
+
   // Load controls from localStorage or use defaults
   const [controls, setControls] = useLocalStorage<ControlSettings>('tetris-controls', {
     moveLeft: 'ArrowLeft',
@@ -38,21 +40,21 @@ const TetrisGame: React.FC = () => {
     hold: 'KeyC',
     pause: 'KeyP'
   });
-  
+
   // Determine game status based on state
   const getGameStatus = useCallback((): 'start' | 'playing' | 'paused' | 'gameOver' => {
     if (state.gameOver) return 'gameOver';
     if (state.isPaused) return 'paused';
     return state.isStarted ? 'playing' : 'start';
   }, [state.gameOver, state.isPaused, state.isStarted]);
-  
+
   // Handle keyboard input based on current controls
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const gameStatus = getGameStatus();
     if (gameStatus === GameStatus.PAUSED || gameStatus === GameStatus.GAME_OVER) {
       return;
     }
-    
+
     switch (e.code) {
       case controls.moveLeft:
         e.preventDefault();
@@ -90,7 +92,7 @@ const TetrisGame: React.FC = () => {
       }
     }
   }, [dispatch, controls, getGameStatus]);
-  
+
   // Set up keyboard event listeners
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -98,38 +100,17 @@ const TetrisGame: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
-  
+
   const [highScore, setHighScore] = useLocalStorage('tetris-highscore', 0);
   const { isConnected } = useWalletStore();
-  
-  // Memoized callbacks
-  const handleStartGame = useCallback(() => {
-    dispatch({ type: 'START_GAME' });
-  }, [dispatch]);
-  
-  const handleResumeGame = useCallback(() => {
-    dispatch({ type: 'PAUSE', isPaused: false });
-  }, [dispatch]);
-  
-  const handleRestartGame = useCallback(() => {
-    dispatch({ type: 'RESET_GAME' });
-    dispatch({ type: 'START_GAME' });
-  }, [dispatch]);
-  
-  const handleQuitGame = useCallback(() => {
-    // Reset game state
-    dispatch({ type: 'RESET_GAME' });
-    // Navigate back to the main menu
-    window.location.href = '/games';
-  }, [dispatch]);
-  
+
   // Effects
   useEffect(() => {
     if (state.gameOver && state.stats.score > highScore) {
       setHighScore(state.stats.score);
     }
   }, [state.gameOver, state.stats.score, highScore, setHighScore]);
-  
+
   useEffect(() => {
     // Prevent scrolling on the body
     document.body.style.overflow = 'hidden';
@@ -137,7 +118,7 @@ const TetrisGame: React.FC = () => {
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
     document.body.style.height = '100%';
-    
+
     return () => {
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
@@ -148,7 +129,7 @@ const TetrisGame: React.FC = () => {
   }, []);
 
   const currentStatus = getGameStatus();
-  
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center p-4 bg-gray-900">
       <Board />
@@ -174,15 +155,11 @@ const TetrisGame: React.FC = () => {
             // Handle quit to menu
             window.location.href = '/games';
           }}
-          controls={controls}
-          onControlsChange={(newControls: ControlSettings) => {
-            setControls(newControls);
-          }}
         />
       )}
-      
+
       {/* Help Button */}
-      <button 
+      <button
         onClick={() => setShowHelp(true)}
         className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white"
         aria-label="Help"
@@ -191,20 +168,24 @@ const TetrisGame: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </button>
-      
+
       {/* Help Sidebar */}
-      <HelpSidebar 
-        isOpen={showHelp} 
-        onClose={() => setShowHelp(false)} 
-        controls={controls} 
+      <HelpSidebar
+        isOpen={showHelp}
+        onClose={() => setShowHelp(false)}
+        controls={controls}
       />
     </div>
   );
 };
 
-// const TetrisGame: React.FC = () => {
-//   return <GameUI />;
-// };
+// Main TetrisGame component wrapped with GameProvider
+const TetrisGame: React.FC = () => {
+  return (
+    <GameProvider>
+      <GameUI />
+    </GameProvider>
+  );
+};
 
 export default TetrisGame;
-  

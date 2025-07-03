@@ -34,16 +34,20 @@ const isValidMove = (board: number[][], shape: number[][], position: {x: number,
 };
 
 const rotateMatrix = (matrix: number[][]): number[][] => {
-  const rows = matrix.length;
-  const cols = matrix[0]?.length || 0;
-  const rotated: number[][] = [];
+  if (!matrix.length || !matrix[0]?.length) return matrix;
   
-  for (let x = 0; x < cols; x++) {
-    const newRow: number[] = [];
-    for (let y = rows - 1; y >= 0; y--) {
-      newRow.push(matrix[y][x]);
+  // Get dimensions
+  const rows = matrix.length;
+  const cols = matrix[0].length;
+  
+  // Create rotated matrix
+  const rotated: number[][] = Array(cols).fill(0).map(() => Array(rows).fill(0));
+  
+  // Rotate 90 degrees clockwise
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      rotated[x][rows - 1 - y] = matrix[y][x];
     }
-    rotated.push(newRow);
   }
   
   return rotated;

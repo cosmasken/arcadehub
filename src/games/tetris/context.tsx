@@ -12,7 +12,7 @@ const createBoard = (): number[][] => {
   return board;
 };
 
-const getRandomPiece = (): number => 
+const getRandomPiece = (): number =>
   Math.floor(Math.random() * (SHAPES.length - 1)) + 1;
 
 const createDefaultState = (): GameState => ({
@@ -61,7 +61,7 @@ const getInitialState = (): GameState => {
   if (typeof window === 'undefined') {
     return createDefaultState();
   }
-  
+
   const savedState = localStorage.getItem('tetris-state');
   if (!savedState) return createDefaultState();
 
@@ -82,7 +82,7 @@ const getInitialState = (): GameState => {
   } catch (e) {
     console.error('Failed to parse saved game state', e);
   }
-  
+
   return createDefaultState();
 };
 
@@ -98,15 +98,15 @@ const isValidMove = (board: number[][], shape: number[][], position: Position): 
     for (let x = 0; x < shape[y].length; x++) {
       // Skip empty cells in the shape
       if (shape[y][x] === 0) continue;
-      
+
       // Calculate board position
       const boardX = position.x + x;
       const boardY = position.y + y;
-      
+
       // Check boundaries
       if (boardX < 0 || boardX >= COLS) return false;  // Left/Right walls
       if (boardY >= ROWS) return false;                 // Bottom
-      
+
       // Check for collisions with existing pieces (only if within board bounds)
       if (boardY >= 0 && board[boardY][boardX] !== 0) {
         return false;
@@ -116,11 +116,109 @@ const isValidMove = (board: number[][], shape: number[][], position: Position): 
   return true;
 };
 
+// Helper functions
+const rotateMatrix = (matrix: number[][]): number[][] => {
+  if (!matrix.length) return matrix;
+
+  // Make the matrix square if it's not
+  const N = Math.max(matrix.length, Math.max(...matrix.map(row => row.length)));
+  const paddedMatrix = matrix.map(row => [...row, ...Array(N - row.length).fill(0)]);
+  while (paddedMatrix.length < N) {
+    paddedMatrix.push(Array(N).fill(0));
+  }
+
+  // Create result matrix
+  const result = Array(N).fill(0).map(() => Array(N).fill(0));
+
+  // Do the rotation (90 degrees clockwise)
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      result[x][N - 1 - y] = paddedMatrix[y][x] || 0;
+    }
+  }
+
+  // Trim empty rows and columns
+  // Trim empty rows from top and bottom
+  const trimmed = result.filter(row => row.some(cell => cell !== 0));
+
+  // Trim empty columns from left and right
+  const cols = trimmed[0]?.length || 0;
+  let startCol = 0;
+  let endCol = cols - 1;
+
+  for (let x = 0; x < cols; x++) {
+    if (trimmed.some(row => row[x] !== 0)) {
+      startCol = x;
+      break;
+    }
+  }
+
+  for (let x = cols - 1; x >= 0; x--) {
+    if (trimmed.some(row => row[x] !== 0)) {
+      endCol = x;
+      break;
+    }
+  }
+
+  return trimmed.map(row => row.slice(startCol, endCol + 1));
+};
+
+const rotatePiece = (state: GameState): GameState => {
+  if (!state.currentPiece || state.gameOver || state.isPaused) return state;
+
+  const rotated = rotateMatrix(state.currentPiece.shape);
+
+  // Check if rotation is valid in current position
+  if (isValidMove(state.board, rotated, state.currentPiece.position)) {
+    return {
+      ...state,
+      currentPiece: {
+        ...state.currentPiece,
+        shape: rotated,
+      },
+    };
+  }
+
+  // Try wall kicks with more positions
+  const kicks = [
+    { x: -1, y: 0 },  // try left
+    { x: 1, y: 0 },   // try right
+    { x: 0, y: -1 },  // try up
+    { x: -2, y: 0 },  // try two left
+    { x: 2, y: 0 },   // try two right
+    { x: 0, y: -2 },  // try two up
+    { x: -1, y: -1 }, // try left and up
+    { x: 1, y: -1 },  // try right and up
+  ];
+
+  // Try each wall kick position
+  for (const kick of kicks) {
+    const newPosition = {
+      x: state.currentPiece.position.x + kick.x,
+      y: state.currentPiece.position.y + kick.y,
+    };
+
+    if (isValidMove(state.board, rotated, newPosition)) {
+      return {
+        ...state,
+        currentPiece: {
+          ...state.currentPiece,
+          shape: rotated,
+          position: newPosition,
+        },
+      };
+    }
+  }
+
+  // If no valid rotation found, keep the original position
+  return state;
+};
+
 // Context provider component
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const stateRef = useRef(state);
-  
+
   // Keep ref in sync with state
   useEffect(() => {
     stateRef.current = state;
@@ -129,7 +227,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Auto-save when state changes
   const saveGame = useCallback(() => {
     if (typeof window === 'undefined') return;
-    
+
     const { board, currentPiece, ...stateToSave } = stateRef.current;
     localStorage.setItem('tetris-state', JSON.stringify(stateToSave));
   }, []);
@@ -159,15 +257,15 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const checkAchievements = () => {
       const newAchievements = ACHIEVEMENTS.filter(
-        a => 
-          !state.stats.achievements.includes(a.id) && 
+        a =>
+          !state.stats.achievements.includes(a.id) &&
           a.condition(state.stats)
       );
 
       if (newAchievements.length > 0) {
         const newAchievementIds = newAchievements.map(a => a.id);
         const totalReward = newAchievements.reduce((sum, a) => sum + a.reward, 0);
-        
+
         // Show achievement notification
         newAchievements.forEach(achievement => {
           console.log(`Achievement Unlocked: ${achievement.name} - ${achievement.description}`);

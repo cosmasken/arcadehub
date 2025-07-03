@@ -8,6 +8,7 @@ export interface GameState {
     shape: Tetromino;
     position: Position;
     type: number;
+    rotation?: number; // 0-3, representing 0°, 90°, 180°, 270°
   } | null;
   nextPieces: number[];
   holdPiece: number | null;

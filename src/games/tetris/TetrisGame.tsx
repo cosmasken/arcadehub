@@ -30,8 +30,8 @@ const GameUI: React.FC = () => {
   const { state, dispatch } = useGame();
   const [showHelp, setShowHelp] = useState(false);
 
-  // Load controls from localStorage or use defaults
-  const [controls, setControls] = useLocalStorage<ControlSettings>('tetris-controls', {
+  // Default controls
+  const defaultControls: ControlSettings = {
     moveLeft: 'ArrowLeft',
     moveRight: 'ArrowRight',
     rotate: 'ArrowUp',
@@ -39,7 +39,16 @@ const GameUI: React.FC = () => {
     hardDrop: 'Space',
     hold: 'KeyC',
     pause: 'KeyP'
-  });
+  };
+
+  // Load controls from localStorage or use defaults
+  const [controls, setControls] = useLocalStorage<ControlSettings>('tetris-controls', defaultControls);
+  
+  // Merge with defaults to ensure all controls are set
+  const effectiveControls = useCallback(() => ({
+    ...defaultControls,
+    ...controls
+  }), [controls, defaultControls]);
 
   // Determine game status based on state
   const getGameStatus = useCallback((): 'start' | 'playing' | 'paused' | 'gameOver' => {
@@ -55,43 +64,43 @@ const GameUI: React.FC = () => {
       return;
     }
 
-    switch (e.code) {
-      case controls.moveLeft:
-        e.preventDefault();
-        dispatch({ type: 'MOVE_LEFT' });
-        break;
-      case controls.moveRight:
-        e.preventDefault();
-        dispatch({ type: 'MOVE_RIGHT' });
-        break;
-      case controls.rotate:
-        e.preventDefault();
-        dispatch({ type: 'ROTATE' });
-        break;
-      case controls.softDrop:
-        e.preventDefault();
-        dispatch({ type: 'SOFT_DROP' });
-        break;
-      case controls.hardDrop:
-        e.preventDefault();
-        dispatch({ type: 'HARD_DROP' });
-        break;
-      case controls.hold:
-        e.preventDefault();
-        dispatch({ type: 'HOLD' });
-        break;
-      case controls.pause: {
-        e.preventDefault();
-        const currentStatus = getGameStatus();
-        if (currentStatus === 'playing') {
-          dispatch({ type: 'PAUSE' });
-        } else if (currentStatus === 'paused') {
-          dispatch({ type: 'RESET' });
-        }
-        break;
+    const currentControls = effectiveControls();
+    
+    // Handle both key and code for better compatibility
+    const key = e.key || e.code;
+    const code = e.code;
+
+    // Check if any control matches either the key or code
+    if (key === currentControls.rotate || code === currentControls.rotate) {
+      e.preventDefault();
+      dispatch({ type: 'ROTATE' });
+    } else if (key === currentControls.moveLeft || code === currentControls.moveLeft) {
+      e.preventDefault();
+      dispatch({ type: 'MOVE_LEFT' });
+    } else if (key === currentControls.moveRight || code === currentControls.moveRight) {
+      e.preventDefault();
+      dispatch({ type: 'MOVE_RIGHT' });
+    } else if (key === currentControls.softDrop || code === currentControls.softDrop) {
+      e.preventDefault();
+      dispatch({ type: 'SOFT_DROP' });
+    } else if (key === currentControls.hardDrop || code === currentControls.hardDrop || 
+               (code === 'Space' && key === ' ')) {
+      e.preventDefault();
+      dispatch({ type: 'HARD_DROP' });
+    } else if (key === currentControls.hold || code === currentControls.hold) {
+      e.preventDefault();
+      dispatch({ type: 'HOLD' });
+    } else if (key === currentControls.pause || code === currentControls.pause || 
+               (code === 'KeyP' && key.toLowerCase() === 'p')) {
+      e.preventDefault();
+      const currentStatus = getGameStatus();
+      if (currentStatus === 'playing') {
+        dispatch({ type: 'PAUSE' });
+      } else if (currentStatus === 'paused') {
+        dispatch({ type: 'RESET' });
       }
     }
-  }, [dispatch, controls, getGameStatus]);
+  }, [dispatch, effectiveControls, getGameStatus]);
 
   // Set up keyboard event listeners
   useEffect(() => {

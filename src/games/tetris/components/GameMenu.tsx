@@ -224,23 +224,23 @@ const GameMenu: React.FC<GameMenuProps> = ({
       <div className="bg-gray-900/95 p-8 rounded-xl border border-cyan-400/20 shadow-2xl w-full max-w-md transform transition-all duration-300 hover:shadow-cyan-500/20">
         {activeTab !== 'main' && (
           <div className="flex justify-between items-center mb-6">
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
               <TabButton
                 active={activeTab === 'achievements'}
                 onClick={() => handleTabChange('achievements')}
-                icon={<Award className="w-5 h-5" />}
+                icon={<Award className="w-4 h-4 sm:w-5 sm:h-5" />}
                 label="Achievements"
               />
               <TabButton
                 active={activeTab === 'upgrades'}
                 onClick={() => handleTabChange('upgrades')}
-                icon={<ShoppingCart className="w-5 h-5" />}
+                icon={<ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />}
                 label="Shop"
               />
               <TabButton
                 active={activeTab === 'settings'}
                 onClick={() => handleTabChange('settings')}
-                icon={<Settings className="w-5 h-5" />}
+                icon={<Settings className="w-4 h-4 sm:w-5 sm:h-5" />}
                 label="Settings"
               />
             </div>

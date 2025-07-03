@@ -156,7 +156,16 @@ const movePiece = (state: GameState, dx: number, dy: number): GameState => {
     y: state.currentPiece.position.y + dy,
   };
 
-  if (isValidMove(state.board, state.currentPiece.shape, newPosition)) {
+  // Check if the move is valid
+  const canMove = isValidMove(state.board, state.currentPiece.shape, newPosition);
+  
+  // If moving down and can't move further, lock the piece
+  if (dy > 0 && !canMove) {
+    return lockPiece(state);
+  }
+
+  // Only update position if the move is valid
+  if (canMove) {
     return {
       ...state,
       currentPiece: {
@@ -164,11 +173,6 @@ const movePiece = (state: GameState, dx: number, dy: number): GameState => {
         position: newPosition,
       },
     };
-  }
-
-  // If we can't move down, lock the piece
-  if (dy > 0) {
-    return lockPiece(state);
   }
 
   return state;
@@ -321,11 +325,12 @@ const isValidMove = (board: number[][], shape: number[][], position: Position): 
       const newX = position.x + x;
       const newY = position.y + y;
 
+      // Allow pieces to go to the very bottom and right edges
       if (
         newX < 0 ||
         newX >= COLS ||
-        newY >= ROWS ||
-        (newY >= 0 && board[newY][newX] !== 0)
+        newY > ROWS - 1 ||  // Changed from >= to > to allow placing at the bottom
+        (newY >= 0 && newY < ROWS && board[newY][newX] !== 0)
       ) {
         return false;
       }
@@ -335,16 +340,23 @@ const isValidMove = (board: number[][], shape: number[][], position: Position): 
 };
 
 const rotateMatrix = (matrix: number[][]): number[][] => {
-  const N = matrix.length;
-  const result = Array(N).fill(0).map(() => Array(N).fill(0));
+  // Get the dimensions of the original matrix
+  const rows = matrix.length;
+  const cols = matrix[0]?.length || 0;
   
-  for (let y = 0; y < N; y++) {
-    for (let x = 0; x < N; x++) {
-      result[x][N - 1 - y] = matrix[y][x];
+  // Create a new matrix with transposed dimensions
+  const rotated: number[][] = [];
+  
+  // Rotate 90 degrees clockwise
+  for (let x = 0; x < cols; x++) {
+    const newRow: number[] = [];
+    for (let y = rows - 1; y >= 0; y--) {
+      newRow.push(matrix[y][x]);
     }
+    rotated.push(newRow);
   }
   
-  return result;
+  return rotated;
 };
 
 const lockPiece = (state: GameState): GameState => {

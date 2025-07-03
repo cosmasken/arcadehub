@@ -2,8 +2,8 @@ import { ShopItem } from './types';
 
 // Game constants
 export const COLS = 10;
-export const ROWS = 20;
-export const BLOCK = 24;
+export const ROWS = 22; // Slightly taller board for better gameplay
+export const BLOCK = 40; // Increased block size for better visibility
 export const GAME_SPEED = 1000; // ms
 
 // Colors for each tetromino type

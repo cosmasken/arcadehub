@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useGame, GameProvider } from './context';
-import { Board, Stats, Shop, Achievements } from './components';
-import SplashScreen from './components/SplashScreen';
+import { useCallback, useEffect, useState } from 'react';
+import { useGame } from './context';
+import Board from './components/Board';
 import GameMenu from './components/GameMenu';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import useWalletStore from '../../stores/useWalletStore';
@@ -12,15 +11,14 @@ const GameUI: React.FC = () => {
   const { state, dispatch } = useGame();
   const [showSplash, setShowSplash] = useState(true);
   const [highScore, setHighScore] = useLocalStorage('tetris-highscore', 0);
-  const { isConnected, connect } = useWalletStore();
-  const [showShop, setShowShop] = useState(false);
-  const [showAchievements, setShowAchievements] = useState(false);
-  const [showControls, setShowControls] = useState(false);
+  const { isConnected } = useWalletStore();
   
   // Memoized callbacks
   const handleSplashComplete = useCallback(() => {
     setShowSplash(false);
-  }, []);
+    // Initialize game when splash is complete
+    dispatch({ type: 'RESET_GAME' });
+  }, [dispatch]);
   
   const handleStartGame = useCallback(() => {
     dispatch({ type: 'START_GAME' });
@@ -36,26 +34,11 @@ const GameUI: React.FC = () => {
   }, [dispatch]);
   
   const handleQuitGame = useCallback(() => {
+    // Reset game state
     dispatch({ type: 'RESET_GAME' });
+    // Navigate back to the main menu
+    window.location.href = '/games';
   }, [dispatch]);
-  
-  const toggleShop = useCallback(() => {
-    setShowShop(prev => !prev);
-    setShowAchievements(false);
-    setShowControls(false);
-  }, []);
-
-  const toggleAchievements = useCallback(() => {
-    setShowAchievements(prev => !prev);
-    setShowShop(false);
-    setShowControls(false);
-  }, []);
-
-  const toggleControls = useCallback(() => {
-    setShowControls(prev => !prev);
-    setShowShop(false);
-    setShowAchievements(false);
-  }, []);
   
   // Effects
   useEffect(() => {
@@ -95,7 +78,19 @@ const GameUI: React.FC = () => {
 
   // Show splash screen on initial load
   if (showSplash) {
-    return <SplashScreen onComplete={handleSplashComplete} />;
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">TETRIS</h1>
+          <button 
+            onClick={handleSplashComplete}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Start Game
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -121,53 +116,24 @@ const GameUI: React.FC = () => {
         </header>
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 h-[calc(100vh-100px)]">
-          {/* Left Sidebar - Stats */}
-          <div className="lg:col-span-3 xl:col-span-2 flex flex-col gap-2 h-full min-w-[180px] max-w-[250px]">
-            <div className="bg-gray-800/50 p-2 rounded-lg border border-blue-400/20">
-              <h3 className="font-bold text-blue-400 text-xs mb-2">GAME STATS</h3>
-              <Stats />
-            </div>
-            
-            <div className="bg-gray-800/50 p-2 rounded-lg border border-blue-400/20">
-              <h3 className="font-bold text-blue-400 text-xs mb-2">QUICK ACTIONS</h3>
-              <div className="space-y-1">
-                <button
-                  onClick={toggleShop}
-                  className="w-full px-2 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded hover:opacity-90 transition-all duration-200"
-                >
-                  🛒 SHOP
-                </button>
-                <button
-                  onClick={toggleAchievements}
-                  className="w-full px-2 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded hover:opacity-90 transition-all duration-200"
-                >
-                  🏆 ACHIEVEMENTS
-                </button>
-                <button
-                  onClick={toggleControls}
-                  className="w-full px-2 py-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold rounded hover:opacity-90 transition-all duration-200"
-                >
-                  🎮 CONTROLS
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* Main Game Area */}
-          <div className="lg:col-span-6 xl:col-span-8 h-full flex items-center justify-center">
-            <div 
-              className="bg-black/30 rounded-lg shadow-lg overflow-hidden border border-blue-400/20"
-              style={{ 
-                filter: showShop || showAchievements || showControls ? 'blur(2px)' : 'none',
-                width: 'fit-content',
-                height: 'fit-content'
-              }}
-            >
-              <Board />
+          <div className="lg:col-span-12 h-full flex items-center justify-center p-4">
+            <div className="relative">
+              <div 
+                className="bg-black/30 rounded-lg shadow-lg overflow-hidden border border-blue-400/20"
+                style={{ 
+                  width: 'fit-content',
+                  height: 'fit-content',
+                  maxHeight: '90vh',
+                  maxWidth: '100%'
+                }}
+              >
+                <Board />
+              </div>
               
               {/* Game Menu Overlay */}
               {(!state.isStarted || state.isPaused || state.gameOver) && (
-                <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10">
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
                   <GameMenu
                     type={getMenuType()}
                     score={state.stats.score}
@@ -177,62 +143,10 @@ const GameUI: React.FC = () => {
                     onResume={handleResumeGame}
                     onRestart={handleRestartGame}
                     onQuit={handleQuitGame}
-                    onToggleShop={toggleShop}
-                    onToggleAchievements={toggleAchievements}
-                    onToggleSettings={() => {}}
                   />
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Right Sidebar - Shop, Achievements, Controls */}
-          <div className="lg:col-span-3 xl:col-span-2 flex flex-col gap-4 h-full min-w-[200px] max-w-[300px]">
-            {showShop && (
-              <div className="bg-gray-800/90 p-4 rounded-lg border border-purple-500/30 h-full overflow-y-auto">
-                <h3 className="font-bold text-purple-400 text-lg mb-3">SHOP</h3>
-                <Shop />
-              </div>
-            )}
-            
-            {showAchievements && (
-              <div className="bg-gray-800/90 p-4 rounded-lg border border-yellow-500/30 h-full overflow-y-auto">
-                <h3 className="font-bold text-yellow-400 text-lg mb-3">ACHIEVEMENTS</h3>
-                <Achievements />
-              </div>
-            )}
-            
-            {showControls && (
-              <div className="bg-gray-800/90 p-4 rounded-lg border border-blue-500/30 h-full overflow-y-auto">
-                <h3 className="font-bold text-blue-400 text-lg mb-3">CONTROLS</h3>
-                <div className="space-y-3 text-sm text-gray-200">
-                  <div className="flex items-center gap-2">
-                    <kbd className="bg-gray-700 px-2 py-1 rounded">←</kbd> / <kbd className="bg-gray-700 px-2 py-1 rounded">→</kbd>
-                    <span>Move piece</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <kbd className="bg-gray-700 px-2 py-1 rounded">↑</kbd>
-                    <span>Rotate piece</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <kbd className="bg-gray-700 px-2 py-1 rounded">↓</kbd>
-                    <span>Soft drop</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <kbd className="bg-gray-700 px-2 py-1 rounded">Space</kbd>
-                    <span>Hard drop</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <kbd className="bg-gray-700 px-2 py-1 rounded">C</kbd> / <kbd className="bg-gray-700 px-2 py-1 rounded">Shift</kbd>
-                    <span>Hold piece</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <kbd className="bg-gray-700 px-2 py-1 rounded">P</kbd>
-                    <span>Pause game</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -242,11 +156,7 @@ const GameUI: React.FC = () => {
 
 // Main game component
 const TetrisGame: React.FC = () => {
-  return (
-    <GameProvider>
-      <GameUI />
-    </GameProvider>
-  );
+  return <GameUI />;
 };
 
 export default TetrisGame;

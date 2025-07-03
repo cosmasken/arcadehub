@@ -9,9 +9,11 @@ const Board: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animationRef = useRef<number>();
     const lastTick = useRef<number>(0);
+    // Increased cell size from 30 to 40 pixels for a larger game area
+    const cellSize = 40;
     const [dimensions] = useState({ 
-      width: COLS * 30, 
-      height: ROWS * 30 
+      width: COLS * cellSize, 
+      height: ROWS * cellSize 
     });
     const accumulatedTime = useRef<number>(0);
     const lastTime = useRef<number>(0);
@@ -39,15 +41,32 @@ const Board: React.FC = () => {
       ctx.fillStyle = '#1a1a2e';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Draw grid lines
+      // Draw grid lines with updated cell size
       ctx.strokeStyle = '#16213e';
       ctx.lineWidth = 0.5;
+      
+      // Draw vertical lines
+      for (let x = 0; x <= COLS; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * cellSize, 0);
+        ctx.lineTo(x * cellSize, ROWS * cellSize);
+        ctx.stroke();
+      }
+      
+      // Draw horizontal lines
+      for (let y = 0; y <= ROWS; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * cellSize);
+        ctx.lineTo(COLS * cellSize, y * cellSize);
+        ctx.stroke();
+      }
       
       // Draw the board - ensure it's a valid 2D array before rendering
       const board = Array.isArray(state.board) ? state.board : [];
       for (let y = 0; y < ROWS; y++) {
         const row = Array.isArray(board[y]) ? board[y] : [];
         for (let x = 0; x < COLS; x++) {
+          // Draw all cells, including those at the bottom and right edges
           const value = typeof row[x] === 'number' ? row[x] : 0;
           if (value !== 0) {
             drawBlock(ctx, x, y, value);
@@ -58,6 +77,7 @@ const Board: React.FC = () => {
       // Draw ghost piece if enabled and there's a valid current piece
       if (state.settings.ghostPiece && state.currentPiece?.shape && state.currentPiece?.position) {
         const { shape, position, type } = state.currentPiece;
+        const pieceType = type || 1;
         let ghostY = position.y;
         
         // Find the lowest valid position for the ghost piece
@@ -70,29 +90,39 @@ const Board: React.FC = () => {
         }
         
         // Only draw the ghost piece if it's below the current piece
-        if (ghostY > position.y && Array.isArray(shape)) {
+        if (ghostY > position.y) {
           for (let y = 0; y < shape.length; y++) {
             const row = Array.isArray(shape[y]) ? shape[y] : [];
             for (let x = 0; x < row.length; x++) {
               if (row[x] !== 0) {
-                drawGhostBlock(ctx, (position?.x || 0) + x, ghostY + y, type || 1);
+                const posX = position.x + x;
+                const posY = ghostY + y;
+                
+                // Only draw if position is within visible board
+                if (posY >= 0 && posY < ROWS && posX >= 0 && posX < COLS) {
+                  drawGhostBlock(ctx, posX, posY, pieceType);
+                }
               }
             }
           }
         }
       }
   
-      // Draw current piece with null/undefined checks
-      if (state.currentPiece && state.currentPiece.shape && state.currentPiece.position) {
+      // Draw current piece with position validation
+      if (state.currentPiece?.shape && state.currentPiece.position) {
         const { shape, position, type } = state.currentPiece;
-        if (Array.isArray(shape)) {
-          for (let y = 0; y < shape.length; y++) {
-            const row = Array.isArray(shape[y]) ? shape[y] : [];
-            for (let x = 0; x < row.length; x++) {
-              if (row[x] !== 0) {
-                const posX = (position?.x || 0) + x;
-                const posY = (position?.y || 0) + y;
-                drawBlock(ctx, posX, posY, type || 1);
+        const pieceType = type || 1;
+        
+        for (let y = 0; y < shape.length; y++) {
+          const row = Array.isArray(shape[y]) ? shape[y] : [];
+          for (let x = 0; x < row.length; x++) {
+            if (row[x] !== 0) {
+              const posX = position.x + x;
+              const posY = position.y + y;
+              
+              // Only draw if position is within visible board
+              if (posY >= 0 && posY < ROWS && posX >= 0 && posX < COLS) {
+                drawBlock(ctx, posX, posY, pieceType);
               }
             }
           }

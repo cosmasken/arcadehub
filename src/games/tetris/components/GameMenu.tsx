@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context';
 import { Button } from '../../../components/ui/button';
-import { Play, RotateCcw, Home, Settings, Award, ShoppingCart, LogIn } from 'lucide-react';
+import { Play, RotateCcw, Home, Settings, Award, ShoppingCart } from 'lucide-react';
+import useWalletStore from '../../../stores/useWalletStore';
 
 interface GameMenuProps {
   type: 'start' | 'pause' | 'gameOver' | null;
@@ -13,6 +13,9 @@ interface GameMenuProps {
   onResume: () => void;
   onRestart: () => void;
   onQuit: () => void;
+  onToggleShop?: () => void;
+  onToggleAchievements?: () => void;
+  onToggleSettings?: () => void;
 }
 
 const GameMenu: React.FC<GameMenuProps> = ({
@@ -24,11 +27,11 @@ const GameMenu: React.FC<GameMenuProps> = ({
   onResume,
   onRestart,
   onQuit,
+  onToggleShop,
+  onToggleAchievements,
+  onToggleSettings,
 }) => {
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const navigate = useNavigate();
-  
-  // Get wallet connection status from context
   const { isConnected, connect } = useWalletStore();
   
   if (!type) return null;
@@ -36,22 +39,25 @@ const GameMenu: React.FC<GameMenuProps> = ({
   const title = type === 'start' ? 'TETRIS' : 
                 type === 'pause' ? 'PAUSED' : 'GAME OVER';
 
-  // Handle exit to home
-  const handleExit = () => {
-    navigate('/');
+  const handleStartWithConnection = async () => {
+    if (!isConnected) {
+      try {
+        await connect();
+        // Auto-start after successful connection
+        onStart();
+      } catch (error) {
+        console.error('Failed to connect wallet:', error);
+      }
+    } else {
+      onStart();
+    }
   };
 
-  // Handle wallet connection
-  const handleConnect = async () => {
-    await connect();
-  };
-
-  // Get the appropriate action button based on menu type
   const getActionButton = () => {
     if (type === 'start') {
       return (
         <Button
-          onClick={isConnected ? onStart : handleConnect}
+          onClick={handleStartWithConnection}
           className="w-full py-6 text-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
           size="lg"
         >
@@ -82,16 +88,14 @@ const GameMenu: React.FC<GameMenuProps> = ({
       );
     } else { // gameOver
       return (
-        <>
-          <Button
-            onClick={onRestart}
-            className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 text-white mb-3"
-            size="lg"
-          >
-            <RotateCcw className="mr-2 h-5 w-5" />
-            Play Again
-          </Button>
-        </>
+        <Button
+          onClick={onRestart}
+          className="w-full py-6 text-lg bg-blue-600 hover:bg-blue-700 text-white mb-3"
+          size="lg"
+        >
+          <RotateCcw className="mr-2 h-5 w-5" />
+          Play Again
+        </Button>
       );
     }
   };
@@ -124,30 +128,39 @@ const GameMenu: React.FC<GameMenuProps> = ({
           {getActionButton()}
           
           <div className="grid grid-cols-2 gap-3 mt-4">
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {/* Open settings */}}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {/* Open achievements */}}
-            >
-              <Award className="mr-2 h-4 w-4" />
-              Achievements
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => {/* Open shop */}}
-            >
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Shop
-            </Button>
+            {onToggleSettings && (
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={onToggleSettings}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </Button>
+            )}
+            
+            {onToggleAchievements && (
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={onToggleAchievements}
+              >
+                <Award className="mr-2 h-4 w-4" />
+                Achievements
+              </Button>
+            )}
+            
+            {onToggleShop && isConnected && (
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={onToggleShop}
+              >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Shop
+              </Button>
+            )}
+            
             <Button 
               variant="ghost" 
               className="w-full text-red-400 hover:bg-red-900/50 hover:text-red-300"
@@ -162,11 +175,5 @@ const GameMenu: React.FC<GameMenuProps> = ({
     </div>
   );
 };
-
-// Temporary wallet store mock - replace with actual implementation
-const useWalletStore = () => ({
-  isConnected: false,
-  connect: () => {}
-});
 
 export default GameMenu;

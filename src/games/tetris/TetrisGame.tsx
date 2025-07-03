@@ -112,40 +112,40 @@ const GameUI: React.FC = () => {
         </button>
       </div>
 
-      <div className="h-full flex flex-col pt-16 px-4">
-        <header className="text-center mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+      <div className="h-full flex flex-col pt-4 pb-4 px-4">
+        <header className="text-center mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
             TETRIS
           </h1>
-          <p className="text-sm md:text-base text-gray-400 mt-1">Clear lines and get the highest score!</p>
+          <p className="text-xs md:text-sm text-gray-400">Clear lines and get the highest score!</p>
         </header>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-180px)]">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 h-[calc(100vh-100px)]">
           {/* Left Sidebar - Stats */}
-          <div className="lg:col-span-3 xl:col-span-2 flex flex-col gap-4 h-full min-w-[200px] max-w-[300px]">
-            <div className="bg-gray-800/50 p-4 rounded-lg border border-blue-400/20">
-              <h3 className="font-bold text-blue-400 text-sm mb-3">GAME STATS</h3>
+          <div className="lg:col-span-3 xl:col-span-2 flex flex-col gap-2 h-full min-w-[180px] max-w-[250px]">
+            <div className="bg-gray-800/50 p-2 rounded-lg border border-blue-400/20">
+              <h3 className="font-bold text-blue-400 text-xs mb-2">GAME STATS</h3>
               <Stats />
             </div>
             
-            <div className="bg-gray-800/50 p-4 rounded-lg border border-blue-400/20">
-              <h3 className="font-bold text-blue-400 text-sm mb-3">QUICK ACTIONS</h3>
-              <div className="space-y-2">
+            <div className="bg-gray-800/50 p-2 rounded-lg border border-blue-400/20">
+              <h3 className="font-bold text-blue-400 text-xs mb-2">QUICK ACTIONS</h3>
+              <div className="space-y-1">
                 <button
                   onClick={toggleShop}
-                  className="w-full px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all duration-200"
+                  className="w-full px-2 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded hover:opacity-90 transition-all duration-200"
                 >
                   🛒 SHOP
                 </button>
                 <button
                   onClick={toggleAchievements}
-                  className="w-full px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all duration-200"
+                  className="w-full px-2 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded hover:opacity-90 transition-all duration-200"
                 >
                   🏆 ACHIEVEMENTS
                 </button>
                 <button
                   onClick={toggleControls}
-                  className="w-full px-3 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-bold rounded-lg hover:opacity-90 transition-all duration-200"
+                  className="w-full px-2 py-1.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold rounded hover:opacity-90 transition-all duration-200"
                 >
                   🎮 CONTROLS
                 </button>
@@ -154,14 +154,16 @@ const GameUI: React.FC = () => {
           </div>
 
           {/* Main Game Area */}
-          <div className="lg:col-span-6 xl:col-span-8 h-full">
+          <div className="lg:col-span-6 xl:col-span-8 h-full flex items-center justify-center">
             <div 
-              className="bg-black/30 rounded-lg shadow-lg overflow-hidden h-full flex items-center justify-center border border-blue-400/20"
-              style={{ filter: showShop || showAchievements || showControls ? 'blur(2px)' : 'none' }}
+              className="bg-black/30 rounded-lg shadow-lg overflow-hidden border border-blue-400/20"
+              style={{ 
+                filter: showShop || showAchievements || showControls ? 'blur(2px)' : 'none',
+                width: 'fit-content',
+                height: 'fit-content'
+              }}
             >
-              <div className="w-full max-w-md">
-                <Board />
-              </div>
+              <Board />
               
               {/* Game Menu Overlay */}
               {(!state.isStarted || state.isPaused || state.gameOver) && (
@@ -175,6 +177,9 @@ const GameUI: React.FC = () => {
                     onResume={handleResumeGame}
                     onRestart={handleRestartGame}
                     onQuit={handleQuitGame}
+                    onToggleShop={toggleShop}
+                    onToggleAchievements={toggleAchievements}
+                    onToggleSettings={() => {}}
                   />
                 </div>
               )}

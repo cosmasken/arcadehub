@@ -1,29 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useGame } from './context';
-import { GameProvider } from './context';
+import { useGame, GameProvider } from './context';
 import { Board, Stats, Shop, Achievements } from './components';
 import SplashScreen from './components/SplashScreen';
 import GameMenu from './components/GameMenu';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
-
-// Create a simple GameStateProvider since we don't have the actual one
-const GameStateProvider: React.FC<{ children: React.ReactNode; initialState: GameState }> = ({ children, initialState }) => {
-  return <>{children}</>;
-};
-
-// Temporary type definition for GameState until we import it properly
-type GameState = {
-  score: number;
-  level: number;
-  isStarted: boolean;
-  isPaused: boolean;
-  gameOver: boolean;
-  stats: {
-    score: number;
-    level: number;
-    linesCleared: number;
-  };
-};
 
 // Inner component to handle game UI
 const GameUI: React.FC = () => {
@@ -143,9 +123,7 @@ const GameUI: React.FC = () => {
 const TetrisGame: React.FC = () => {
   return (
     <GameProvider>
-      <GameStateProvider initialState={getInitialState()}>
-        <GameUI />
-      </GameStateProvider>
+      <GameUI />
     </GameProvider>
   );
 };

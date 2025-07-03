@@ -2,24 +2,107 @@ import { useCallback, useEffect, useState } from 'react';
 import { useGame } from './context';
 import Board from './components/Board';
 import GameMenu from './components/GameMenu';
-import { useLocalStorage } from '../../hooks/useLocalStorage';
+import HelpSidebar from './components/HelpSidebar';
 import useWalletStore from '../../stores/useWalletStore';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
+import type { GameState } from './types';
 
-// Inner component to handle game UI
-const GameUI: React.FC = () => {
-  // State hooks
+// Local game status for the UI
+enum GameStatus {
+  START = 'start',
+  PLAYING = 'playing',
+  PAUSED = 'paused',
+  GAME_OVER = 'gameOver'
+}
+
+interface ControlSettings {
+  moveLeft: string;
+  moveRight: string;
+  rotate: string;
+  softDrop: string;
+  hardDrop: string;
+  hold: string;
+  pause: string;
+}
+const TetrisGame: React.FC = () => {
   const { state, dispatch } = useGame();
-  const [showSplash, setShowSplash] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
+  
+  // Load controls from localStorage or use defaults
+  const [controls, setControls] = useLocalStorage<ControlSettings>('tetris-controls', {
+    moveLeft: 'ArrowLeft',
+    moveRight: 'ArrowRight',
+    rotate: 'ArrowUp',
+    softDrop: 'ArrowDown',
+    hardDrop: 'Space',
+    hold: 'KeyC',
+    pause: 'KeyP'
+  });
+  
+  // Determine game status based on state
+  const getGameStatus = useCallback((): 'start' | 'playing' | 'paused' | 'gameOver' => {
+    if (state.gameOver) return 'gameOver';
+    if (state.isPaused) return 'paused';
+    return state.isStarted ? 'playing' : 'start';
+  }, [state.gameOver, state.isPaused, state.isStarted]);
+  
+  // Handle keyboard input based on current controls
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    const gameStatus = getGameStatus();
+    if (gameStatus === GameStatus.PAUSED || gameStatus === GameStatus.GAME_OVER) {
+      return;
+    }
+    
+    switch (e.code) {
+      case controls.moveLeft:
+        e.preventDefault();
+        dispatch({ type: 'MOVE_LEFT' });
+        break;
+      case controls.moveRight:
+        e.preventDefault();
+        dispatch({ type: 'MOVE_RIGHT' });
+        break;
+      case controls.rotate:
+        e.preventDefault();
+        dispatch({ type: 'ROTATE' });
+        break;
+      case controls.softDrop:
+        e.preventDefault();
+        dispatch({ type: 'SOFT_DROP' });
+        break;
+      case controls.hardDrop:
+        e.preventDefault();
+        dispatch({ type: 'HARD_DROP' });
+        break;
+      case controls.hold:
+        e.preventDefault();
+        dispatch({ type: 'HOLD' });
+        break;
+      case controls.pause: {
+        e.preventDefault();
+        const currentStatus = getGameStatus();
+        if (currentStatus === 'playing') {
+          dispatch({ type: 'PAUSE' });
+        } else if (currentStatus === 'paused') {
+          dispatch({ type: 'RESET' });
+        }
+        break;
+      }
+    }
+  }, [dispatch, controls, getGameStatus]);
+  
+  // Set up keyboard event listeners
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+  
   const [highScore, setHighScore] = useLocalStorage('tetris-highscore', 0);
   const { isConnected } = useWalletStore();
   
   // Memoized callbacks
-  const handleSplashComplete = useCallback(() => {
-    setShowSplash(false);
-    // Initialize game when splash is complete
-    dispatch({ type: 'RESET_GAME' });
-  }, [dispatch]);
-  
   const handleStartGame = useCallback(() => {
     dispatch({ type: 'START_GAME' });
   }, [dispatch]);
@@ -64,100 +147,64 @@ const GameUI: React.FC = () => {
     };
   }, []);
 
-  // Helper functions
-  const getMenuType = () => {
-    if (!state.isStarted) return 'start';
-    if (state.isPaused) return 'pause';
-    if (state.gameOver) return 'gameOver';
-    return null;
-  };
-
-  const handleBack = () => {
-    window.history.back();
-  };
-
-  // Show splash screen on initial load
-  if (showSplash) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">TETRIS</h1>
-          <button 
-            onClick={handleSplashComplete}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Start Game
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  const currentStatus = getGameStatus();
+  
   return (
-    <div className="min-h-screen bg-gray-900 relative">
-      <div className="absolute top-4 left-4">
-        <button
-          onClick={handleBack}
-          className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-          </svg>
-          Back to Menu
-        </button>
-      </div>
-
-      <div className="h-full flex flex-col pt-4 pb-4 px-4">
-        <header className="text-center mb-2">
-          <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-            TETRIS
-          </h1>
-          <p className="text-xs md:text-sm text-gray-400">Clear lines and get the highest score!</p>
-        </header>
-
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 h-[calc(100vh-100px)]">
-          {/* Main Game Area */}
-          <div className="lg:col-span-12 h-full flex items-center justify-center p-4">
-            <div className="relative">
-              <div 
-                className="bg-black/30 rounded-lg shadow-lg overflow-hidden border border-blue-400/20"
-                style={{ 
-                  width: 'fit-content',
-                  height: 'fit-content',
-                  maxHeight: '90vh',
-                  maxWidth: '100%'
-                }}
-              >
-                <Board />
-              </div>
-              
-              {/* Game Menu Overlay */}
-              {(!state.isStarted || state.isPaused || state.gameOver) && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                  <GameMenu
-                    type={getMenuType()}
-                    score={state.stats.score}
-                    highScore={highScore}
-                    level={state.stats.level}
-                    onStart={handleStartGame}
-                    onResume={handleResumeGame}
-                    onRestart={handleRestartGame}
-                    onQuit={handleQuitGame}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="relative w-full h-full flex flex-col items-center justify-center p-4 bg-gray-900">
+      <Board />
+      {currentStatus !== 'playing' && (
+        <GameMenu
+          type={currentStatus === 'paused' ? 'pause' : currentStatus === 'gameOver' ? 'gameOver' : 'start'}
+          score={state.stats.score}
+          highScore={state.stats.highScore}
+          level={state.stats.level}
+          onStart={() => {
+            if (currentStatus === GameStatus.START) {
+              dispatch({ type: 'START_GAME' });
+            } else {
+              dispatch({ type: 'RESET' });
+            }
+          }}
+          onResume={() => dispatch({ type: 'RESET' })}
+          onRestart={() => {
+            dispatch({ type: 'RESET_GAME' });
+            dispatch({ type: 'START_GAME' });
+          }}
+          onQuit={() => {
+            // Handle quit to menu
+            window.location.href = '/games';
+          }}
+          controls={controls}
+          onControlsChange={(newControls: ControlSettings) => {
+            setControls(newControls);
+          }}
+        />
+      )}
+      
+      {/* Help Button */}
+      <button 
+        onClick={() => setShowHelp(true)}
+        className="absolute top-4 right-4 p-2 text-gray-400 hover:text-white"
+        aria-label="Help"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </button>
+      
+      {/* Help Sidebar */}
+      <HelpSidebar 
+        isOpen={showHelp} 
+        onClose={() => setShowHelp(false)} 
+        controls={controls} 
+      />
     </div>
   );
 };
 
-// Main game component
-const TetrisGame: React.FC = () => {
-  return <GameUI />;
-};
+// const TetrisGame: React.FC = () => {
+//   return <GameUI />;
+// };
 
 export default TetrisGame;
   

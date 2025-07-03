@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '../../../components/ui/button';
-import { Play, RotateCcw, Home, Settings, Award, ShoppingCart, X } from 'lucide-react';
+import { Play, RotateCcw, Home, Settings, Award, ShoppingCart, X, HelpCircle } from 'lucide-react';
 import useWalletStore from '../../../stores/useWalletStore';
 import { cn } from '../../../lib/utils';
+import HelpSidebar from './HelpSidebar';
+
+interface ControlSettings {
+  moveLeft: string;
+  moveRight: string;
+  rotate: string;
+  softDrop: string;
+  hardDrop: string;
+  hold: string;
+  pause: string;
+}
 
 type TabType = 'main' | 'achievements' | 'upgrades' | 'settings';
 
@@ -43,14 +54,16 @@ const TabButton: React.FC<{
 );
 
 interface GameMenuProps {
-  type: 'start' | 'pause' | 'gameOver' | null;
+  type: 'start' | 'pause' | 'gameOver';
   score: number;
   highScore: number;
-  level?: number;
+  level: number;
   onStart: () => void;
   onResume: () => void;
   onRestart: () => void;
   onQuit: () => void;
+  controls: ControlSettings;
+  onControlsChange: (controls: ControlSettings) => void;
 }
 
 const GameMenu: React.FC<GameMenuProps> = ({
@@ -64,7 +77,13 @@ const GameMenu: React.FC<GameMenuProps> = ({
   onQuit,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('main');
+  const [showHelp, setShowHelp] = useState(false);
   const { isConnected, connect } = useWalletStore();
+
+  const toggleHelp = useCallback(() => {
+    setShowHelp(prev => !prev);
+  }, []);
+
   const [coins, setCoins] = useState(100); // Example coin balance
   
   // Example achievements
@@ -92,7 +111,25 @@ const GameMenu: React.FC<GameMenuProps> = ({
     }
   ]);
   
-  // Example upgrades
+  // Example controls configuration - should come from game settings
+  const [controls, setControls] = useState<ControlSettings>({
+    moveLeft: 'ArrowLeft',
+    moveRight: 'ArrowRight',
+    rotate: 'ArrowUp',
+    softDrop: 'ArrowDown',
+    hardDrop: ' ',
+    hold: 'c',
+    pause: 'p'
+  });
+
+  const handleControlChange = (control: string, key: string) => {
+    setControls(prev => ({
+      ...prev,
+      [control]: key
+    }));
+  };
+
+  // Example upgrades data - replace with actual game state
   const [upgrades, setUpgrades] = useState<Upgrade[]>([
     {
       id: 'ghost_piece',
@@ -151,156 +188,131 @@ const GameMenu: React.FC<GameMenuProps> = ({
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{achievement.icon}</span>
                     <div>
-                      <h3 className={`font-medium ${achievement.unlocked ? 'text-yellow-400' : 'text-gray-400'}`}>
-                        {achievement.title}
-                      </h3>
-                      <p className="text-sm text-gray-300">{achievement.description}</p>
                     </div>
-                    {achievement.unlocked && (
-                      <span className="ml-auto text-yellow-400">✓</span>
-                    )}
+                    <div>
+                      <div className="font-medium">{achievement.title}</div>
+                      <div className="text-sm text-gray-400">{achievement.description}</div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         );
-      
+
       case 'upgrades':
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-xl font-bold text-white">Upgrades</h2>
-                <p className="text-sm text-gray-400">Coins: <span className="text-yellow-400">{coins}</span></p>
+              <h3 className="text-lg font-bold text-white">Upgrades</h3>
+              <div className="flex items-center bg-yellow-600/20 text-yellow-400 px-3 py-1 rounded-full text-sm">
+                🪙 {coins}
               </div>
-              <button 
-                onClick={() => setActiveTab('main')}
-                className="text-gray-400 hover:text-white"
-              >
-                <X size={24} />
-              </button>
             </div>
-            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            <div className="space-y-3">
               {upgrades.map((upgrade) => (
-                <div 
+                <div
                   key={upgrade.id}
-                  className={`p-3 rounded-lg border ${upgrade.purchased ? 'border-green-500 bg-green-500/10' : 'border-gray-700 bg-gray-800/50'}`}
+                  className={`p-3 rounded-lg ${
+                    upgrade.purchased ? 'bg-green-900/30' : 'bg-gray-800/50'
+                  }`}
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{upgrade.icon}</span>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <h3 className={`font-medium ${upgrade.purchased ? 'text-green-400' : 'text-white'}`}>
-                          {upgrade.name}
-                        </h3>
-                        {!upgrade.purchased && (
-                          <span className="text-yellow-400 text-sm font-mono">{upgrade.price} coins</span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-300">{upgrade.description}</p>
-                      <p className="text-xs text-blue-300 mt-1">Effect: {upgrade.effect}</p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium">{upgrade.name}</div>
+                      <div className="text-sm text-gray-400">{upgrade.description}</div>
+                      <div className="text-xs text-blue-400 mt-1">{upgrade.effect}</div>
                     </div>
-                  </div>
-                  {!upgrade.purchased && (
-                    <button 
+                    <Button
+                      size="sm"
+                      disabled={upgrade.purchased || coins < upgrade.price}
                       onClick={() => {
                         if (coins >= upgrade.price) {
-                          setUpgrades(prev => prev.map(u => 
-                            u.id === upgrade.id ? {...u, purchased: true} : u
-                          ));
+                          setUpgrades(prev =>
+                            prev.map(u =>
+                              u.id === upgrade.id
+                                ? { ...u, purchased: true }
+                                : u
+                            )
+                          );
                           setCoins(prev => prev - upgrade.price);
                         }
                       }}
-                      disabled={coins < upgrade.price}
-                      className={`mt-2 w-full py-1 rounded text-sm font-medium ${coins >= upgrade.price 
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                        : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                      className={`${
+                        upgrade.purchased
+                          ? 'bg-green-600 hover:bg-green-600'
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
                     >
-                      {coins >= upgrade.price ? 'Purchase' : 'Not enough coins'}
-                    </button>
-                  )}
+                      {upgrade.purchased ? 'Purchased' : `${upgrade.price} 🪙`}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         );
-        
+
       case 'settings':
         return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">Settings</h2>
-              <button 
-                onClick={() => setActiveTab('main')}
-                className="text-gray-400 hover:text-white"
-              >
-                <X size={24} />
-              </button>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Controls</h3>
+              <div className="space-y-3">
+                {Object.entries({
+                  moveLeft: 'Move Left',
+                  moveRight: 'Move Right',
+                  rotate: 'Rotate',
+                  softDrop: 'Soft Drop',
+                  hardDrop: 'Hard Drop',
+                  hold: 'Hold Piece',
+                  pause: 'Pause'
+                }).map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <span className="text-gray-300">{label}</span>
+                    <input
+                      type="text"
+                      value={controls[key as keyof ControlSettings]}
+                      onChange={(e) => handleControlChange(key, e.target.value)}
+                      className="w-20 bg-gray-800/50 p-1 rounded text-gray-300 text-center"
+                      maxLength={1}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="bg-gray-800/50 p-4 rounded-lg">
-              <p className="text-gray-400 text-center py-8">Settings coming soon!</p>
+            
+            <div className="pt-4 border-t border-gray-700">
+              <h3 className="text-lg font-semibold mb-4">Game Settings</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Sound Effects</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Music</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300">Ghost Piece</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         );
-        
+
       default:
-        return (
-          <>
-            <h1 className="text-4xl font-bold text-white mb-2 font-mono">{title}</h1>
-            {(type === 'gameOver' || type === 'pause') && (
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-lg">
-                  <span className="text-gray-400">Score:</span>
-                  <span className="font-bold text-white">{score}</span>
-                </div>
-                <div className="flex justify-between text-lg">
-                  <span className="text-gray-400">High Score:</span>
-                  <span className="font-bold text-yellow-400">{highScore}</span>
-                </div>
-                <div className="flex justify-between text-lg">
-                  <span className="text-gray-400">Level:</span>
-                  <span className="font-bold text-blue-400">{level}</span>
-                </div>
-              </div>
-            )}
-            
-            <div className="space-y-3 w-full">
-              {getActionButton()}
-              
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                <TabButton
-                  active={false}
-                  onClick={() => setActiveTab('achievements')}
-                  icon={<Award size={16} />}
-                  label="Achievements"
-                />
-                {isConnected && (
-                  <TabButton
-                    active={false}
-                    onClick={() => setActiveTab('upgrades')}
-                    icon={<ShoppingCart size={16} />}
-                    label="Upgrades"
-                  />
-                )}
-                <TabButton
-                  active={false}
-                  onClick={() => setActiveTab('settings')}
-                  icon={<Settings size={16} />}
-                  label="Settings"
-                />
-                <Button 
-                  variant="ghost" 
-                  className="w-full text-red-400 hover:bg-red-900/50 hover:text-red-300"
-                  onClick={onQuit}
-                >
-                  <Home className="mr-2 h-4 w-4" />
-                  Quit to Menu
-                </Button>
-              </div>
-            </div>
-          </>
-        );
+        return null;
     }
   };
 
@@ -366,13 +378,20 @@ const GameMenu: React.FC<GameMenuProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <div className="text-center">
-          {renderContent()}
+    <>
+      <HelpSidebar 
+        isOpen={showHelp} 
+        onClose={toggleHelp} 
+        controls={controls}
+      />
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+          <div className="text-center">
+            {renderContent()}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

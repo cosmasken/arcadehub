@@ -1,20 +1,37 @@
 import { GameState, GameAction } from './types';
 import { COLS, ROWS, SHAPES, POINTS, LEVELS } from './constants';
 
-// SRS Wall Kick Data
+// Standard SRS Wall Kick Data
+// Format: [initial rotation] -> [next rotation]: [test1, test2, test3, test4, test5]
 const WALL_KICK_TESTS = {
-  JLSTZ: [ // Counter-clockwise kicks for J, L, S, T, Z pieces
-    [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]], // 0->L
-    [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],   // L->2
-    [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],    // 2->R
-    [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]] // R->0
+  // J, L, S, T, Z pieces
+  JLSTZ: [
+    // 0>>1 (0° -> 90°)
+    [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+    // 1>>2 (90° -> 180°)
+    [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+    // 2>>3 (180° -> 270°)
+    [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+    // 3>>0 (270° -> 0°)
+    [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]]
   ],
-  I: [ // Counter-clockwise kicks for I piece
-    [[0, 0], [-2, 0], [1, 0], [-2, 1], [1, -2]],  // 0->L
-    [[0, 0], [-1, 0], [2, 0], [-1, -2], [2, 1]],  // L->2
-    [[0, 0], [2, 0], [-1, 0], [2, -1], [-1, 2]],  // 2->R
-    [[0, 0], [1, 0], [-2, 0], [1, 2], [-2, -1]]   // R->0
+  // I piece has different wall kicks
+  I: [
+    // 0>>1
+    [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+    // 1>>2
+    [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
+    // 2>>3
+    [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+    // 3>>0
+    [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]]
   ]
+};
+
+// For counter-clockwise rotation (not currently used but here for completeness)
+const WALL_KICK_TESTS_CCW = {
+  JLSTZ: WALL_KICK_TESTS.JLSTZ.map((_, i, arr) => arr[(i + 1) % 4]),
+  I: WALL_KICK_TESTS.I.map((_, i, arr) => arr[(i + 1) % 4])
 };
 
 // Helper functions
@@ -30,23 +47,37 @@ const getRandomPiece = (): number =>
   Math.floor(Math.random() * (SHAPES.length - 1)) + 1;
 
 const isValidMove = (board: number[][], shape: number[][], position: {x: number, y: number}): boolean => {
+  // Check if shape is empty
+  if (!shape.length || !shape[0]?.length) return false;
+  
+  // Check each cell of the shape
   for (let y = 0; y < shape.length; y++) {
     for (let x = 0; x < shape[y].length; x++) {
+      // Skip empty cells in the shape
       if (shape[y][x] === 0) continue;
-      const newX = position.x + x;
-      const newY = position.y + y;
       
-      if (
-        newX < 0 || 
-        newX >= COLS || 
-        newY >= ROWS ||
-        (newY >= 0 && board[newY][newX] !== 0)
-      ) {
-        return false;
+      // Calculate board position
+      const boardX = position.x + x;
+      const boardY = position.y + y;
+      
+      // Check boundaries
+      if (boardX < 0 || boardX >= COLS || boardY >= ROWS) {
+        return false; // Out of bounds
+      }
+      
+      // Check if position is above the board (spawn area)
+      if (boardY < 0) {
+        continue;
+      }
+      
+      // Check for collision with existing pieces
+      if (board[boardY][boardX] !== 0) {
+        return false; // Collision with existing piece
       }
     }
   }
-  return true;
+  
+  return true; // No collisions or boundaries hit
 };
 
 const rotateMatrix = (matrix: number[][], clockwise: boolean = true): number[][] => {
@@ -54,25 +85,77 @@ const rotateMatrix = (matrix: number[][], clockwise: boolean = true): number[][]
   
   const rows = matrix.length;
   const cols = matrix[0].length;
-  const rotated = Array(cols).fill(0).map(() => Array(rows).fill(0));
   
-  if (clockwise) {
-    // Rotate 90 degrees clockwise
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        rotated[x][rows - 1 - y] = matrix[y][x];
+  // For square matrices, we can rotate in place
+  if (rows === cols) {
+    // Create a deep copy of the matrix
+    const result = matrix.map(row => [...row]);
+    
+    if (clockwise) {
+      // Rotate 90 degrees clockwise
+      for (let y = 0; y < rows / 2; y++) {
+        for (let x = y; x < cols - 1 - y; x++) {
+          // Store top
+          const temp = result[y][x];
+          
+          // Move left to top
+          result[y][x] = result[rows - 1 - x][y];
+          
+          // Move bottom to left
+          result[rows - 1 - x][y] = result[rows - 1 - y][cols - 1 - x];
+          
+          // Move right to bottom
+          result[rows - 1 - y][cols - 1 - x] = result[x][cols - 1 - y];
+          
+          // Move top to right
+          result[x][cols - 1 - y] = temp;
+        }
+      }
+    } else {
+      // Rotate 90 degrees counter-clockwise
+      for (let y = 0; y < rows / 2; y++) {
+        for (let x = y; x < cols - 1 - y; x++) {
+          // Store top
+          const temp = result[y][x];
+          
+          // Move right to top
+          result[y][x] = result[x][cols - 1 - y];
+          
+          // Move bottom to right
+          result[x][cols - 1 - y] = result[rows - 1 - y][cols - 1 - x];
+          
+          // Move left to bottom
+          result[rows - 1 - y][cols - 1 - x] = result[rows - 1 - x][y];
+          
+          // Move top to left
+          result[rows - 1 - x][y] = temp;
+        }
       }
     }
+    
+    return result;
   } else {
-    // Rotate 90 degrees counter-clockwise
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        rotated[cols - 1 - x][y] = matrix[y][x];
+    // For non-square matrices, create a new matrix with swapped dimensions
+    const rotated = Array(cols).fill(0).map(() => Array(rows).fill(0));
+    
+    if (clockwise) {
+      // Rotate 90 degrees clockwise
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          rotated[x][rows - 1 - y] = matrix[y][x];
+        }
+      }
+    } else {
+      // Rotate 90 degrees counter-clockwise
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          rotated[cols - 1 - x][y] = matrix[y][x];
+        }
       }
     }
+    
+    return rotated;
   }
-  
-  return rotated;
 };
 
 const spawnNewPiece = (state: GameState): GameState => {
@@ -181,26 +264,32 @@ const movePiece = (state: GameState, dx: number, dy: number): GameState => {
   return state;
 };
 
-const rotatePiece = (state: GameState): GameState => {
+const rotatePiece = (state: GameState, clockwise: boolean = true): GameState => {
   if (!state.currentPiece || state.gameOver || state.isPaused) return state;
 
-  const { type, shape, position } = state.currentPiece;
-  const rotatedShape = rotateMatrix(shape);
+  const { type, shape, position, rotation = 0 } = state.currentPiece;
+  
+  // Rotate the piece
+  const rotatedShape = rotateMatrix(shape, !clockwise);
   
   // Determine piece type for wall kick tests
   const isIPiece = type === 1; // I piece
-  const kickTests = isIPiece ? WALL_KICK_TESTS.I : WALL_KICK_TESTS.JLSTZ;
+  const kickSet = isIPiece ? WALL_KICK_TESTS.I : WALL_KICK_TESTS.JLSTZ;
   
-  // Get current rotation state (0, 1, 2, 3 for 0°, 90°, 180°, 270°)
-  const currentRotation = state.currentPiece.rotation || 0;
-  const nextRotation = (currentRotation + 1) % 4;
+  // Calculate rotation states (0-3 for 0°, 90°, 180°, 270°)
+  const currentRotation = rotation % 4;
+  const nextRotation = clockwise ? (currentRotation + 1) % 4 : (currentRotation + 3) % 4;
+  
+  // Get the appropriate wall kick tests for this rotation
+  const kickTests = clockwise 
+    ? kickSet[currentRotation] 
+    : (isIPiece ? WALL_KICK_TESTS_CCW.I : WALL_KICK_TESTS_CCW.JLSTZ)[currentRotation];
   
   // Try all wall kick positions
-  const kicks = kickTests[currentRotation];
-  for (const [dx, dy] of kicks) {
+  for (const [dx, dy] of kickTests) {
     const newPosition = {
       x: position.x + dx,
-      y: position.y - dy // Subtract dy because Tetris coordinate system is inverted
+      y: position.y + dy // Keep dy as is for standard SRS
     };
     
     if (isValidMove(state.board, rotatedShape, newPosition)) {
@@ -216,7 +305,25 @@ const rotatePiece = (state: GameState): GameState => {
     }
   }
   
-  return state;
+  // If no valid rotation found, try the opposite rotation (180° flip)
+  if (clockwise) {
+    const flipRotation = (currentRotation + 2) % 4;
+    const flippedShape = rotateMatrix(rotatedShape, true); // Rotate again for 180°
+    
+    if (isValidMove(state.board, flippedShape, position)) {
+      return {
+        ...state,
+        currentPiece: {
+          ...state.currentPiece,
+          shape: flippedShape,
+          position: position,
+          rotation: flipRotation
+        }
+      };
+    }
+  }
+  
+  return state; // No valid rotation found
 };
 
 const hardDrop = (state: GameState): GameState => {

@@ -1,17 +1,73 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useGame } from './context';
 import { GameProvider } from './context';
 import { Board, Stats, Shop, Achievements } from './components';
-import { getInitialState } from './initialState';
+import SplashScreen from './components/SplashScreen';
+import GameMenu from './components/GameMenu';
+import { useLocalStorage } from '../../hooks/useLocalStorage';
 
 // Create a simple GameStateProvider since we don't have the actual one
-const GameStateProvider: React.FC<{ children: React.ReactNode; initialState: any }> = ({ children, initialState }) => {
+const GameStateProvider: React.FC<{ children: React.ReactNode; initialState: GameState }> = ({ children, initialState }) => {
   return <>{children}</>;
+};
+
+// Temporary type definition for GameState until we import it properly
+type GameState = {
+  score: number;
+  level: number;
+  isStarted: boolean;
+  isPaused: boolean;
+  gameOver: boolean;
+  stats: {
+    score: number;
+    level: number;
+    linesCleared: number;
+  };
 };
 
 // Inner component to handle game UI
 const GameUI: React.FC = () => {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
+  const [showSplash, setShowSplash] = useState(true);
+  const [highScore, setHighScore] = useLocalStorage('tetris-highscore', 0);
+  
+  // Update high score if current score is higher
+  useEffect(() => {
+    if (state.gameOver && state.stats.score > highScore) {
+      setHighScore(state.stats.score);
+    }
+  }, [state.gameOver, state.stats.score, highScore, setHighScore]);
+  
+  // Handle splash screen completion
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+  
+  // Game control handlers
+  const handleStartGame = useCallback(() => {
+    dispatch({ type: 'START_GAME' });
+  }, [dispatch]);
+  
+  const handleResumeGame = useCallback(() => {
+    dispatch({ type: 'PAUSE', isPaused: false });
+  }, [dispatch]);
+  
+  const handleRestartGame = useCallback(() => {
+    dispatch({ type: 'RESET_GAME' });
+    dispatch({ type: 'START_GAME' });
+  }, [dispatch]);
+  
+  const handleQuitGame = useCallback(() => {
+    dispatch({ type: 'RESET_GAME' });
+  }, [dispatch]);
+  
+  // Determine menu type based on game state
+  const getMenuType = () => {
+    if (!state.isStarted) return 'start';
+    if (state.isPaused) return 'pause';
+    if (state.gameOver) return 'gameOver';
+    return null;
+  };
   
   // Prevent page scrolling and touch events when game is mounted
   useEffect(() => {
@@ -32,6 +88,11 @@ const GameUI: React.FC = () => {
     };
   }, []);
 
+  // Show splash screen on initial load
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
   return (
     <div className="relative w-full h-screen bg-background overflow-hidden">
       {/* Game Board */}
@@ -39,10 +100,26 @@ const GameUI: React.FC = () => {
         <Board />
       </div>
       
-      {/* Stats Panel */}
-      <div className="absolute right-4 top-4">
-        <Stats />
-      </div>
+      {/* Stats Panel - Only show when game is in progress */}
+      {state.isStarted && !state.isPaused && !state.gameOver && (
+        <div className="absolute right-4 top-4">
+          <Stats />
+        </div>
+      )}
+      
+      {/* Game Menu */}
+      {!state.isStarted || state.isPaused || state.gameOver ? (
+        <GameMenu
+          type={getMenuType()}
+          score={state.stats.score}
+          highScore={highScore}
+          level={state.stats.level}
+          onStart={handleStartGame}
+          onResume={handleResumeGame}
+          onRestart={handleRestartGame}
+          onQuit={handleQuitGame}
+        />
+      ) : null}
       
       {/* Shop and Achievements */}
       <Shop />

@@ -94,11 +94,14 @@ export type GameAction =
   | { type: 'SOFT_DROP' }
   | { type: 'HARD_DROP' }
   | { type: 'HOLD' }
-  | { type: 'PAUSE' }
-  | { type: 'RESET' }
-  | { type: 'START' }
+  | { type: 'PAUSE'; isPaused?: boolean }
+  | { type: 'RESET' | 'RESET_GAME' }
+  | { type: 'START' | 'START_GAME' }
   | { type: 'TICK' }
-  | { type: 'BUY_ITEM'; itemId: string };
+  | { type: 'BUY_ITEM'; itemId: string }
+  | { type: 'GAME_OVER' }
+  | { type: 'ADD_SCORE'; points: number }
+  | { type: 'ADD_LINES'; lines: number };
 
 export interface GameContextType {
   state: GameState;

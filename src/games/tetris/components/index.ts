@@ -6,3 +6,5 @@ export { default as Shop } from './Shop';
 export { default as Achievements } from './Achievements';
 export { default as GameOverModal } from './GameOverModal';
 export { default as Board } from './Board';
+export { default as GameMenu } from './GameMenu';
+export { default as SplashScreen } from './SplashScreen';

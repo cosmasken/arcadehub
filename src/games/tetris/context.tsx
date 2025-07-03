@@ -90,27 +90,58 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'MOVE_LEFT':
-      return movePiece(state, -1, 0);
+      return !state.isPaused && !state.gameOver ? movePiece(state, -1, 0) : state;
     case 'MOVE_RIGHT':
-      return movePiece(state, 1, 0);
+      return !state.isPaused && !state.gameOver ? movePiece(state, 1, 0) : state;
     case 'ROTATE':
-      return rotatePiece(state);
+      return !state.isPaused && !state.gameOver ? rotatePiece(state) : state;
     case 'SOFT_DROP':
-      return movePiece(state, 0, 1);
+      return !state.isPaused && !state.gameOver ? movePiece(state, 0, 1) : state;
     case 'HARD_DROP':
-      return hardDrop(state);
+      return !state.isPaused && !state.gameOver ? hardDrop(state) : state;
     case 'HOLD':
-      return holdPiece(state);
+      return !state.isPaused && !state.gameOver ? holdPiece(state) : state;
     case 'PAUSE':
-      return { ...state, isPaused: !state.isPaused };
+      return {
+        ...state,
+        isPaused: action.isPaused !== undefined ? action.isPaused : !state.isPaused,
+      };
     case 'RESET':
+    case 'RESET_GAME':
       return getInitialState();
     case 'START':
-      return { ...state, isStarted: true, isPaused: false };
+    case 'START_GAME':
+      return { ...state, isStarted: true, isPaused: false, gameOver: false };
     case 'TICK':
-      return gameTick(state);
+      return !state.isPaused && !state.gameOver ? gameTick(state) : state;
     case 'BUY_ITEM':
       return buyItem(state, action.itemId);
+    case 'GAME_OVER':
+      return { ...state, gameOver: true, isPaused: true };
+    case 'ADD_SCORE':
+      return {
+        ...state,
+        stats: {
+          ...state.stats,
+          score: state.stats.score + action.points,
+        },
+      };
+    case 'ADD_LINES': {
+      const newLines = state.stats.linesCleared + action.lines;
+      const newLevel = Math.min(
+        Math.floor(newLines / 10) + 1,
+        LEVELS.length
+      );
+      
+      return {
+        ...state,
+        stats: {
+          ...state.stats,
+          linesCleared: newLines,
+          level: newLevel,
+        },
+      };
+    }
     default:
       return state;
   }

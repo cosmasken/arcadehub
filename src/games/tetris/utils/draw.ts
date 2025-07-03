@@ -5,11 +5,11 @@ export const drawBlock = (
   x: number,
   y: number,
   value: number,
-  blockSize: number = 30,
+  blockSize: number = 40,
   padding: number = 1
 ): void => {
-  const xPos = x * (blockSize + padding);
-  const yPos = y * (blockSize + padding);
+  const xPos = x * blockSize;
+  const yPos = y * blockSize;
   
   // Draw block with 3D effect
   ctx.fillStyle = COLORS[value] || '#000000';
@@ -39,11 +39,11 @@ export const drawGhostBlock = (
   x: number,
   y: number,
   value: number,
-  blockSize: number = 30,
+  blockSize: number = 40,
   padding: number = 1
 ): void => {
-  const xPos = x * (blockSize + padding);
-  const yPos = y * (blockSize + padding);
+  const xPos = x * blockSize;
+  const yPos = y * blockSize;
   
   // Draw ghost piece with transparency
   ctx.fillStyle = `${COLORS[value] || '#000000'}40`; // 25% opacity
@@ -52,5 +52,5 @@ export const drawGhostBlock = (
   // Border for ghost piece
   ctx.strokeStyle = COLORS[value] || '#000000';
   ctx.lineWidth = 1;
-  ctx.strokeRect(xPos + 1, yPos + 1, blockSize - 2, blockSize - 2);
+  ctx.strokeRect(xPos + padding, yPos + padding, blockSize - padding * 2, blockSize - padding * 2);
 };

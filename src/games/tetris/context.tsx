@@ -96,17 +96,19 @@ const initialState = getInitialState();
 const isValidMove = (board: number[][], shape: number[][], position: Position): boolean => {
   for (let y = 0; y < shape.length; y++) {
     for (let x = 0; x < shape[y].length; x++) {
+      // Skip empty cells in the shape
       if (shape[y][x] === 0) continue;
       
-      const newX = position.x + x;
-      const newY = position.y + y;
+      // Calculate board position
+      const boardX = position.x + x;
+      const boardY = position.y + y;
       
-      if (
-        newX < 0 || 
-        newX >= COLS || 
-        newY >= ROWS ||
-        (newY >= 0 && board[newY][newX] !== 0)
-      ) {
+      // Check boundaries
+      if (boardX < 0 || boardX >= COLS) return false;  // Left/Right walls
+      if (boardY >= ROWS) return false;                 // Bottom
+      
+      // Check for collisions with existing pieces (only if within board bounds)
+      if (boardY >= 0 && board[boardY][boardX] !== 0) {
         return false;
       }
     }

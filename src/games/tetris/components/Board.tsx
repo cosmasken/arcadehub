@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useGame } from '../context';
-import { COLS, ROWS, LEVELS } from '../constants';
+import { COLS, ROWS, LEVELS, COLORS } from '../constants';
 import { drawBlock, drawGhostBlock } from '../utils/draw';
 import { isValidMove } from '../utils/game';
 
@@ -18,19 +18,40 @@ const Board: React.FC = () => {
   const accumulatedTime = useRef<number>(0);
   const lastTime = useRef<number>(0);
 
-  // Set up canvas dimensions on mount
+  // Set up canvas dimensions on mount and handle resizing
   useEffect(() => {
-    if (canvasRef.current) {
+    const updateCanvasSize = () => {
+      if (!canvasRef.current) return;
+      
+      const container = canvasRef.current.parentElement;
+      if (!container) return;
+      
+      // Get the container size
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      
+      // Calculate the scale to fit the board in the container
+      const scaleX = containerWidth / dimensions.width;
+      const scaleY = containerHeight / dimensions.height;
+      const scale = Math.min(scaleX, scaleY);
+      
+      // Set the canvas size to maintain aspect ratio
+      const canvasWidth = Math.floor(dimensions.width * scale);
+      const canvasHeight = Math.floor(dimensions.height * scale);
+      
       canvasRef.current.width = dimensions.width;
       canvasRef.current.height = dimensions.height;
-
-      // Force the container to accommodate the full height including border/padding
-      const container = canvasRef.current.parentElement;
-      if (container) {
-        container.style.height = `${dimensions.height}px`;
-        container.style.marginBottom = '1rem';
-      }
-    }
+      
+      // Apply scaling to the canvas element
+      canvasRef.current.style.width = `${canvasWidth}px`;
+      canvasRef.current.style.height = `${canvasHeight}px`;
+    };
+    
+    updateCanvasSize();
+    
+    // Handle window resize
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
   }, [dimensions]);
 
   // Render function
@@ -45,11 +66,11 @@ const Board: React.FC = () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid background
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = COLORS[0]; // Use the same color as empty cells
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw grid lines with updated cell size
-    ctx.strokeStyle = '#16213e';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.lineWidth = 0.5;
 
     // Draw vertical lines
@@ -243,47 +264,71 @@ const Board: React.FC = () => {
   }, [renderGame]);
 
   return (
-    <div className="relative">
-      <canvas
-        ref={canvasRef}
-        className="border-2 border-gray-700 rounded-lg shadow-lg"
-        width={dimensions.width}
-        height={dimensions.height}
+    <div className="relative w-full h-full flex items-center justify-center p-0 m-0 overflow-hidden">
+      <div 
+        className="relative"
         style={{
-          backgroundColor: '#1a1a2e',
-          boxShadow: '0 0 20px rgba(0, 0, 0, 0.3)'
+          width: '100%',
+          height: '100%',
+          maxWidth: '100%',
+          maxHeight: '100%',
+          aspectRatio: `${COLS}/${ROWS}`,
+          boxSizing: 'border-box',
+          padding: 0,
+          margin: '0 auto',
+          backgroundColor: COLORS[0],
+          borderRadius: '0.5rem',
+          border: '2px solid #4B5563',
+          overflow: 'hidden',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
         }}
-      />
-      {state.gameOver && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 rounded-lg">
-          <div className="text-center p-4 bg-gray-900 rounded-lg">
-            <h2 className="text-2xl font-bold text-red-500 mb-2">Game Over</h2>
-            <p className="text-white">Score: {state.stats.score}</p>
-            <div className="mt-4 space-x-2">
-              <button
-                onClick={() => window.history.back()}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
-              >
-                Back to Games
-              </button>
-              <button
-                onClick={() => dispatch({ type: 'RESET' })}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
-              >
-                Play Again
-              </button>
+      >
+        <canvas
+          ref={canvasRef}
+          style={{
+            display: 'block',
+            imageRendering: 'pixelated',
+            backgroundColor: 'transparent',
+            width: '100%',
+            height: '100%',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            objectFit: 'contain'
+          }}
+        />
+        {state.gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 rounded-lg">
+            <div className="text-center p-4 bg-gray-900 rounded-lg">
+              <h2 className="text-2xl font-bold text-red-500 mb-2">Game Over</h2>
+              <p className="text-white">Score: {state.stats.score}</p>
+              <div className="mt-4 space-x-2">
+                <button
+                  onClick={() => window.history.back()}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
+                >
+                  Back to Games
+                </button>
+                <button
+                  onClick={() => dispatch({ type: 'RESET' })}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded"
+                >
+                  Play Again
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {state.isPaused && !state.gameOver && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-          <div className="text-center p-4 bg-gray-900 rounded-lg">
-            <h2 className="text-2xl font-bold text-yellow-400 mb-2">Paused</h2>
-            <p className="text-white">Press P to resume</p>
+        )}
+        {state.isPaused && !state.gameOver && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+            <div className="text-center p-4 bg-gray-900 rounded-lg">
+              <h2 className="text-2xl font-bold text-yellow-400 mb-2">Paused</h2>
+              <p className="text-white">Press P to resume</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

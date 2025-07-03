@@ -213,8 +213,10 @@ const GameUI: React.FC = () => {
             {/* Main Game Area */}
             <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-auto">
               <div className="relative w-full max-w-md mx-auto">
-                <div className="aspect-square w-full max-h-[90vh] flex items-center justify-center">
-                  <Board />
+                <div className="w-full flex items-center justify-center" style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}>
+                  <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
+                    <Board />
+                  </div>
                 </div>
                 {currentStatus !== 'playing' && (
                   <GameMenu

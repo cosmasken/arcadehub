@@ -8,14 +8,14 @@ export const GAME_SPEED = 1000; // ms
 
 // Colors for each tetromino type
 export const COLORS = [
-  '#1a1a1a',  // empty (dark background)
-  '#00FFFF',  // I - Cyan
-  '#0000FF',  // J - Blue
-  '#FFA500',  // L - Orange
-  '#FFFF00',  // O - Yellow
-  '#00FF00',  // S - Green
-  '#800080',  // T - Purple
-  '#FF0000',  // Z - Red
+  '#0f0f14',  // empty (darker background for better contrast)
+  '#00F0FF',  // I - Brighter Cyan
+  '#3366FF',  // J - Brighter Blue
+  '#FF8C00',  // L - Brighter Orange
+  '#FFEE33',  // O - Brighter Yellow
+  '#33FF33',  // S - Brighter Green
+  '#CC33FF',  // T - Brighter Purple
+  '#FF3333',  // Z - Brighter Red
 ];
 
 // Tetromino shapes

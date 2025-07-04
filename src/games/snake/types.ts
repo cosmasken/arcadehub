@@ -74,6 +74,8 @@ export interface GameContextType {
   changeDirection: (direction: Direction) => void;
   buyItem: (itemId: string) => void;
   claimAchievement: (achievementId: string) => void;
+  saveGame: (userAddress: string) => Promise<void>;
+  loadGame: (userAddress: string) => Promise<void>;
 }
 
 export interface LevelConfig {

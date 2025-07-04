@@ -8,7 +8,7 @@ interface SplashScreenProps {
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ 
   message = 'Loading...',
-  duration = 3000,
+  duration = 400,
   onComplete 
 }) => {
   const [isVisible, setIsVisible] = useState(true);

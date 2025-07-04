@@ -106,14 +106,15 @@ export type GameAction =
   | { type: 'BUY_ITEM'; itemId: string }
   | { type: 'GAME_OVER' }
   | { type: 'ADD_SCORE'; points: number }
-  | { type: 'ADD_LINES'; lines: number };
+  | { type: 'ADD_LINES'; lines: number }
+  | { type: 'LOAD_STATE'; payload: Partial<GameState> };
 
 export interface GameContextType {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
   buyItem: (itemId: string) => void;
   claimAchievement: (achievementId: string) => void;
-  saveGame: () => void;
-  loadGame: () => void;
+  saveGame: (userAddress: string) => Promise<void>;
+  loadGame: (userAddress: string) => Promise<void>;
   isValidMove: (board: number[][], shape: number[][], position: Position) => boolean;
 }

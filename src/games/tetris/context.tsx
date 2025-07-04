@@ -224,19 +224,41 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     stateRef.current = state;
   }, [state]);
 
-  // Auto-save when state changes
-  const saveGame = useCallback(() => {
-    if (typeof window === 'undefined') return;
+  // --- Save/Load Game Feature ---
+  // Stub: Replace with real on-chain logic
+  const checkOnChainSave = async (userAddress: string): Promise<boolean> => {
+    // TODO: Query blockchain for existing save for userAddress
+    // Return true if found, false otherwise
+    return false;
+  };
 
-    const { board, currentPiece, ...stateToSave } = stateRef.current;
+  const saveGame = useCallback(async (userAddress: string) => {
+    if (typeof window === 'undefined') return;
+    const stateToSave = stateRef.current;
+    // TODO: Save to chain if needed
     localStorage.setItem('tetris-state', JSON.stringify(stateToSave));
   }, []);
 
-  // Save game when state changes, but throttle it
-  useEffect(() => {
-    const timeout = setTimeout(saveGame, 1000);
-    return () => clearTimeout(timeout);
-  }, [state, saveGame]);
+  const loadGame = useCallback(async (userAddress: string) => {
+    if (typeof window === 'undefined') return;
+    const onChainExists = await checkOnChainSave(userAddress);
+    let loadedState = null;
+    if (onChainExists) {
+      // TODO: Load from chain
+      // For now, fallback to local
+    }
+    const saved = localStorage.getItem('tetris-state');
+    if (saved) {
+      try {
+        loadedState = JSON.parse(saved);
+        dispatch({ type: 'LOAD_STATE', payload: loadedState });
+      } catch (e) {
+        console.error('Failed to load saved game state', e);
+      }
+    }
+  }, [dispatch]);
+
+  // (Removed autosave useEffect to rely on manual save)
 
   // Game loop
   useEffect(() => {
@@ -292,19 +314,17 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // For now, we're auto-claiming achievements in the effect above
   }, []);
 
-  const loadGame = useCallback(() => {
-    // This would reload the game from localStorage
-    dispatch({ type: 'RESET' });
-  }, [dispatch]);
+
 
   // Expose the context value
+  // Expose the context value (with async save/load)
   const contextValue: GameContextType = {
     state,
     dispatch,
     buyItem,
     claimAchievement,
-    saveGame,
-    loadGame,
+    saveGame, // async (userAddress: string) => Promise<void>
+    loadGame, // async (userAddress: string) => Promise<void>
     isValidMove,
   };
 

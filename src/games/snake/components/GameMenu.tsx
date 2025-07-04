@@ -120,6 +120,14 @@ const GameMenu: React.FC<GameMenuProps> = ({
           {getActionButton()}
           
           {/* Additional options */}
+          {(type === 'pause' || type === 'gameOver') && onSave && (
+            <button
+              onClick={onSave}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium font-bold transition-all"
+            >
+              Save Game
+            </button>
+          )}
           {(type === 'pause' || type === 'gameOver') && (
             <button
               onClick={onRestart}

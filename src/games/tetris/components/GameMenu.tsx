@@ -15,6 +15,7 @@ interface GameMenuProps {
   onResume: () => void;
   onRestart: () => void;
   onQuit: () => void;
+  onSave?: () => void;
 }
 
 const TabButton: React.FC<{
@@ -46,6 +47,7 @@ const GameMenu: React.FC<GameMenuProps> = ({
   onResume,
   onRestart,
   onQuit,
+  onSave,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('main');
 
@@ -173,6 +175,15 @@ const GameMenu: React.FC<GameMenuProps> = ({
 
             <div className="space-y-3">
               {getActionButton()}
+
+              {(type === 'pause' || type === 'gameOver') && onSave && (
+                <button
+                  onClick={onSave}
+                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white py-2 px-4 rounded-lg text-sm font-bold transition-colors"
+                >
+                  Save Game
+                </button>
+              )}
 
               {(type === 'pause' || type === 'gameOver') && (
                 <button

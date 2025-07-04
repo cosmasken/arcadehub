@@ -386,11 +386,14 @@ const GameBoard: React.FC = () => {
     dispatch({ type: 'PAUSE_GAME', isPaused: false });
   }, [dispatch]);
 
-  const handleSave = useCallback(() => {
-    // Save game state
-    // This would be implemented to save to local storage or backend
+  const { saveGame } = useGame();
+  const handleSave = useCallback(async () => {
+    // TODO: Replace with actual user address from wallet/session
+    const userAddress = 'demo-user-address';
+    await saveGame(userAddress);
+    // Optionally show a toast or log
     console.log('Game saved');
-  }, []);
+  }, [saveGame]);
 
   const handleQuit = useCallback(() => {
     if (state.menuType === 'pause') {

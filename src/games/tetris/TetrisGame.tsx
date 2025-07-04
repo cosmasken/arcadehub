@@ -35,6 +35,7 @@ interface ControlSettings {
 
 // Separate GameUI component that uses the hooks
 const GameUI: React.FC = () => {
+  const { state, dispatch, saveGame } = useGame();
   const { aaSigner } = useWalletStore();
   const [tournamentId, setTournamentId] = useState<number | null>(null);
   const hasJoinedRef = useRef(false);
@@ -62,7 +63,6 @@ const GameUI: React.FC = () => {
     hasJoinedRef.current = true;
     joinTournamentAA(aaSigner, tournamentId, 0, { gasMultiplier: 1.5 }).catch(() => {});
   }, [aaSigner, tournamentId]);
-  const { state, dispatch } = useGame();
   const prevScore = useRef(0);
   // Toast when score increases significantly
   useEffect(() => {
@@ -302,6 +302,10 @@ const GameUI: React.FC = () => {
                       dispatch({ type: 'START' });
                     }}
                     onQuit={() => navigate('/')}
+                    onSave={async () => {
+                      await saveGame('user-placeholder-address');
+                      toast({ title: 'Game Saved', description: 'Your Tetris progress has been saved.' });
+                    }}
                   />
                 )}
               </div>

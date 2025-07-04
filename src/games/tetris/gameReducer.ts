@@ -80,82 +80,35 @@ const isValidMove = (board: number[][], shape: number[][], position: {x: number,
   return true; // No collisions or boundaries hit
 };
 
+// SRS: always rotate the base shape from SHAPES, not the current shape
+const getSRSShape = (type: number, rotation: number): number[][] => {
+  const shape = SHAPES[type];
+  let result = shape;
+  for (let i = 0; i < rotation; i++) {
+    result = rotateMatrix(result, true);
+  }
+  return result;
+};
+
 const rotateMatrix = (matrix: number[][], clockwise: boolean = true): number[][] => {
   if (!matrix.length || !matrix[0]?.length) return matrix;
-  
   const rows = matrix.length;
   const cols = matrix[0].length;
-  
-  // For square matrices, we can rotate in place
-  if (rows === cols) {
-    // Create a deep copy of the matrix
-    const result = matrix.map(row => [...row]);
-    
-    if (clockwise) {
-      // Rotate 90 degrees clockwise
-      for (let y = 0; y < rows / 2; y++) {
-        for (let x = y; x < cols - 1 - y; x++) {
-          // Store top
-          const temp = result[y][x];
-          
-          // Move left to top
-          result[y][x] = result[rows - 1 - x][y];
-          
-          // Move bottom to left
-          result[rows - 1 - x][y] = result[rows - 1 - y][cols - 1 - x];
-          
-          // Move right to bottom
-          result[rows - 1 - y][cols - 1 - x] = result[x][cols - 1 - y];
-          
-          // Move top to right
-          result[x][cols - 1 - y] = temp;
-        }
-      }
-    } else {
-      // Rotate 90 degrees counter-clockwise
-      for (let y = 0; y < rows / 2; y++) {
-        for (let x = y; x < cols - 1 - y; x++) {
-          // Store top
-          const temp = result[y][x];
-          
-          // Move right to top
-          result[y][x] = result[x][cols - 1 - y];
-          
-          // Move bottom to right
-          result[x][cols - 1 - y] = result[rows - 1 - y][cols - 1 - x];
-          
-          // Move left to bottom
-          result[rows - 1 - y][cols - 1 - x] = result[rows - 1 - x][y];
-          
-          // Move top to left
-          result[rows - 1 - x][y] = temp;
-        }
+  const rotated = Array(cols).fill(0).map(() => Array(rows).fill(0));
+  if (clockwise) {
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        rotated[x][rows - 1 - y] = matrix[y][x];
       }
     }
-    
-    return result;
   } else {
-    // For non-square matrices, create a new matrix with swapped dimensions
-    const rotated = Array(cols).fill(0).map(() => Array(rows).fill(0));
-    
-    if (clockwise) {
-      // Rotate 90 degrees clockwise
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          rotated[x][rows - 1 - y] = matrix[y][x];
-        }
-      }
-    } else {
-      // Rotate 90 degrees counter-clockwise
-      for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-          rotated[cols - 1 - x][y] = matrix[y][x];
-        }
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        rotated[cols - 1 - x][y] = matrix[y][x];
       }
     }
-    
-    return rotated;
   }
+  return rotated;
 };
 
 const spawnNewPiece = (state: GameState): GameState => {
@@ -267,31 +220,23 @@ const movePiece = (state: GameState, dx: number, dy: number): GameState => {
 const rotatePiece = (state: GameState, clockwise: boolean = true): GameState => {
   if (!state.currentPiece || state.gameOver || state.isPaused) return state;
 
-  const { type, shape, position, rotation = 0 } = state.currentPiece;
-  
-  // Rotate the piece
-  const rotatedShape = rotateMatrix(shape, !clockwise);
-  
-  // Determine piece type for wall kick tests
-  const isIPiece = type === 1; // I piece
-  const kickSet = isIPiece ? WALL_KICK_TESTS.I : WALL_KICK_TESTS.JLSTZ;
-  
-  // Calculate rotation states (0-3 for 0°, 90°, 180°, 270°)
+  const { type, position, rotation = 0 } = state.currentPiece;
   const currentRotation = rotation % 4;
   const nextRotation = clockwise ? (currentRotation + 1) % 4 : (currentRotation + 3) % 4;
-  
-  // Get the appropriate wall kick tests for this rotation
-  const kickTests = clockwise 
-    ? kickSet[currentRotation] 
+
+  // Always rotate from base shape using SRS
+  const rotatedShape = getSRSShape(type, nextRotation);
+  const isIPiece = type === 1; // I piece
+  const kickSet = isIPiece ? WALL_KICK_TESTS.I : WALL_KICK_TESTS.JLSTZ;
+  const kickTests = clockwise
+    ? kickSet[currentRotation]
     : (isIPiece ? WALL_KICK_TESTS_CCW.I : WALL_KICK_TESTS_CCW.JLSTZ)[currentRotation];
-  
-  // Try all wall kick positions
+
   for (const [dx, dy] of kickTests) {
     const newPosition = {
       x: position.x + dx,
-      y: position.y + dy // Keep dy as is for standard SRS
+      y: position.y + dy
     };
-    
     if (isValidMove(state.board, rotatedShape, newPosition)) {
       return {
         ...state,
@@ -304,25 +249,6 @@ const rotatePiece = (state: GameState, clockwise: boolean = true): GameState => 
       };
     }
   }
-  
-  // If no valid rotation found, try the opposite rotation (180° flip)
-  if (clockwise) {
-    const flipRotation = (currentRotation + 2) % 4;
-    const flippedShape = rotateMatrix(rotatedShape, true); // Rotate again for 180°
-    
-    if (isValidMove(state.board, flippedShape, position)) {
-      return {
-        ...state,
-        currentPiece: {
-          ...state.currentPiece,
-          shape: flippedShape,
-          position: position,
-          rotation: flipRotation
-        }
-      };
-    }
-  }
-  
   return state; // No valid rotation found
 };
 
@@ -414,6 +340,24 @@ const buyItem = (state: GameState, itemId: string): GameState => {
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
+    case 'LOAD_STATE': {
+      // Defensive: ensure all required fields exist, fallback to current state if not
+      const loaded = action.payload as Partial<GameState>;
+      return {
+        ...state,
+        ...loaded,
+        board: loaded.board || state.board,
+        currentPiece: loaded.currentPiece || null,
+        nextPieces: loaded.nextPieces || state.nextPieces,
+        holdPiece: loaded.holdPiece ?? state.holdPiece,
+        canHold: loaded.canHold ?? true,
+        gameOver: loaded.gameOver ?? false,
+        isPaused: loaded.isPaused ?? false,
+        isStarted: loaded.isStarted ?? false,
+        stats: { ...state.stats, ...loaded.stats },
+        settings: { ...state.settings, ...loaded.settings },
+      };
+    }
     case 'MOVE_LEFT':
       return !state.isPaused && !state.gameOver ? movePiece(state, -1, 0) : state;
     case 'MOVE_RIGHT':

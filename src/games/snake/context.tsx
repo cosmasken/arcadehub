@@ -404,6 +404,40 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'UNLOCK_ACHIEVEMENT', achievementId });
   }, []);
   
+  // --- Save/Load Game Feature ---
+  // Stub: Replace with real on-chain logic
+  const checkOnChainSave = async (userAddress: string): Promise<boolean> => {
+    // TODO: Query blockchain for existing save for userAddress
+    // Return true if found, false otherwise
+    return false;
+  };
+
+  const saveGame = async (userAddress: string) => {
+    const onChainExists = await checkOnChainSave(userAddress);
+    if (!onChainExists) {
+      // TODO: Save to chain here
+      // For now, just save locally
+      localStorage.setItem('snake-save', JSON.stringify(state));
+    } else {
+      // TODO: Prompt user to overwrite or handle as needed
+      // For now, just overwrite local
+      localStorage.setItem('snake-save', JSON.stringify(state));
+    }
+  };
+
+  const loadGame = async (userAddress: string) => {
+    const onChainExists = await checkOnChainSave(userAddress);
+    if (onChainExists) {
+      // TODO: Load from chain
+      // For now, fallback to local
+    }
+    const saved = localStorage.getItem('snake-save');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      dispatch({ type: 'RESET_GAME', ...parsed });
+    }
+  };
+
   const value = {
     state,
     dispatch,
@@ -413,6 +447,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     changeDirection,
     buyItem,
     claimAchievement,
+    saveGame,
+    loadGame,
   };
   
   return (

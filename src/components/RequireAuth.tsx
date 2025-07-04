@@ -10,12 +10,12 @@ interface RequireAuthProps {
 }
 
 const RequireAuth: React.FC<RequireAuthProps> = ({ children, showLoginPrompt }) => {
-  const { isConnected, connectWallet } = useWalletStore();
+  const { isConnected, connect } = useWalletStore();
   const navigate = useNavigate();
 
   const handleConnect = async () => {
     try {
-      await connectWallet();
+      await connect();
       // If there's a showLoginPrompt function, call it after successful connection
       if (showLoginPrompt) {
         showLoginPrompt();

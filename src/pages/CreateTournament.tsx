@@ -42,7 +42,7 @@ const CreateTournament = () => {
     token: TESTNET_CONFIG.smartContracts.arcadeToken // Default to ARC token
   });
 
-  const gameOptions = ['Honey Clicker'];
+  const gameOptions = ['Honey Clicker', 'Snake', 'Tetris'];
   const tokenOptions = [
     { address: TESTNET_CONFIG.smartContracts.arcadeToken, symbol: 'ARC' },
     { address: '0x0000000000000000000000000000000000000000', symbol: 'NERO' }

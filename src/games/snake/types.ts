@@ -15,6 +15,7 @@ export interface GameState {
   // Core game state
   snake: Position[];
   food: Position;
+  obstacles: Position[]; // Added obstacles array
   direction: Direction;
   nextDirection: Direction;
   gameOver: boolean;
@@ -32,7 +33,7 @@ export interface GameState {
   // UI state
   isLoading: boolean; // For splash screen
   showMenu: boolean;  // For menu visibility
-  menuType: 'start' | 'pause' | 'gameOver' | null; // Menu type
+  menuType: 'start' | 'pause' | 'gameOver' | 'levelComplete' | null; // Menu type
   // Removed tooltip related fields
   
   // Game economy
@@ -73,6 +74,21 @@ export interface GameContextType {
   changeDirection: (direction: Direction) => void;
   buyItem: (itemId: string) => void;
   claimAchievement: (achievementId: string) => void;
+  saveGame: (userAddress: string) => Promise<void>;
+  loadGame: (userAddress: string) => Promise<void>;
+}
+
+export interface LevelConfig {
+  level: number;              // Level number (1-based)
+  speed: number;              // Game speed in milliseconds (lower is faster)
+  linesNeeded: number;        // Lines needed to advance to next level
+  hasObstacles: boolean;      // Whether the level has obstacles
+  obstacleCount: number;      // Number of obstacles to generate
+  timeLimit?: number;         // Time limit in seconds (optional)
+  description: string;        // Description shown to player
+  foodValue: number;          // Points per food in this level
+  speedIncrement: number;     // Speed increase per food (0-1)
+  allowWallPass: boolean;     // Whether snake can pass through walls
 }
 
 export interface TournamentConfig {
@@ -114,12 +130,14 @@ export type GameAction =
   | { type: 'CHANGE_DIRECTION'; direction: Direction }
   | { type: 'EAT_FOOD' }
   | { type: 'GAME_OVER' }
-  | { type: 'PAUSE'; isPaused: boolean }
-  | { type: 'RESET' }
+
   | { type: 'START' }
   | { type: 'INCREASE_SCORE'; points: number }
   | { type: 'BUY_ITEM'; itemId: string; cost: number }
   | { type: 'UNLOCK_ACHIEVEMENT'; achievementId: string }
+
+  | { type: 'LEVEL_COMPLETE' }
+  | { type: 'NEXT_LEVEL' }
   // Tournament enhancements
   | { type: 'START_TOURNAMENT'; duration: number; mode: 'timeAttack' | 'survival' | 'targetScore' }
   | { type: 'UPDATE_COMBO'; isPerfect: boolean }
@@ -128,7 +146,7 @@ export type GameAction =
   // New actions for menu and UI
   | { type: 'START_GAME' }
   | { type: 'PAUSE_GAME'; isPaused: boolean }
-  | { type: 'RESET_GAME' }
+  | { type: 'RESET_GAME'; level?: number }
   | { type: 'RETURN_TO_MENU' }
   | { type: 'SPLASH_COMPLETE' }
   // Removed tooltip related actions

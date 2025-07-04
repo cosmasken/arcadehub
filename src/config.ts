@@ -40,6 +40,8 @@ interface SmartContracts {
   nftManager: string;
   tournamentHub: string;
   adminApplications: string;
+  snakeTournament: string;
+  tetrisTournament: string;
 }
 
 interface AdminContracts {
@@ -109,6 +111,8 @@ export const TESTNET_CONFIG: {
     nftManager: '0x92CD16b242D30451e6e53B93cB8C641A678dbc74',
     tournamentHub: '0xb0fd335193F9cea1c1ce069739761B41d0cae97c',
     adminApplications: '0x0797FE7109Ec3E711b7445036051409e2bB7d558',
+    snakeTournament: '0x0B93fE3014FA4884938659eEEB3412BdE4E0ECa8',
+    tetrisTournament: '0x0B93fE3014FA4884938659eEEB3412BdE4E0ECa8', 
   },
   erc20: {
     dai: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345',
@@ -145,6 +149,19 @@ const MAINNET_CONFIG: {
     accountFactory: '0x...',
     multiCall: '0x...',
   },
+  // smartContracts: {
+  //   gameRegistry: '0xF7D8fb9eA82A14cBb190bBB80Cd65C3EcE67C3E2',
+  //   arcadeNFT: '0xc079c8e4779f5B01A2678236849577FB22Ec5079',
+  //   arcadeToken: '0x150E812D3443699e8b829EF6978057Ed7CB47AE6',
+  //   pointsSystem: '0xA6bBDefcA7342DB68320C0D1D402E08981267e71',
+  //   stakingSystem: '0x48c3d13633b00C95CFa763bA2293F31f0b8448Eb',
+  //   developerPayouts: '0xF27a858EC52Cc789F87e93A87D6E854ec103B2AF',
+  //   nftManager: '0x92CD16b242D30451e6e53B93cB8C641A678dbc74',
+  //   tournamentHub: '0xb0fd335193F9cea1c1ce069739761B41d0cae97c',
+  //   adminApplications: '0x0797FE7109Ec3E711b7445036051409e2bB7d558',
+  //   snakeTournament: '0x0B93fE3014FA4884938659eEEB3412BdE4E0ECa8',
+  //   tetrisTournament: '0x0B93fE3014FA4884938659eEEB3412BdE4E0ECa8', 
+  // },
   erc20: {
     dai: '0x...',
     usdt: '0x...',

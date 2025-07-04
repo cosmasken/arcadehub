@@ -33,6 +33,7 @@ const nftCache = new Map<string, { timestamp: number, data: any[] }>();
 const NFT_CACHE_DURATION = 60000; // 1 minute cache
 
 import TournamentHub from '../abi/TournamentHub.json'; 
+import SnakeGame from '../abi/SnakeGame.json';
 
 // Validate ABI at load time
 if (!TournamentHub || !Array.isArray(TournamentHub)) {
@@ -2685,6 +2686,175 @@ export const setPointsToTokensRateAA = async (
     options
   );
 };
+
+// Snake Tournament Functions
+export const createSnakeTournamentAA = async (
+  accountSigner: ethers.Signer,
+  name: string,
+  duration: number, // in minutes
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options: any = {}
+) => {
+  const operationKey = `createSnakeTournament_${Date.now()}`;
+  return executeOperation(
+    operationKey,
+    accountSigner,
+    async (client, builder) => {
+      const snakeTournament = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.snakeTournament,
+        SnakeGame,
+        accountSigner
+      );
+
+      const tx = await snakeTournament.createTournament(duration);
+      const receipt = await tx.wait();
+
+      return {
+        transactionHash: receipt.transactionHash,
+        tournamentId: receipt.events?.[0]?.args?.tournamentId?.toString(),
+        receipt,
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+export const joinSnakeTournamentAA = async (
+  accountSigner: ethers.Signer,
+  tournamentId: string,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options: any = {}
+) => {
+  const operationKey = `joinSnakeTournament_${tournamentId}_${Date.now()}`;
+  return executeOperation(
+    operationKey,
+    accountSigner,
+    async (client, builder) => {
+      const snakeTournament = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.snakeTournament,
+        SnakeGame,
+        accountSigner
+      );
+
+      const tx = await snakeTournament.joinTournament(tournamentId);
+      const receipt = await tx.wait();
+
+      return {
+        transactionHash: receipt.transactionHash,
+        receipt,
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+export const submitSnakeScoreAA = async (
+  accountSigner: ethers.Signer,
+  tournamentId: string,
+  score: number,
+  paymentType: number = 0,
+  selectedToken: string = '',
+  options: any = {}
+) => {
+  const operationKey = `submitSnakeScore_${tournamentId}_${Date.now()}`;
+  return executeOperation(
+    operationKey,
+    accountSigner,
+    async (client, builder) => {
+      const snakeTournament = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.snakeTournament,
+        SnakeGame,
+        accountSigner
+      );
+
+      const tx = await snakeTournament.submitScore(tournamentId, score);
+      const receipt = await tx.wait();
+
+      return {
+        transactionHash: receipt.transactionHash,
+        receipt,
+      };
+    },
+    paymentType,
+    selectedToken,
+    options
+  );
+};
+
+export const getSnakeTournamentInfo = async (tournamentId: string) => {
+  try {
+    const provider = getProvider();
+    const snakeTournament = new ethers.Contract(
+      TESTNET_CONFIG.smartContracts.snakeTournament,
+      SnakeGame,
+      provider
+    );
+
+    const info = await snakeTournament.tournaments(tournamentId);
+    const participants = await snakeTournament.getParticipants(tournamentId);
+
+    return {
+      id: tournamentId,
+      startTime: Number(info.startTime) * 1000, // Convert to milliseconds
+      endTime: Number(info.endTime) * 1000,
+      isActive: info.isActive,
+      isFinished: info.isFinished,
+      prizePool: info.prizePool.toString(),
+      participants: participants || [],
+    };
+  } catch (error) {
+    console.error('Error getting tournament info:', error);
+    throw error;
+  }
+};
+
+export const getActiveSnakeTournaments = async () => {
+  try {
+    const provider = getProvider();
+    const snakeTournament = new ethers.Contract(
+      TESTNET_CONFIG.smartContracts.snakeTournament,
+      SnakeGame,
+      provider
+    );
+
+    const currentId = await snakeTournament.currentTournamentId();
+    const activeTournaments = [];
+
+    for (let i = 1; i <= currentId; i++) {
+      const tournament = await snakeTournament.tournaments(i);
+      if (tournament.isActive && !tournament.isFinished) {
+        const participants = await snakeTournament.getParticipants(i);
+        activeTournaments.push({
+          id: i.toString(),
+          startTime: Number(tournament.startTime) * 1000,
+          endTime: Number(tournament.endTime) * 1000,
+          prizePool: tournament.prizePool.toString(),
+          participantCount: participants?.length || 0,
+        });
+      }
+    }
+
+    return activeTournaments;
+  } catch (error) {
+    console.error('Error getting active tournaments:', error);
+    throw error;
+  }
+};
+
+// Add SnakeTournament ABI at the top of the file with other imports
+// import SnakeTournament from '../abi/SnakeTournament.json';
+
+// And add this to the existing ABI validation section
+// if (!SnakeTournament || !Array.isArray(SnakeTournament)) {
+//   console.error('Invalid SnakeTournament ABI:', SnakeTournament);
+//   throw new Error('SnakeTournament ABI is not a valid ABI array');
+// }
 
 // Dev helper to clear all AA caches from console
 if (typeof window !== 'undefined') {

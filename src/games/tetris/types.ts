@@ -8,6 +8,7 @@ export interface GameState {
     shape: Tetromino;
     position: Position;
     type: number;
+    rotation?: number; // 0-3, representing 0°, 90°, 180°, 270°
   } | null;
   nextPieces: number[];
   holdPiece: number | null;
@@ -53,11 +54,15 @@ export interface GameSettings {
 }
 
 // Union of all possible effect types
-type ShopItemEffect = 
-  | { ghostPiece: boolean }
-  | { holdPiece: boolean }
-  | { nextPieces: number }
-  | { theme: string };
+type ShopItemEffect = Partial<{
+  ghostPiece: boolean;
+  holdPiece: boolean;
+  nextPiecesCount: number;
+  theme: string;
+  softDropMultiplier: number;
+  hardDropMultiplier: number;
+  comboMultiplier: number;
+}>;
 
 export type ShopItem = {
   id: string;
@@ -94,18 +99,22 @@ export type GameAction =
   | { type: 'SOFT_DROP' }
   | { type: 'HARD_DROP' }
   | { type: 'HOLD' }
-  | { type: 'PAUSE' }
-  | { type: 'RESET' }
-  | { type: 'START' }
+  | { type: 'PAUSE'; isPaused?: boolean }
+  | { type: 'RESET' | 'RESET_GAME' }
+  | { type: 'START' | 'START_GAME' }
   | { type: 'TICK' }
-  | { type: 'BUY_ITEM'; itemId: string };
+  | { type: 'BUY_ITEM'; itemId: string }
+  | { type: 'GAME_OVER' }
+  | { type: 'ADD_SCORE'; points: number }
+  | { type: 'ADD_LINES'; lines: number }
+  | { type: 'LOAD_STATE'; payload: Partial<GameState> };
 
 export interface GameContextType {
   state: GameState;
   dispatch: React.Dispatch<GameAction>;
   buyItem: (itemId: string) => void;
   claimAchievement: (achievementId: string) => void;
-  saveGame: () => void;
-  loadGame: () => void;
+  saveGame: (userAddress: string) => Promise<void>;
+  loadGame: (userAddress: string) => Promise<void>;
   isValidMove: (board: number[][], shape: number[][], position: Position) => boolean;
 }

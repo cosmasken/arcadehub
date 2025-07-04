@@ -1,14 +1,20 @@
 import React, { createContext, useReducer, useCallback, useRef, useEffect } from 'react';
 import { GameState, GameAction, GameContextType, Direction } from './types';
-import { getInitialState, getRandomPosition } from './initialState';
-import { GRID_SIZE, INITIAL_GAME_SPEED, DIRECTIONS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
+import { getInitialState, getRandomPosition, generateObstacles } from './initialState';
+import { GRID_SIZE, DIRECTIONS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
+import { Position } from './types';
 
 // Helper functions
 // Re-export for backward compatibility
-export { getInitialState, getRandomPosition };
+export { getInitialState, getRandomPosition, generateObstacles };
 
 // Game context
 const GameContext = createContext<GameContextType | undefined>(undefined);
+
+// Helper function to check if a position is occupied by an obstacle
+const isPositionOccupied = (x: number, y: number, obstacles: Position[]): boolean => {
+  return obstacles.some(obstacle => obstacle.x === x && obstacle.y === y);
+};
 
 // Game reducer
 const gameReducer = (state: GameState, action: GameAction): GameState => {
@@ -16,10 +22,11 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     case 'MOVE': {
       if (state.gameOver || !state.isStarted || state.isPaused) return state;
       
-      // Create a deep copy of the snake
+      // Create a deep copy of the snake and obstacles
       const newSnake = state.snake.map(segment => ({ ...segment }));
       const head = newSnake[0];
       const direction = state.nextDirection;
+      const currentLevel = LEVELS[state.level - 1];
       
       // Calculate next position
       let newHeadX = head.x;
@@ -34,7 +41,14 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       }
       
       // Handle wall collision or wrap around
-      if (state.settings.wallCollision) {
+      if (currentLevel.allowWallPass) {
+        // Wrap around if wall passing is allowed
+        if (newHeadX < 0) newHeadX = GRID_SIZE - 1;
+        else if (newHeadX >= GRID_SIZE) newHeadX = 0;
+        if (newHeadY < 0) newHeadY = GRID_SIZE - 1;
+        else if (newHeadY >= GRID_SIZE) newHeadY = 0;
+      } else {
+        // Check for wall collision
         if (newHeadX < 0 || newHeadX >= GRID_SIZE || newHeadY < 0 || newHeadY >= GRID_SIZE) {
           // Game over - show menu
           return {
@@ -47,12 +61,19 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
             highScore: Math.max(state.score, state.highScore)
           };
         }
-      } else {
-        // Wrap around if wall collision is off
-        if (newHeadX < 0) newHeadX = GRID_SIZE - 1;
-        if (newHeadX >= GRID_SIZE) newHeadX = 0;
-        if (newHeadY < 0) newHeadY = GRID_SIZE - 1;
-        if (newHeadY >= GRID_SIZE) newHeadY = 0;
+      }
+      
+      // Check for obstacle collision
+      if (isPositionOccupied(newHeadX, newHeadY, state.obstacles)) {
+        return {
+          ...state,
+          gameOver: true,
+          isStarted: false,
+          isPaused: true,
+          showMenu: true,
+          menuType: 'gameOver',
+          highScore: Math.max(state.score, state.highScore)
+        };
       }
       
       // Check for self collision (skip the head)
@@ -116,12 +137,20 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         // Update score and level
         const newScore = state.score + 10 * state.level;
         const newLinesCleared = state.linesCleared + 1;
-        let newLevel = state.level;
+        const newLevel = state.level;
         
         // Level up check
         const nextLevel = LEVELS.find(l => l.level === newLevel + 1);
         if (nextLevel && newLinesCleared >= nextLevel.linesNeeded) {
-          newLevel++;
+          // Trigger level complete instead of auto-progress
+          return {
+            ...state,
+            score: newScore,
+            linesCleared: newLinesCleared,
+            showMenu: true,
+            menuType: 'levelComplete',
+            isPaused: true,
+          };
         }
         
         return {
@@ -162,7 +191,20 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         nextDirection: action.direction
       };
     
-    case 'START_GAME':
+    case 'START_GAME': {
+      const newFood = getRandomPosition();
+      const newSnake = [{
+        x: 10,
+        y: 10,
+        dx: 0,
+        dy: 0,
+        targetX: 10,
+        targetY: 10,
+        moving: false,
+        direction: 'RIGHT' as const
+      }];
+      const obstacles = generateObstacles(state.level, newSnake, newFood);
+      
       return {
         ...state,
         isLoading: false,
@@ -171,85 +213,74 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         isStarted: true,
         gameOver: false,
         isPaused: false,
+        snake: newSnake,
+        food: newFood,
+        obstacles,
+        direction: DIRECTIONS.RIGHT,
+        nextDirection: DIRECTIONS.RIGHT,
+        score: 0,
+        linesCleared: 0,
+        foodEaten: 0,
+        moveCount: 0,
+        gameStartTime: Date.now(),
+        gameDuration: 0,
+        comboMultiplier: 1,
       };
-      
+    }
+    
     case 'PAUSE_GAME':
       return {
         ...state,
         isPaused: action.isPaused,
         showMenu: action.isPaused,
-        menuType: 'pause',
+        menuType: action.isPaused ? 'pause' : null,
       };
-      
+
     case 'RESET_GAME':
       return {
-        ...getInitialState(),
+        ...getInitialState(action.level || 1),
         isLoading: false,
         showMenu: true,
         menuType: 'start',
         highScore: state.highScore, // Preserve high score
+        isPaused: false, // Reset pause state
+        isStarted: false, // Ensure not started until START
+        gameOver: false,
       };
-      
-    case 'RETURN_TO_MENU':
-      return {
-        ...getInitialState(),
-        isLoading: false,
-        showMenu: true,
-        menuType: 'start',
-        highScore: state.highScore, // Preserve high score
-      };
-      
-    case 'SPLASH_COMPLETE':
-      console.log('Reducer: Handling SPLASH_COMPLETE action');
-      // Only update if we're actually loading
-      if (!state.isLoading) {
-        console.log('Reducer: Not in loading state, ignoring SPLASH_COMPLETE');
-        return state;
-      }
-      return {
-        ...state,
-        isLoading: false,
-        showMenu: true,
-        menuType: 'start',
-        isPaused: false,
-      };
-      
-    case 'TOGGLE_MENU':
-      return { 
-        ...state, 
-        showMenu: action.show,
-        menuType: action.menuType || state.menuType,
-        // Pause the game when showing menu, unless it's the game over menu
-        isPaused: action.show && action.menuType !== 'gameOver' ? true : state.isPaused
-      };
-      
-    case 'GAME_OVER':
-      return {
-        ...state,
-        gameOver: true,
-        isStarted: false,
-        isPaused: true,
-        showMenu: true,
-        menuType: 'gameOver',
-        highScore: Math.max(state.score, state.highScore)
-      };
-      
-    case 'RESET':
-      return getInitialState();
-      
+
     case 'START':
-      return { 
-        ...state, 
-        isStarted: true, 
+      return {
+        ...state,
+        isStarted: true,
+        isPaused: false,
         gameOver: false,
         showMenu: false,
         menuType: null,
-        isPaused: false
       };
-      
-    case 'INCREASE_SCORE':
-      return { ...state, score: state.score + action.points };
-      
+
+    case 'LEVEL_COMPLETE':
+      return {
+        ...state,
+        isPaused: true,
+        showMenu: true,
+        menuType: 'levelComplete',
+      };
+
+    case 'NEXT_LEVEL': {
+      const nextLevel = state.level + 1;
+      return {
+        ...getInitialState(nextLevel),
+        isLoading: false,
+        showMenu: false,
+        menuType: null,
+        highScore: state.highScore,
+        isPaused: false,
+        isStarted: true,
+        gameOver: false,
+        level: nextLevel,
+      };
+    }
+
     case 'BUY_ITEM': {
       const item = SHOP_ITEMS.find(item => item.id === action.itemId);
       if (!item || state.coins < item.price) return state;
@@ -282,6 +313,15 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
     }
     
+    case 'SPLASH_COMPLETE':
+      return {
+        ...state,
+        isLoading: false,
+        showMenu: true,
+        menuType: 'start',
+        isStarted: false,
+        isPaused: false,
+      };
     default:
       return state;
   }
@@ -342,11 +382,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const pauseGame = useCallback(() => {
-    dispatch({ type: 'PAUSE', isPaused: true });
+    dispatch({ type: 'PAUSE_GAME', isPaused: true });
   }, []);
 
-  const resetGame = useCallback(() => {
-    dispatch({ type: 'RESET' });
+  const resetGame = useCallback((level?: number) => {
+    dispatch({ type: 'RESET_GAME', level });
   }, []);
 
   const changeDirection = useCallback((direction: Direction) => {
@@ -364,6 +404,40 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch({ type: 'UNLOCK_ACHIEVEMENT', achievementId });
   }, []);
   
+  // --- Save/Load Game Feature ---
+  // Stub: Replace with real on-chain logic
+  const checkOnChainSave = async (userAddress: string): Promise<boolean> => {
+    // TODO: Query blockchain for existing save for userAddress
+    // Return true if found, false otherwise
+    return false;
+  };
+
+  const saveGame = async (userAddress: string) => {
+    const onChainExists = await checkOnChainSave(userAddress);
+    if (!onChainExists) {
+      // TODO: Save to chain here
+      // For now, just save locally
+      localStorage.setItem('snake-save', JSON.stringify(state));
+    } else {
+      // TODO: Prompt user to overwrite or handle as needed
+      // For now, just overwrite local
+      localStorage.setItem('snake-save', JSON.stringify(state));
+    }
+  };
+
+  const loadGame = async (userAddress: string) => {
+    const onChainExists = await checkOnChainSave(userAddress);
+    if (onChainExists) {
+      // TODO: Load from chain
+      // For now, fallback to local
+    }
+    const saved = localStorage.getItem('snake-save');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      dispatch({ type: 'RESET_GAME', ...parsed });
+    }
+  };
+
   const value = {
     state,
     dispatch,
@@ -373,6 +447,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     changeDirection,
     buyItem,
     claimAchievement,
+    saveGame,
+    loadGame,
   };
   
   return (

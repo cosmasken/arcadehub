@@ -6,10 +6,10 @@ import { Wallet } from 'lucide-react'; // Assuming you have a Wallet icon in luc
 
 
 const RequireWallet: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isConnected, isInitialized, connectWallet } = useWalletStore();
+  const { isConnected, isInitialized, connect } = useWalletStore();
   const handleConnect = async () => {
     try {
-      await connectWallet();
+      await connect();
     } catch (error) {
       console.error('Failed to connect wallet:', error);
     }

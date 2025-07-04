@@ -16,6 +16,12 @@ const GameBoard: React.FC = () => {
 
   // Handle keyboard controls
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Toggle pause with 'p' key
+    if (e.key.toLowerCase() === 'p' && state.isStarted && !state.gameOver) {
+      dispatch({ type: 'PAUSE_GAME', isPaused: !state.isPaused });
+      return;
+    }
+
     const useWASD = gameState.settings.useWASD;
 
     if (useWASD) {
@@ -183,6 +189,29 @@ const GameBoard: React.FC = () => {
       ctx.stroke();
     }
 
+    // Draw obstacles (walls) with a distinct style
+    if (state.obstacles && state.obstacles.length > 0) {
+      state.obstacles.forEach(obstacle => {
+        ctx.save();
+        ctx.shadowColor = '#d946ef'; // Neon purple shadow
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#a21caf'; // Bold neon purple
+        ctx.strokeStyle = '#f0abfc'; // Light purple border
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(
+          obstacle.x * cellSize + 2,
+          obstacle.y * cellSize + 2,
+          cellSize - 4,
+          cellSize - 4,
+          cellSize * 0.25
+        );
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
     // Draw food
     ctx.fillStyle = '#ff4757';
     ctx.beginPath();
@@ -329,17 +358,21 @@ const GameBoard: React.FC = () => {
       // Start a new game - reset everything first
       dispatch({ type: 'RESET_GAME' });
       // Then start the game
-      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'START' });
+      // Make sure menu is hidden and game is not paused
+      dispatch({ type: 'TOGGLE_MENU', show: false });
+      dispatch({ type: 'PAUSE_GAME', isPaused: false });
+    } else if (state.menuType === 'pause') {
+      // Just resume the game - don't reset, just unpause
+      dispatch({ type: 'PAUSE_GAME', isPaused: false });
       // Make sure menu is hidden
       dispatch({ type: 'TOGGLE_MENU', show: false });
-    } else if (state.menuType === 'pause') {
-      // Just resume the game - the PAUSE_GAME action will handle the rest
-      dispatch({ type: 'PAUSE_GAME', isPaused: false });
     } else if (state.menuType === 'gameOver') {
       // For game over, we want to reset and start a new game
       dispatch({ type: 'RESET_GAME' });
-      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'START' });
       dispatch({ type: 'TOGGLE_MENU', show: false });
+      dispatch({ type: 'PAUSE_GAME', isPaused: false });
     }
   }, [state.menuType, dispatch]);
 
@@ -347,16 +380,20 @@ const GameBoard: React.FC = () => {
     // Reset the game completely
     dispatch({ type: 'RESET_GAME' });
     // Start a new game immediately
-    dispatch({ type: 'START_GAME' });
+    dispatch({ type: 'START' });
     // Hide menu after restart
     dispatch({ type: 'TOGGLE_MENU', show: false });
+    dispatch({ type: 'PAUSE_GAME', isPaused: false });
   }, [dispatch]);
 
-  const handleSave = useCallback(() => {
-    // Save game state
-    // This would be implemented to save to local storage or backend
+  const { saveGame } = useGame();
+  const handleSave = useCallback(async () => {
+    // TODO: Replace with actual user address from wallet/session
+    const userAddress = 'demo-user-address';
+    await saveGame(userAddress);
+    // Optionally show a toast or log
     console.log('Game saved');
-  }, []);
+  }, [saveGame]);
 
   const handleQuit = useCallback(() => {
     if (state.menuType === 'pause') {
@@ -405,7 +442,7 @@ const GameBoard: React.FC = () => {
             !state.isStarted || state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}>
             <GameMenu 
-              type={state.gameOver ? 'gameOver' : state.isPaused ? 'pause' : 'start'}
+              type={state.menuType === 'levelComplete' ? 'levelComplete' : state.gameOver ? 'gameOver' : state.isPaused ? 'pause' : 'start'}
               score={state.score}
               highScore={state.highScore}
               level={state.level}
@@ -413,6 +450,9 @@ const GameBoard: React.FC = () => {
               onRestart={handleRestart}
               onSave={handleSave}
               onQuit={handleQuit}
+              onNextLevel={() => {
+                dispatch({ type: 'NEXT_LEVEL' });
+              }}
             />
           </div>
         )}

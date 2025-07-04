@@ -178,7 +178,7 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
       </nav>
 
       {/* Add padding to account for fixed header */}
-      <div className="h-24 md:h-20" />
+      <div className="h-16 md:h-12" />
       <style>
         {`
           .hide-scrollbar {

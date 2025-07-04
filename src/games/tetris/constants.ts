@@ -2,20 +2,20 @@ import { ShopItem } from './types';
 
 // Game constants
 export const COLS = 10;
-export const ROWS = 20;
-export const BLOCK = 24;
+export const ROWS = 22; // Slightly taller board for better gameplay
+export const BLOCK = 40; // Increased block size for better visibility
 export const GAME_SPEED = 1000; // ms
 
 // Colors for each tetromino type
 export const COLORS = [
-  '#1a1a1a',  // empty (dark background)
-  '#00FFFF',  // I - Cyan
-  '#0000FF',  // J - Blue
-  '#FFA500',  // L - Orange
-  '#FFFF00',  // O - Yellow
-  '#00FF00',  // S - Green
-  '#800080',  // T - Purple
-  '#FF0000',  // Z - Red
+  '#0f0f14',  // empty (darker background for better contrast)
+  '#00F0FF',  // I - Brighter Cyan
+  '#3366FF',  // J - Brighter Blue
+  '#FF8C00',  // L - Brighter Orange
+  '#FFEE33',  // O - Brighter Yellow
+  '#33FF33',  // S - Brighter Green
+  '#CC33FF',  // T - Brighter Purple
+  '#FF3333',  // Z - Brighter Red
 ];
 
 // Tetromino shapes
@@ -52,6 +52,7 @@ export const POINTS = {
   HARD_DROP: 2,
 };
 
+
 // Shop items
 export const SHOP_ITEMS: ShopItem[] = [
   {
@@ -76,28 +77,69 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'next_pieces',
-    name: 'Next Pieces',
+    name: 'Next Pieces Preview',
     description: 'See the next 3 pieces',
     price: 2000,
     type: 'upgrade',
-    maxLevel: 1,
-    effect: { nextPieces: 3 },
+    maxLevel: 3,
+    effect: { nextPiecesCount: 3 },
     icon: '🔍',
+  },
+  {
+    id: 'soft_drop_boost',
+    name: 'Soft Drop Boost',
+    description: 'Earn more points from soft drops',
+    price: 3000,
+    type: 'upgrade',
+    maxLevel: 3,
+    effect: { softDropMultiplier: 2 },
+    icon: '⬇️',
+  },
+  {
+    id: 'hard_drop_boost',
+    name: 'Hard Drop Boost',
+    description: 'Earn more points from hard drops',
+    price: 3500,
+    type: 'upgrade',
+    maxLevel: 3,
+    effect: { hardDropMultiplier: 2 },
+    icon: '⏬',
+  },
+  {
+    id: 'combo_boost',
+    name: 'Combo Boost',
+    description: 'Earn bonus points for consecutive line clears',
+    price: 5000,
+    type: 'upgrade',
+    maxLevel: 3,
+    effect: { comboMultiplier: 1.5 },
+    icon: '🔥',
   },
   {
     id: 'theme_retro',
     name: 'Retro Theme',
     description: 'Classic retro theme',
-    price: 5000,
+    price: 2500,
     type: 'theme',
+    maxLevel: 1,
     effect: { theme: 'retro' },
     icon: '👾',
+  },
+  {
+    id: 'theme_neon',
+    name: 'Neon Theme',
+    description: 'Bright neon theme',
+    price: 3000,
+    type: 'theme',
+    maxLevel: 1,
+    effect: { theme: 'neon' },
+    icon: '🌈',
   },
   {
     id: 'theme_dark',
     name: 'Dark Theme',
     description: 'Dark mode theme',
-    price: 5000,
+    price: 2500,
     type: 'theme',
     effect: { theme: 'dark' },
     icon: '🌙',

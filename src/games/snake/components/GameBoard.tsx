@@ -189,6 +189,29 @@ const GameBoard: React.FC = () => {
       ctx.stroke();
     }
 
+    // Draw obstacles (walls) with a distinct style
+    if (state.obstacles && state.obstacles.length > 0) {
+      state.obstacles.forEach(obstacle => {
+        ctx.save();
+        ctx.shadowColor = '#d946ef'; // Neon purple shadow
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#a21caf'; // Bold neon purple
+        ctx.strokeStyle = '#f0abfc'; // Light purple border
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(
+          obstacle.x * cellSize + 2,
+          obstacle.y * cellSize + 2,
+          cellSize - 4,
+          cellSize - 4,
+          cellSize * 0.25
+        );
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+
     // Draw food
     ctx.fillStyle = '#ff4757';
     ctx.beginPath();

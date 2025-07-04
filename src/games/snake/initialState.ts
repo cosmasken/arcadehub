@@ -18,37 +18,71 @@ export const generateObstacles = (level: number, snake: Position[], food: Positi
   if (!currentLevel.hasObstacles) return [];
   
   const obstacles: Position[] = [];
-  const occupied = new Set();
+  const occupied = new Set<string>();
   
   // Mark snake and food positions as occupied
   snake.forEach(segment => {
     occupied.add(`${segment.x},${segment.y}`);
   });
   occupied.add(`${food.x},${food.y}`);
-  
-  // Generate obstacles
+
+  // Add edge wall obstacles if wall pass is not allowed
+  if (!currentLevel.allowWallPass) {
+    // Top and bottom rows
+    for (let x = 0; x < GRID_SIZE; x++) {
+      [0, GRID_SIZE - 1].forEach(y => {
+        const key = `${x},${y}`;
+        if (!occupied.has(key)) {
+          obstacles.push({
+            x,
+            y,
+            dx: 0,
+            dy: 0,
+            targetX: x,
+            targetY: y,
+            moving: false,
+            direction: 'RIGHT' as const
+          });
+          occupied.add(key);
+        }
+      });
+    }
+    // Left and right columns (excluding corners already added)
+    for (let y = 1; y < GRID_SIZE - 1; y++) {
+      [0, GRID_SIZE - 1].forEach(x => {
+        const key = `${x},${y}`;
+        if (!occupied.has(key)) {
+          obstacles.push({
+            x,
+            y,
+            dx: 0,
+            dy: 0,
+            targetX: x,
+            targetY: y,
+            moving: false,
+            direction: 'RIGHT' as const
+          });
+          occupied.add(key);
+        }
+      });
+    }
+  }
+
+  // Generate internal obstacles
   for (let i = 0; i < currentLevel.obstacleCount; i++) {
     let x: number, y: number;
     let attempts = 0;
     const maxAttempts = 100;
-    
-    // Try to find a valid position for the obstacle
     do {
       x = Math.floor(Math.random() * GRID_SIZE);
       y = Math.floor(Math.random() * GRID_SIZE);
       attempts++;
-      
-      // Give up after too many attempts to prevent infinite loops
       if (attempts >= maxAttempts) break;
-      
-      // Continue if position is already occupied
     } while (
       occupied.has(`${x},${y}`) ||
-      // Leave some space around the edges
       x < 2 || x >= GRID_SIZE - 2 ||
       y < 2 || y >= GRID_SIZE - 2
     );
-    
     if (attempts < maxAttempts) {
       obstacles.push({
         x,
@@ -60,12 +94,10 @@ export const generateObstacles = (level: number, snake: Position[], food: Positi
         moving: false,
         direction: 'RIGHT' as const
       });
-      
-      // Mark this position as occupied
       occupied.add(`${x},${y}`);
     }
   }
-  
+
   return obstacles;
 };
 

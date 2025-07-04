@@ -39,7 +39,7 @@ const createDefaultState = (): GameState => ({
     coins: 0,
   },
   settings: {
-    ghostPiece: true,
+    ghostPiece: false,
     holdPiece: true,
     nextPiecesCount: 3,
     theme: 'classic',

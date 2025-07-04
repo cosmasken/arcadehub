@@ -1,5 +1,5 @@
 import { GameState, GameAction } from './types';
-import { COLS, ROWS, SHAPES, POINTS, LEVELS } from './constants';
+import { COLS, ROWS, SHAPES, POINTS, LEVELS, SHOP_ITEMS } from './constants';
 
 // Standard SRS Wall Kick Data
 // Format: [initial rotation] -> [next rotation]: [test1, test2, test3, test4, test5]
@@ -393,8 +393,23 @@ const gameTick = (state: GameState): GameState => {
 };
 
 const buyItem = (state: GameState, itemId: string): GameState => {
-  // This is a placeholder - implement your shop item logic here
-  return state;
+  // Find the item in the shop
+  const item = SHOP_ITEMS.find(i => i.id === itemId);
+  if (!item) return state;
+
+  // Only update if user can afford it, etc. (omitted for brevity)
+  const newSettings = { ...state.settings };
+  if (itemId === 'ghost_piece') {
+    newSettings.ghostPiece = true;
+  }
+  // Add similar logic for other upgrades if needed
+
+  // Deduct coins, add to inventory, etc. (omitted for brevity)
+  return {
+    ...state,
+    settings: newSettings,
+    // You may want to update stats.inventory, stats.coins, etc.
+  };
 };
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {

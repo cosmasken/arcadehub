@@ -9,8 +9,8 @@ const Board: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const lastTick = useRef<number>(0);
-  // Increased cell size from 30 to 40 pixels for a larger game area
-  const cellSize = 40;
+  // Increased cell size from 40 to 48 pixels for a bigger game area
+  const cellSize = 48;
   const [dimensions] = useState({
     width: COLS * cellSize,
     height: ROWS * cellSize
@@ -97,7 +97,7 @@ const Board: React.FC = () => {
         // Draw all cells, including those at the bottom and right edges
         const value = typeof row[x] === 'number' ? row[x] : 0;
         if (value !== 0) {
-          drawBlock(ctx, x, y, value);
+          drawBlock(ctx, x, y, value, cellSize);
         }
       }
     }
@@ -128,7 +128,7 @@ const Board: React.FC = () => {
 
               // Only draw if position is within visible board
               if (posY >= 0 && posY < ROWS && posX >= 0 && posX < COLS) {
-                drawGhostBlock(ctx, posX, posY, pieceType);
+                drawGhostBlock(ctx, posX, posY, pieceType, cellSize);
               }
             }
           }
@@ -150,7 +150,7 @@ const Board: React.FC = () => {
 
             // Only draw if position is within visible board
             if (posY >= 0 && posY < ROWS && posX >= 0 && posX < COLS) {
-              drawBlock(ctx, posX, posY, pieceType);
+              drawBlock(ctx, posX, posY, pieceType, cellSize);
             }
           }
         }

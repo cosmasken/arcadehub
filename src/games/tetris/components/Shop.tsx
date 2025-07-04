@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useGame } from '../context';
 import { SHOP_ITEMS } from '../constants';
 import { cn } from '../../../lib/utils';
-import MintingModal from '../../../components/MintingModal';
+import GameItemMintModal from '../../../components/GameItemMintModal';
 
 type TabType = 'all' | 'upgrades' | 'themes';
 
@@ -141,11 +141,10 @@ const Shop: React.FC = () => {
       </div>
     </div>
       {mintingItem && (
-        <MintingModal
+        <GameItemMintModal
           isOpen={isMintingModalOpen}
           onClose={() => { setIsMintingModalOpen(false); setMintingItem(null); }}
-          achievement={mintingItem}
-          setIsLoadingModalOpen={() => {}}
+          item={mintingItem}
           onMintSuccess={() => {
             buyItem(mintingItem.id);
             setIsMintingModalOpen(false);

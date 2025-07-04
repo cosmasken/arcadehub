@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGame } from '../hooks/useGame';
 import { SHOP_ITEMS } from '../constants';
-import MintingModal from '../../../components/MintingModal';
+import GameItemMintModal from '../../../components/GameItemMintModal';
 
 interface ShopProps {
   shopOpen: boolean;
@@ -130,13 +130,11 @@ const Shop: React.FC<ShopProps> = ({ shopOpen, setShopOpen, onOpen, onClose, onB
         </div>
       </div>
       {mintingSkin && (
-        <MintingModal
+        <GameItemMintModal
           isOpen={isMintingModalOpen}
           onClose={() => { setIsMintingModalOpen(false); setMintingSkin(null); }}
-          achievement={mintingSkin}
-          setIsLoadingModalOpen={() => {}}
+          item={mintingSkin}
           onMintSuccess={() => {
-            // For demo: unlock the skin after minting
             buyItem(mintingSkin.id);
             setIsMintingModalOpen(false);
             setMintingSkin(null);

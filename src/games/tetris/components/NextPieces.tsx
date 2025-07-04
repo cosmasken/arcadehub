@@ -25,27 +25,28 @@ const NextPieces: React.FC = () => {
     const nextPieces = Array.isArray(state.nextPieces) ? state.nextPieces : [];
     nextPieces.forEach((pieceType, index) => {
       // Skip if pieceType is invalid or shape doesn't exist
-      if (typeof pieceType !== 'number' || !SHAPES[pieceType] || !SHAPES[pieceType][0]) {
+      if (typeof pieceType !== 'number' || !SHAPES[pieceType]) {
         return;
       }
-      
-      const shape = SHAPES[pieceType][0]; // Get the first rotation
+      const shape = SHAPES[pieceType]; // Use the full 2D array
       if (!Array.isArray(shape) || shape.length === 0) return;
-      
-      const shapeRow = shape[0];
-      const rowLength = Array.isArray(shapeRow) ? shapeRow.length : 0;
-      const offsetX = Math.floor((COLS * blockSize - rowLength * blockSize) / 2);
-      const offsetY = index * (pieceHeight + padding) + padding;
-      
-      // Draw the piece with null checks
+
+      // Calculate the bounding box for the shape
+      const shapeRows = shape.length;
+      const shapeCols = Math.max(...shape.map(row => row.length));
+      // Center each piece in its preview box
+      const previewBoxHeight = pieceHeight;
+      const previewBoxWidth = COLS * blockSize;
+      const offsetX = Math.floor((previewBoxWidth - shapeCols * blockSize) / 2);
+      const offsetY = index * (previewBoxHeight + padding) + Math.floor((previewBoxHeight - shapeRows * blockSize) / 2);
+
+      // Draw the piece
       shape.forEach((row, y) => {
-        if (Array.isArray(row)) {
-          row.forEach((value, x) => {
-            if (value) {
-              drawBlock(ctx, x * blockSize + offsetX, y * blockSize + offsetY, pieceType, blockSize);
-            }
-          });
-        }
+        row.forEach((value, x) => {
+          if (value) {
+            drawBlock(ctx, x + offsetX / blockSize, y + offsetY / blockSize, pieceType, blockSize);
+          }
+        });
       });
     });
   }, [state.nextPieces]);

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { GameState } from '../types';
 
 interface GameMenuProps {
-  type: 'start' | 'pause' | 'gameOver' | null;
+  type: 'start' | 'pause' | 'gameOver' | 'levelComplete' | null;
   score: number;
   highScore: number;
   level?: number;
@@ -11,6 +11,7 @@ interface GameMenuProps {
   onRestart: () => void;
   onSave: () => void;
   onQuit: () => void;
+  onNextLevel?: () => void;
 }
 
 const GameMenu: React.FC<GameMenuProps> = ({
@@ -22,13 +23,15 @@ const GameMenu: React.FC<GameMenuProps> = ({
   onRestart,
   onSave,
   onQuit,
+  onNextLevel,
 }) => {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const navigate = useNavigate();
   if (!type) return null;
 
   const title = type === 'start' ? 'SNAKE' : 
-                type === 'pause' ? 'PAUSED' : 'GAME OVER';
+                type === 'pause' ? 'PAUSED' : 
+                type === 'levelComplete' ? 'LEVEL COMPLETE!' : 'GAME OVER';
 
   // Handle exit to home
   const handleExit = () => {
@@ -55,6 +58,15 @@ const GameMenu: React.FC<GameMenuProps> = ({
           Continue Playing
         </button>
       );
+    } else if (type === 'levelComplete') {
+      return (
+        <button
+          onClick={onNextLevel}
+          className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
+        >
+          Next Level
+        </button>
+      );
     } else { // gameOver
       return (
         <button
@@ -75,7 +87,7 @@ const GameMenu: React.FC<GameMenuProps> = ({
         </h2>
         
         {/* Score Display */}
-        {(type === 'pause' || type === 'gameOver') && (
+        {(type === 'pause' || type === 'gameOver' || type === 'levelComplete') && (
           <div className="text-center mb-6">
             <p className="text-lg text-gray-300">
               Score: <span className="text-cyan-400 font-bold">{score}</span>
@@ -84,6 +96,9 @@ const GameMenu: React.FC<GameMenuProps> = ({
               <p className="text-sm text-gray-400 mt-1">
                 High Score: <span className="text-yellow-400 font-bold">{highScore}</span>
               </p>
+            )}
+            {type === 'levelComplete' && (
+              <p className="text-green-400 mt-2 font-semibold">Level {level} Complete!</p>
             )}
           </div>
         )}

@@ -33,7 +33,7 @@ export interface GameState {
   // UI state
   isLoading: boolean; // For splash screen
   showMenu: boolean;  // For menu visibility
-  menuType: 'start' | 'pause' | 'gameOver' | null; // Menu type
+  menuType: 'start' | 'pause' | 'gameOver' | 'levelComplete' | null; // Menu type
   // Removed tooltip related fields
   
   // Game economy
@@ -128,12 +128,14 @@ export type GameAction =
   | { type: 'CHANGE_DIRECTION'; direction: Direction }
   | { type: 'EAT_FOOD' }
   | { type: 'GAME_OVER' }
-  | { type: 'PAUSE'; isPaused: boolean }
-  | { type: 'RESET' }
+
   | { type: 'START' }
   | { type: 'INCREASE_SCORE'; points: number }
   | { type: 'BUY_ITEM'; itemId: string; cost: number }
   | { type: 'UNLOCK_ACHIEVEMENT'; achievementId: string }
+
+  | { type: 'LEVEL_COMPLETE' }
+  | { type: 'NEXT_LEVEL' }
   // Tournament enhancements
   | { type: 'START_TOURNAMENT'; duration: number; mode: 'timeAttack' | 'survival' | 'targetScore' }
   | { type: 'UPDATE_COMBO'; isPerfect: boolean }
@@ -142,7 +144,7 @@ export type GameAction =
   // New actions for menu and UI
   | { type: 'START_GAME' }
   | { type: 'PAUSE_GAME'; isPaused: boolean }
-  | { type: 'RESET_GAME' }
+  | { type: 'RESET_GAME'; level?: number }
   | { type: 'RETURN_TO_MENU' }
   | { type: 'SPLASH_COMPLETE' }
   // Removed tooltip related actions

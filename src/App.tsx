@@ -30,7 +30,6 @@ import Collections from "./pages/Collections";
 import CollectionDetail from "./pages/CollectionDetail";
 import DeveloperProfile from "./pages/DeveloperProfile";
 import NotFound from "./pages/NotFound";
-import HoneyClicker from './pages/HoneyClicker';
 import Admin from "./pages/Admin";
 import Sponsors from "./pages/Sponsors";
 import SponsorLogin from "./pages/SponsorLogin";
@@ -216,7 +215,6 @@ const App = () => {
                 <Route path="collections" element={<Collections />} />
                 <Route path="collections/:id" element={<CollectionDetail />} />
                 <Route path="developer-profile/:id" element={<DeveloperProfile />} />
-                <Route path="honey-clicker" element={<HoneyClicker />} />
                 <Route path="games/snake" element={<SnakeGame />} />
                 <Route path="games/tetris" element={<Tetris />} />
                 <Route path="sponsors" element={<Sponsors />} />

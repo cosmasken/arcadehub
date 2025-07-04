@@ -6,14 +6,10 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import GameCard from '../components/GameCard';
 import WelcomeModal from '../components/WelcomeModal';
 import HowToPlay from '../components/HowToPlay';
-import { Badge } from '../components/ui/badge';
-import { Card } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { GamepadIcon, Users, Wallet as WalletIcon, Search, X, Star } from 'lucide-react';
+import { GamepadIcon, Users, Search, X, Star } from 'lucide-react';
 import useWalletStore from '../stores/useWalletStore';
 import useProfileStore from '../stores/useProfileStore';
 import { Input } from '../components/ui/input';
-import Tooltip from '../components/Tooltip';
 
 type GameStatus = 'live' | 'upcoming' | 'completed' | 'beta';
 
@@ -30,7 +26,6 @@ interface Game {
   lastUpdated: string;
 }
 
-const TOKEN_ABI = "../abi/ArcadeToken.json";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -54,18 +49,7 @@ const Index = () => {
   }, [isConnected]);
 
   const allGames: Game[] = useMemo(() => [
-    {
-      id: "honey-clicker",
-      title: "Honey Clicker",
-      description: "Click to collect honey and grow your hive!",
-      image: "/honey-clicker.jpg",
-      status: "live" as const,
-      category: "idle",
-      players: 12453,
-      rating: 4.8,
-      prize: "100 NERO",
-      lastUpdated: '2023-06-15'
-    },
+
     {
       id: "tetris",
       title: "Tetris",
@@ -238,38 +222,6 @@ const Index = () => {
         <WelcomeModal />
         <HowToPlay />
         <Breadcrumbs />
-
-        {/* <div className="container mx-auto px-4 pt-6 pb-2 flex flex-wrap gap-4 justify-center">
-          <button
-            onClick={() => navigate('/tournaments')}
-            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-green-400 to-emerald-300 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 hover:scale-105"
-          >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <span className="text-xl">🏆</span>
-              <span>Tournaments</span>
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </button>
-          <button
-            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-cyan-300 to-blue-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/30 hover:scale-105"
-          >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <span className="text-xl">💰</span>
-              <span>Rewards</span>
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </button>
-          <button
-            onClick={() => navigate('/leaderboard')}
-            className="group relative px-6 py-3 font-medium text-black bg-gradient-to-r from-yellow-300 to-amber-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/30 hover:scale-105"
-          >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <span className="text-xl">📈</span>
-              <span>Leaderboards</span>
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-300 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          </button>
-        </div> */}
 
         <main className="container mx-auto px-4 py-8">
           {/* Search and Filters */}

@@ -58,7 +58,7 @@ const Achievements: React.FC = () => {
               >
                 <div className="flex items-center">
                   <div className="relative">
-                    <img 
+                    {/* <img 
                       src={achievement.icon} 
                       alt={achievement.name}
                       className={`w-10 h-10 object-contain ${!isUnlocked ? 'opacity-40' : ''}`}
@@ -66,7 +66,7 @@ const Achievements: React.FC = () => {
                         const target = e.target as HTMLImageElement;
                         target.src = 'https://via.placeholder.com/40';
                       }}
-                    />
+                    /> */}
                     {!isUnlocked && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">

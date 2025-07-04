@@ -137,12 +137,20 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         // Update score and level
         const newScore = state.score + 10 * state.level;
         const newLinesCleared = state.linesCleared + 1;
-        let newLevel = state.level;
+        const newLevel = state.level;
         
         // Level up check
         const nextLevel = LEVELS.find(l => l.level === newLevel + 1);
         if (nextLevel && newLinesCleared >= nextLevel.linesNeeded) {
-          newLevel++;
+          // Trigger level complete instead of auto-progress
+          return {
+            ...state,
+            score: newScore,
+            linesCleared: newLinesCleared,
+            showMenu: true,
+            menuType: 'levelComplete',
+            isPaused: true,
+          };
         }
         
         return {
@@ -217,94 +225,62 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         gameStartTime: Date.now(),
         gameDuration: 0,
         comboMultiplier: 1,
-        perfectMoves: 0,
-        timeLimit: LEVELS[state.level - 1]?.timeLimit
       };
     }
-      
+    
     case 'PAUSE_GAME':
       return {
         ...state,
         isPaused: action.isPaused,
         showMenu: action.isPaused,
-        menuType: 'pause',
+        menuType: action.isPaused ? 'pause' : null,
       };
-      
+
     case 'RESET_GAME':
       return {
-        ...getInitialState(1), // Reset to level 1
+        ...getInitialState(action.level || 1),
         isLoading: false,
         showMenu: true,
         menuType: 'start',
         highScore: state.highScore, // Preserve high score
+        isPaused: false, // Reset pause state
+        isStarted: false, // Ensure not started until START
+        gameOver: false,
       };
-      
-    case 'RETURN_TO_MENU':
-      return {
-        ...getInitialState(),
-        isLoading: false,
-        showMenu: true,
-        menuType: 'start',
-        highScore: state.highScore, // Preserve high score
-      };
-      
-    case 'SPLASH_COMPLETE':
-      console.log('Reducer: Handling SPLASH_COMPLETE action');
-      // Only update if we're actually loading
-      if (!state.isLoading) {
-        console.log('Reducer: Not in loading state, ignoring SPLASH_COMPLETE');
-        return state;
-      }
-      return {
-        ...state,
-        isLoading: false,
-        showMenu: true,
-        menuType: 'start',
-        isPaused: false,
-      };
-      
-    case 'TOGGLE_MENU':
-      return { 
-        ...state, 
-        showMenu: action.show,
-        menuType: action.menuType || state.menuType,
-        // Pause the game when showing menu, unless it's the game over menu
-        isPaused: action.show && action.menuType !== 'gameOver' ? true : state.isPaused
-      };
-      
-    case 'GAME_OVER':
-      return {
-        ...state,
-        gameOver: true,
-        isStarted: false,
-        isPaused: true,
-        showMenu: true,
-        menuType: 'gameOver',
-        highScore: Math.max(state.score, state.highScore)
-      };
-      
-    case 'RESET': {
-      // Get initial state but preserve the loading state to avoid showing splash screen again
-      const initialState = getInitialState();
-      return {
-        ...initialState,
-        isLoading: false // Don't show splash screen on reset
-      };
-    }
-      
+
     case 'START':
-      return { 
-        ...state, 
-        isStarted: true, 
+      return {
+        ...state,
+        isStarted: true,
+        isPaused: false,
         gameOver: false,
         showMenu: false,
         menuType: null,
-        isPaused: false
       };
-      
-    case 'INCREASE_SCORE':
-      return { ...state, score: state.score + action.points };
-      
+
+    case 'LEVEL_COMPLETE':
+      return {
+        ...state,
+        isPaused: true,
+        showMenu: true,
+        menuType: 'levelComplete',
+      };
+
+    case 'NEXT_LEVEL': {
+      const nextLevel = state.level + 1;
+      return {
+        ...getInitialState(nextLevel),
+        isLoading: false,
+        showMenu: false,
+        menuType: null,
+        highScore: state.highScore,
+        isPaused: false,
+        isStarted: true,
+        gameOver: false,
+        level: nextLevel,
+      };
+    }
+
     case 'BUY_ITEM': {
       const item = SHOP_ITEMS.find(item => item.id === action.itemId);
       if (!item || state.coins < item.price) return state;
@@ -337,6 +313,15 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
       };
     }
     
+    case 'SPLASH_COMPLETE':
+      return {
+        ...state,
+        isLoading: false,
+        showMenu: true,
+        menuType: 'start',
+        isStarted: false,
+        isPaused: false,
+      };
     default:
       return state;
   }
@@ -397,11 +382,11 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const pauseGame = useCallback(() => {
-    dispatch({ type: 'PAUSE', isPaused: true });
+    dispatch({ type: 'PAUSE_GAME', isPaused: true });
   }, []);
 
-  const resetGame = useCallback(() => {
-    dispatch({ type: 'RESET' });
+  const resetGame = useCallback((level?: number) => {
+    dispatch({ type: 'RESET_GAME', level });
   }, []);
 
   const changeDirection = useCallback((direction: Direction) => {

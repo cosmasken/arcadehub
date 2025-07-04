@@ -9,6 +9,8 @@ import SplashScreen from './components/SplashScreen';
 import HoldPiece from './components/HoldPiece';
 import NextPieces from './components/NextPieces';
 import BackButton from './components/BackButton';
+import { Link } from 'react-router-dom';
+import {ChevronLeft} from 'lucide-react';
 import useWalletStore from '../../stores/useWalletStore';
 import { getActiveTournamentIdByName } from '../../lib/tournamentUtils';
 import { joinTournamentAA, submitTournamentScoreAA } from '../../lib/aaUtils';
@@ -233,12 +235,9 @@ const GameUI: React.FC = () => {
           <div className="flex flex-1 overflow-hidden">
             {/* Left Sidebar - Desktop */}
             <div className="hidden lg:flex flex-col w-56 xl:w-64 bg-gray-900/80 border-r border-gray-800 p-4 space-y-4">
-              <div className="bg-gray-800/50 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-3">Hold</h3>
-                <div className="flex justify-center min-h-[80px]">
+               <div className="flex justify-center min-h-[80px]">
                   <HoldPiece />
                 </div>
-              </div>
               
               <div className="bg-gray-800/50 rounded-xl p-4 flex-1 overflow-y-auto">
                 <h3 className="text-sm font-medium text-gray-300 mb-3">Controls</h3>
@@ -313,12 +312,14 @@ const GameUI: React.FC = () => {
 
             {/* Right Sidebar - Desktop */}
             <div className="hidden lg:flex flex-col w-56 xl:w-64 bg-gray-900/80 border-l border-gray-800 p-4 space-y-4">
-              <div className="bg-gray-800/50 rounded-xl p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-3">Next</h3>
+              <Link to="/" className="flex items-center space-x-2">
+                <ChevronLeft className="w-6 h-6 text-gray-400" />
+                <span className="text-sm font-medium text-gray-300">Back to Home</span>
+              </Link>
+                
                 <div className="space-y-4">
                   <NextPieces />
                 </div>
-              </div>
               
               <div className="bg-gray-800/50 rounded-xl p-4 space-y-3">
                 <h3 className="text-sm font-medium text-gray-300">Stats</h3>

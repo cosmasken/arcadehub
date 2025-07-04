@@ -1,5 +1,5 @@
 import Layout from "../components/Layout";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useWalletRewardsStore } from '../stores/useWalletRewardsStore';
 import { WalletBalanceCard } from '../components/wallet/WalletBalanceCard';
 import { PendingRewards } from '../components/wallet/PendingRewards';
@@ -8,9 +8,33 @@ import { useToast } from '../components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import useWalletStore from '../stores/useWalletStore';
 import { ethers } from 'ethers';
+// --- ADDED IMPORTS ---
+import { CONFIG } from '../config';
+import useProfileStore from '../stores/useProfileStore';
+import { achievements as allAchievements } from '../data/achievements';
+import type { Achievement } from '../data/achievements';
 
 export default function WalletPage() {
   const navigate = useNavigate();
+    // ERC20 token list (hardcoded as requested)
+    const ERC20_TOKENS = [
+      { symbol: 'DAI', address: '0x5d0E342cCD1aD86a16BfBa26f404486940DBE345' },
+      { symbol: 'USDT', address: '0x1dA998CfaA0C044d7205A17308B20C7de1bdCf74' },
+      { symbol: 'USDC', address: '0xC86Fed58edF0981e927160C50ecB8a8B05B32fed' },
+      { symbol: 'ARC', address: '0x150E812D3443699e8b829EF6978057Ed7CB47AE6' },
+    ];
+  
+    // ERC20 balances state
+    const [erc20Balances, setErc20Balances] = useState<Record<string, { balance: string; address: string; decimals: number }>>({});
+  
+    // Profile/achievements
+    const { achievements: userAchievements } = useProfileStore();
+    // userAchievements is an array of achievement objects with achievement_id or id
+    const mintedAchievementIds = userAchievements?.map((a: { achievement_id?: number; id?: number }) => a.achievement_id ?? a.id) || [];
+    // mintedAchievements: Achievement[]`
+    const mintedAchievements: Achievement[] = mintedAchievementIds
+      .map((id: number | string) => Object.values(allAchievements).find((a: Achievement) => a.id === id))
+      .filter(Boolean) as Achievement[];
   const {
     walletSummary,
     isLoading,
@@ -27,29 +51,45 @@ export default function WalletPage() {
   const getEthereum = (): any => (window as any).ethereum;
 
   // Fetch initial data and trigger ERC20 sync
+  const [erc20Loading, setErc20Loading] = useState(false);
+
   useEffect(() => {
-    fetchWalletSummary();
-    // Only sync if wallet is connected and ethers is available
-    if (isConnected && aaWalletAddress && getEthereum()) {
-      const provider = new ethers.BrowserProvider(getEthereum());
-      fetchAndSyncERC20Balances(provider, aaWalletAddress)
-        .then((balances) => {
-          if (balances) {
-            toast({
-              title: 'Token Balances Synced',
-              description: 'Your ERC20 token balances have been updated.',
-            });
+    // Only fetch balances if wallet is connected and ethers is available
+    const fetchBalances = async () => {
+      if (isConnected && aaWalletAddress && getEthereum()) {
+        setErc20Loading(true);
+        const provider = new ethers.BrowserProvider(getEthereum());
+        const ERC20_ABI = [
+          "function balanceOf(address owner) view returns (uint256)",
+          "function decimals() view returns (uint8)",
+        ];
+        const balances: Record<string, { balance: string; address: string; decimals: number }> = {};
+        for (const { symbol, address } of ERC20_TOKENS) {
+          try {
+            const contract = new ethers.Contract(address, ERC20_ABI, provider);
+            const [rawBalance, decimals] = await Promise.all([
+              contract.balanceOf(aaWalletAddress),
+              contract.decimals()
+            ]);
+            balances[symbol] = {
+              balance: ethers.formatUnits(rawBalance, decimals),
+              address,
+              decimals
+            };
+          } catch (err) {
+            balances[symbol] = { balance: '0', address, decimals: 18 };
           }
-        })
-        .catch((err) => {
-          toast({
-            title: 'Token Sync Error',
-            description: err?.message || 'Failed to sync token balances',
-            variant: 'destructive',
-          });
+        }
+        setErc20Balances(balances);
+        setErc20Loading(false);
+        toast({
+          title: 'Token Balances Synced',
+          description: 'Your ERC20 token balances have been updated.',
         });
-    }
-  }, [fetchWalletSummary, fetchAndSyncERC20Balances, isConnected, aaWalletAddress, toast]);
+      }
+    };
+    fetchBalances();
+  }, [isConnected, aaWalletAddress, toast]);
 
   // Show error toast if there's an error
   useEffect(() => {
@@ -75,6 +115,8 @@ export default function WalletPage() {
     }
   };
 
+
+
   return (
     <Layout>
       <div className="container mx-auto py-6 space-y-6 max-w-4xl">
@@ -93,11 +135,43 @@ export default function WalletPage() {
         </div>
 
         <div className="grid gap-6">
-          {/* Wallet Balance */}
-          <WalletBalanceCard
-            balance={walletSummary?.balance || null}
-            isLoading={isLoading}
-          />
+          {/* ERC20 Token Balances */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {erc20Loading ? (
+              ERC20_TOKENS.map(({ symbol }) => (
+                <div key={symbol} className="animate-pulse h-24 bg-muted rounded-lg" />
+              ))
+            ) : (
+              ERC20_TOKENS.map(({ symbol, address }) => {
+                const token = erc20Balances[symbol] || { balance: '0', address, decimals: 18 };
+                return (
+                  <WalletBalanceCard
+                    key={symbol}
+                    balances={{ [symbol]: token }}
+                    isLoading={erc20Loading}
+                  />
+                );
+              })
+            )}
+          </div>
+
+          {/* Achievements Section */}
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">Achievements</h2>
+            {mintedAchievements.length === 0 ? (
+              <div className="text-gray-400">No achievements minted yet.</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {mintedAchievements.map(ach => (
+                  <div key={ach.id} className="border rounded-lg p-4 flex flex-col items-center bg-gray-900">
+                    <span className="text-4xl mb-2">{ach.emoji}</span>
+                    <span className="font-bold text-lg">{ach.title}</span>
+                    <span className="text-sm text-gray-400 text-center">{ach.description}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Pending Rewards */}
@@ -121,3 +195,4 @@ export default function WalletPage() {
     </Layout>
   );
 }
+

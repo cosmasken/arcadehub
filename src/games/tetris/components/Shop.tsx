@@ -2,12 +2,15 @@ import React, { useState } from 'react';
 import { useGame } from '../context';
 import { SHOP_ITEMS } from '../constants';
 import { cn } from '../../../lib/utils';
+import MintingModal from '../../../components/MintingModal';
 
 type TabType = 'all' | 'upgrades' | 'themes';
 
 const Shop: React.FC = () => {
   const { state, buyItem } = useGame();
   const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [mintingItem, setMintingItem] = useState(null);
+  const [isMintingModalOpen, setIsMintingModalOpen] = useState(false);
 
   const filteredItems = SHOP_ITEMS.filter(item => {
     if (activeTab === 'upgrades') return item.type === 'upgrade';
@@ -15,8 +18,14 @@ const Shop: React.FC = () => {
     return true;
   });
 
+  const handleMint = (item) => {
+    setMintingItem(item);
+    setIsMintingModalOpen(true);
+  };
+
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       <div className="flex space-x-2">
         <button
           onClick={() => setActiveTab('all')}
@@ -98,36 +107,16 @@ const Shop: React.FC = () => {
                       <span className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg font-bold">
                         MAXED
                       </span>
-                    ) : isOwned && maxLevel > 1 ? (
-                      <button
-                        onClick={() => buyItem(item.id)}
-                        disabled={!canAfford}
-                        className={cn(
-                          'px-4 py-2 rounded-lg font-bold transition-all duration-200',
-                          canAfford
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90'
-                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                        )}
-                      >
-                        {item.price} 🪙
-                      </button>
-                    ) : !isOwned ? (
-                      <button
-                        onClick={() => buyItem(item.id)}
-                        disabled={!canAfford}
-                        className={cn(
-                          'px-4 py-2 rounded-lg font-bold transition-all duration-200',
-                          canAfford
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90'
-                            : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-                        )}
-                      >
-                        {item.price} 🪙
-                      </button>
                     ) : (
-                      <span className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg font-bold">
-                        OWNED
-                      </span>
+                      <button
+                        onClick={() => handleMint(item)}
+                        className={cn(
+                          'px-4 py-2 rounded-lg font-bold transition-all duration-200',
+                          'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90'
+                        )}
+                      >
+                        MINT & UNLOCK
+                      </button>
                     )}
                   </div>
                 </div>
@@ -151,6 +140,20 @@ const Shop: React.FC = () => {
         </div>
       </div>
     </div>
+      {mintingItem && (
+        <MintingModal
+          isOpen={isMintingModalOpen}
+          onClose={() => { setIsMintingModalOpen(false); setMintingItem(null); }}
+          achievement={mintingItem}
+          setIsLoadingModalOpen={() => {}}
+          onMintSuccess={() => {
+            buyItem(mintingItem.id);
+            setIsMintingModalOpen(false);
+            setMintingItem(null);
+          }}
+        />
+      )}
+    </>
   );
 };
 

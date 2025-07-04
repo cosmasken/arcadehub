@@ -4,11 +4,74 @@ import { GameProvider, useGame } from './context';
 import { GameStateProvider, useGameState } from './context/GameStateContext';
 import useWalletStore from '../../stores/useWalletStore';
 import { GameBoard, StatsPanel, Shop, Achievements } from './components';
+import ProgressBar from '../../components/ProgressBar';
+import { toast } from '../../hooks/use-toast';
+import { LEVELS, ACHIEVEMENTS } from './constants';
+import { getActiveTournamentIdByName } from '../../lib/tournamentUtils';
+import { joinTournamentAA, submitTournamentScoreAA } from '../../lib/aaUtils';
 
 // Inner component to handle game UI
 const GameUI: React.FC = () => {
   const { state, startGame, pauseGame, resetGame, changeDirection } = useGame();
-  const { isConnected, connect } = useWalletStore();
+  const [tournamentId, setTournamentId] = React.useState<number | null>(null);
+  const prevAchievements = React.useRef<string[]>([]);
+  // Show toast on new achievement
+  useEffect(() => {
+    if (prevAchievements.current.length === 0) {
+      prevAchievements.current = state.achievements;
+      return;
+    }
+    const newAch = state.achievements.find((id) => !prevAchievements.current.includes(id));
+    if (newAch) {
+      const achObj = ACHIEVEMENTS.find((a) => a.id === newAch);
+      toast({ title: 'Achievement Unlocked!', description: achObj?.name || newAch });
+    }
+    prevAchievements.current = state.achievements;
+  }, [state.achievements]);
+  const { isConnected, connect, aaSigner } = useWalletStore();
+
+  // === Tournament integration ===
+  const hasJoinedRef = React.useRef(false);
+  const hasSubmittedRef = React.useRef(false);
+
+  // Fetch tournament ID on component mount
+  useEffect(() => {
+    getActiveTournamentIdByName('Snake')
+      .then(id => {
+        if (id) {
+          setTournamentId(id);
+        } else {
+          toast({ variant: 'destructive', title: 'Error', description: 'Snake tournament not found or is not active.' });
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching Snake tournament ID:', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch tournament details.' });
+      });
+  }, []);
+
+  // Auto-join tournament once signer and tournamentId are ready
+  useEffect(() => {
+    if (!aaSigner || tournamentId === null || hasJoinedRef.current) return;
+    hasJoinedRef.current = true;
+    joinTournamentAA(aaSigner, tournamentId, 0, { gasMultiplier: 1.5 }).catch(() => {
+      /* ignore duplicate join errors */
+    });
+  }, [aaSigner, tournamentId]);
+
+  // Submit score on game over
+  useEffect(() => {
+    if (!aaSigner || !state.gameOver || tournamentId === null || hasSubmittedRef.current) return;
+    hasSubmittedRef.current = true;
+    submitTournamentScoreAA(
+      aaSigner,
+      tournamentId,
+      state.score,
+      "0x", // Empty signature in demo mode
+      0,
+      { gasMultiplier: 1.5 }
+    ).catch(console.error);
+  }, [aaSigner, state.gameOver, state.score, tournamentId]);
   const {
     state: gameState,
     dispatch,
@@ -123,6 +186,14 @@ const GameUI: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 relative">
+      {/* Progress Indicator */}
+      <div className="max-w-md mx-auto pt-4 px-4">
+        <ProgressBar
+          current={state.foodEaten}
+          total={LEVELS[state.level - 1].linesNeeded}
+          label={`Level ${state.level} Progress`}
+        />
+      </div>
       <div className="absolute top-4 left-4">
         <button
           onClick={handleBack}

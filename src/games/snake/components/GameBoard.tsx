@@ -320,34 +320,36 @@ const GameBoard: React.FC = () => {
       menuType: 'start' 
     });
     // Make sure game is paused when menu is shown
-    dispatch({ type: 'PAUSE_GAME', isPaused: true });
+    dispatch({ type: 'PAUSE', isPaused: true });
   }, [dispatch]);
 
   // Handle menu actions
   const handleStart = useCallback(() => {
     if (state.menuType === 'start') {
       // Start a new game - reset everything first
-      dispatch({ type: 'RESET_GAME' });
+      dispatch({ type: 'RESET' });
       // Then start the game
-      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'START' });
       // Make sure menu is hidden
       dispatch({ type: 'TOGGLE_MENU', show: false });
     } else if (state.menuType === 'pause') {
-      // Just resume the game - the PAUSE_GAME action will handle the rest
-      dispatch({ type: 'PAUSE_GAME', isPaused: false });
+      // Just resume the game - don't reset, just unpause
+      dispatch({ type: 'PAUSE', isPaused: false });
+      // Make sure menu is hidden
+      dispatch({ type: 'TOGGLE_MENU', show: false });
     } else if (state.menuType === 'gameOver') {
       // For game over, we want to reset and start a new game
-      dispatch({ type: 'RESET_GAME' });
-      dispatch({ type: 'START_GAME' });
+      dispatch({ type: 'RESET' });
+      dispatch({ type: 'START' });
       dispatch({ type: 'TOGGLE_MENU', show: false });
     }
   }, [state.menuType, dispatch]);
 
   const handleRestart = useCallback(() => {
     // Reset the game completely
-    dispatch({ type: 'RESET_GAME' });
+    dispatch({ type: 'RESET' });
     // Start a new game immediately
-    dispatch({ type: 'START_GAME' });
+    dispatch({ type: 'START' });
     // Hide menu after restart
     dispatch({ type: 'TOGGLE_MENU', show: false });
   }, [dispatch]);

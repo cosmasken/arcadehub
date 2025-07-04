@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useGame, GameProvider } from './context';
 import Board from './components/Board';
+import ProgressBar from '../../components/ProgressBar';
+import { toast } from '../../hooks/use-toast';
 import GameMenu from './components/GameMenu';
 import HelpSidebar from './components/HelpSidebar';
 import SplashScreen from './components/SplashScreen';
@@ -8,6 +10,8 @@ import HoldPiece from './components/HoldPiece';
 import NextPieces from './components/NextPieces';
 import BackButton from './components/BackButton';
 import useWalletStore from '../../stores/useWalletStore';
+import { getActiveTournamentIdByName } from '../../lib/tournamentUtils';
+import { joinTournamentAA, submitTournamentScoreAA } from '../../lib/aaUtils';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { GameState } from './types';
 import { useNavigate } from 'react-router-dom';
@@ -31,7 +35,42 @@ interface ControlSettings {
 
 // Separate GameUI component that uses the hooks
 const GameUI: React.FC = () => {
+  const { aaSigner } = useWalletStore();
+  const [tournamentId, setTournamentId] = useState<number | null>(null);
+  const hasJoinedRef = useRef(false);
+  const hasSubmittedRef = useRef(false);
+
+  // Fetch tournament ID on component mount
+  useEffect(() => {
+    getActiveTournamentIdByName('Tetris')
+      .then(id => {
+        if (id) {
+          setTournamentId(id);
+        } else {
+          toast({ variant: 'destructive', title: 'Error', description: 'Tetris tournament not found or is not active.' });
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching Tetris tournament ID:', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch tournament details.' });
+      });
+  }, []);
+
+  // Join tournament once signer and tournamentId are ready
+  useEffect(() => {
+    if (!aaSigner || tournamentId === null || hasJoinedRef.current) return;
+    hasJoinedRef.current = true;
+    joinTournamentAA(aaSigner, tournamentId, 0, { gasMultiplier: 1.5 }).catch(() => {});
+  }, [aaSigner, tournamentId]);
   const { state, dispatch } = useGame();
+  const prevScore = useRef(0);
+  // Toast when score increases significantly
+  useEffect(() => {
+    if (state.stats.score - prevScore.current >= 500) {
+      toast({ title: 'Great job!', description: `Score: ${state.stats.score}` });
+      prevScore.current = state.stats.score;
+    }
+  }, [state.stats.score]);
   const [showHelp, setShowHelp] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const navigate = useNavigate();
@@ -54,6 +93,20 @@ const GameUI: React.FC = () => {
     ...defaultControls,
     ...controls
   }), [controls, defaultControls]);
+
+  // Submit score when game over
+  useEffect(() => {
+    if (!aaSigner || !state.gameOver || tournamentId === null || hasSubmittedRef.current) return;
+    hasSubmittedRef.current = true;
+    submitTournamentScoreAA(
+      aaSigner,
+      tournamentId,
+      state.stats.score,
+      "0x",
+      0,
+      { gasMultiplier: 1.5 }
+    ).catch(console.error);
+  }, [aaSigner, state.gameOver, state.stats.score, tournamentId]);
 
   // Determine game status based on state
   const getGameStatus = useCallback((): 'start' | 'playing' | 'paused' | 'gameOver' => {
@@ -214,7 +267,15 @@ const GameUI: React.FC = () => {
             <div className="flex-1 flex flex-col items-center justify-center p-2 sm:p-4 overflow-auto">
               <div className="relative w-full max-w-md mx-auto">
                 <div className="w-full flex items-center justify-center" style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}>
-                  <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
+                  {/* Progress bar top */}
+            <div className="w-full px-4 mb-2">
+              <ProgressBar
+                current={state.stats.linesCleared % 10}
+                total={10}
+                label={`Level ${state.stats.level} Progress`}
+              />
+            </div>
+            <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
                     <Board />
                   </div>
                 </div>
@@ -226,15 +287,19 @@ const GameUI: React.FC = () => {
                     level={state.stats.level}
                     onStart={() => {
                       if (currentStatus === GameStatus.START) {
-                        dispatch({ type: 'START_GAME' });
+                        dispatch({ type: 'START' });
                       } else {
+                        // Reset and start a new game
                         dispatch({ type: 'RESET' });
+                        dispatch({ type: 'START' });
                       }
+                      // Always hide the menu when starting a new game
+                      dispatch({ type: 'PAUSE', isPaused: false });
                     }}
-                    onResume={() => dispatch({ type: 'RESET' })}
+                    onResume={() => dispatch({ type: 'PAUSE', isPaused: false })}
                     onRestart={() => {
-                      dispatch({ type: 'RESET_GAME' });
-                      dispatch({ type: 'START_GAME' });
+                      dispatch({ type: 'RESET' });
+                      dispatch({ type: 'START' });
                     }}
                     onQuit={() => navigate('/')}
                   />

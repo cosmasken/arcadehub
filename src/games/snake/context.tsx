@@ -283,8 +283,14 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
         highScore: Math.max(state.score, state.highScore)
       };
       
-    case 'RESET':
-      return getInitialState();
+    case 'RESET': {
+      // Get initial state but preserve the loading state to avoid showing splash screen again
+      const initialState = getInitialState();
+      return {
+        ...initialState,
+        isLoading: false // Don't show splash screen on reset
+      };
+    }
       
     case 'START':
       return { 

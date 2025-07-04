@@ -63,7 +63,7 @@ const Shop: React.FC<ShopProps> = ({ shopOpen, setShopOpen, onOpen, onClose, onB
                 className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 transition-all duration-200 border border-gray-600/50 hover:border-cyan-400/30"
               >
                 <div className="flex items-center">
-                  <img
+                  {/* <img
                     src={item.icon}
                     alt={item.name}
                     className="w-12 h-12 object-contain mr-4 rounded-lg bg-gray-700/50 p-1"
@@ -71,7 +71,7 @@ const Shop: React.FC<ShopProps> = ({ shopOpen, setShopOpen, onOpen, onClose, onB
                       const target = e.target as HTMLImageElement;
                       target.src = 'https://via.placeholder.com/40';
                     }}
-                  />
+                  /> */}
                   <div>
                     <h3 className="font-medium text-gray-100 text-lg">{item.name}</h3>
                     <p className="text-sm text-gray-400">{item.description}</p>

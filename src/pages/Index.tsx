@@ -209,7 +209,7 @@ const Index = () => {
     }
     
     if (role === 'developer') {
-      return <Navigate to="/developer/upload" replace />;
+      return <Navigate to="/developer/dashboard" replace />;
     }
   }
 

@@ -214,7 +214,7 @@ const App = () => {
                 <Route path="profile" element={<Profile />} />
                 <Route path="collections" element={<Collections />} />
                 <Route path="collections/:id" element={<CollectionDetail />} />
-                <Route path="developer-profile/:id" element={<DeveloperProfile />} />
+                <Route path="developer/dashboard" element={<DeveloperProfile />} />
                 <Route path="games/snake" element={<SnakeGame />} />
                 <Route path="games/tetris" element={<Tetris />} />
                 <Route path="sponsors" element={<Sponsors />} />

@@ -39,11 +39,16 @@ export default function WalletPage() {
       .map((id: number | string) => Object.values(allAchievements).find((a: Achievement) => a.id === id))
       .filter(Boolean) as Achievement[];
       
-    // Get game-specific achievements that have been minted
-    const mintedTetrisAchievementIds = localStorage.getItem('tetris_achievements') ? 
-      JSON.parse(localStorage.getItem('tetris_achievements') || '[]') as string[] : [];
-    const mintedSnakeAchievementIds = localStorage.getItem('snake_achievements') ? 
-      JSON.parse(localStorage.getItem('snake_achievements') || '[]') as string[] : [];
+    // Get game-specific achievements that have been minted with memoization
+    const mintedTetrisAchievementIds = useMemo(() => {
+      return localStorage.getItem('tetris_achievements') ? 
+        JSON.parse(localStorage.getItem('tetris_achievements') || '[]') as string[] : [];
+    }, []);
+    
+    const mintedSnakeAchievementIds = useMemo(() => {
+      return localStorage.getItem('snake_achievements') ? 
+        JSON.parse(localStorage.getItem('snake_achievements') || '[]') as string[] : [];
+    }, []);
       
     // Format game achievements to match the display format
     type GameAchievementDisplay = {
@@ -55,40 +60,48 @@ export default function WalletPage() {
       reward: number;
     };
     
-    // Process Tetris achievements
-    const tetrisAchievements: GameAchievementDisplay[] = [];
-    for (const id of mintedTetrisAchievementIds) {
-      const achievement = TETRIS_ACHIEVEMENTS.find(a => a.id === id);
-      if (achievement) {
-        tetrisAchievements.push({
-          id: `tetris_${achievement.id}`,
-          title: achievement.name,
-          emoji: achievement.icon,
-          description: achievement.description,
-          game: 'Tetris',
-          reward: achievement.reward
-        });
+    // Process Tetris achievements with memoization
+    const tetrisAchievements = useMemo(() => {
+      const achievements: GameAchievementDisplay[] = [];
+      for (const id of mintedTetrisAchievementIds) {
+        const achievement = TETRIS_ACHIEVEMENTS.find(a => a.id === id);
+        if (achievement) {
+          achievements.push({
+            id: `tetris_${achievement.id}`,
+            title: achievement.name,
+            emoji: achievement.icon,
+            description: achievement.description,
+            game: 'Tetris',
+            reward: achievement.reward
+          });
+        }
       }
-    }
+      return achievements;
+    }, [mintedTetrisAchievementIds]);
     
-    // Process Snake achievements
-    const snakeAchievements: GameAchievementDisplay[] = [];
-    for (const id of mintedSnakeAchievementIds) {
-      const achievement = SNAKE_ACHIEVEMENTS.find(a => a.id === id);
-      if (achievement) {
-        snakeAchievements.push({
-          id: `snake_${achievement.id}`,
-          title: achievement.name,
-          emoji: achievement.icon,
-          description: achievement.description,
-          game: 'Snake',
-          reward: achievement.reward
-        });
+    // Process Snake achievements with memoization
+    const snakeAchievements = useMemo(() => {
+      const achievements: GameAchievementDisplay[] = [];
+      for (const id of mintedSnakeAchievementIds) {
+        const achievement = SNAKE_ACHIEVEMENTS.find(a => a.id === id);
+        if (achievement) {
+          achievements.push({
+            id: `snake_${achievement.id}`,
+            title: achievement.name,
+            emoji: achievement.icon,
+            description: achievement.description,
+            game: 'Snake',
+            reward: achievement.reward
+          });
+        }
       }
-    }
+      return achievements;
+    }, [mintedSnakeAchievementIds]);
     
-    // Combine all game achievements
-    const gameAchievements = [...tetrisAchievements, ...snakeAchievements];
+    // Combine all game achievements with memoization to prevent unnecessary recalculations
+    const gameAchievements = useMemo(() => {
+      return [...tetrisAchievements, ...snakeAchievements];
+    }, [tetrisAchievements, snakeAchievements]);
   const {
     walletSummary,
     isLoading,
@@ -110,35 +123,58 @@ export default function WalletPage() {
   useEffect(() => {
     // Only fetch balances if wallet is connected and ethers is available
     const fetchBalances = async () => {
-      if (isConnected && aaWalletAddress && getEthereum()) {
-        setErc20Loading(true);
-        const provider = new ethers.BrowserProvider(getEthereum());
-        const ERC20_ABI = [
-          "function balanceOf(address owner) view returns (uint256)",
-          "function decimals() view returns (uint8)",
-        ];
+      if (!isConnected || !getEthereum()) return;
+
+      try {
+        const ethereum = getEthereum();
+        if (!ethereum) {
+          console.error('Ethereum provider not found');
+          return;
+        }
+
+        const provider = new ethers.BrowserProvider(ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        // Fetch ERC20 token balances
         const balances: Record<string, { balance: string; address: string; decimals: number }> = {};
-        for (const { symbol, address } of ERC20_TOKENS) {
+
+        for (const token of ERC20_TOKENS) {
           try {
-            const contract = new ethers.Contract(address, ERC20_ABI, provider);
-            const [rawBalance, decimals] = await Promise.all([
-              contract.balanceOf(aaWalletAddress),
-              contract.decimals()
-            ]);
-            balances[symbol] = {
-              balance: ethers.formatUnits(rawBalance, decimals),
-              address,
+            const tokenContract = new ethers.Contract(
+              token.address,
+              [
+                'function balanceOf(address owner) view returns (uint256)',
+                'function decimals() view returns (uint8)',
+              ],
+              provider
+            );
+
+            const balance = await tokenContract.balanceOf(address);
+            const decimals = await tokenContract.decimals();
+            
+            balances[token.symbol] = {
+              balance: ethers.formatUnits(balance, decimals),
+              address: token.address,
               decimals
             };
-          } catch (err) {
-            balances[symbol] = { balance: '0', address, decimals: 18 };
+          } catch (error) {
+            console.error(`Error fetching balance for ${token.symbol}:`, error);
+            balances[token.symbol] = {
+              balance: '0',
+              address: token.address,
+              decimals: 18
+            };
           }
         }
+
         setErc20Balances(balances);
-        setErc20Loading(false);
+      } catch (error) {
+        console.error('Error fetching balances:', error);
         toast({
-          title: 'Token Balances Synced',
-          description: 'Your ERC20 token balances have been updated.',
+          variant: 'destructive',
+          title: 'Error fetching balances',
+          description: 'Could not retrieve your token balances. Please try again later.'
         });
       }
     };

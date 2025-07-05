@@ -3,6 +3,62 @@ import { COLS, ROWS, SHAPES, POINTS, LEVELS } from '../constants';
 import { createBoard,getRandomPiece } from '../initialState';
 import { rotatePiece, hardDrop,holdPiece,lockPiece,spawnNewPiece,buyItem } from '../utils/gameReducers';
 
+// Helper function to create initial state while preserving certain values from previous state
+const createInitialState = (state: GameState): GameState => {
+  // Preserve only the high score from the previous state
+  const highScore = state.stats?.highScore || 0;
+  
+  return {
+    // Start with a clean board
+    board: createBoard(),
+    currentPiece: null,
+    nextPieces: Array(3).fill(0).map(getRandomPiece),
+    holdPiece: null,
+    canHold: true,
+    
+    // Reset all game state flags
+    gameOver: false,
+    isPaused: false,
+    isStarted: false,
+    
+    // Reset all stats but preserve high score
+    stats: {
+      score: 0,
+      highScore: Math.max(state.stats?.score || 0, highScore),
+      level: 1,
+      linesCleared: 0,
+      tetrisCount: 0,
+      totalPieces: 0,
+      startTime: Date.now(),
+      gameTime: 0,
+      lastLevelUp: 0,
+      // Preserve achievements and inventory from previous state
+      achievements: state.stats?.achievements || [],
+      inventory: state.stats?.inventory || {},
+      coins: state.stats?.coins || 0
+    },
+    
+    // Preserve settings from previous state
+    settings: {
+      ghostPiece: state.settings?.ghostPiece !== undefined ? state.settings.ghostPiece : true,
+      holdPiece: state.settings?.holdPiece !== undefined ? state.settings.holdPiece : true,
+      nextPiecesCount: state.settings?.nextPiecesCount || 3,
+      theme: state.settings?.theme || 'default',
+      soundEnabled: state.settings?.soundEnabled !== undefined ? state.settings.soundEnabled : true,
+      musicEnabled: state.settings?.musicEnabled !== undefined ? state.settings.musicEnabled : true,
+      controls: state.settings?.controls || {
+        moveLeft: 'ArrowLeft',
+        moveRight: 'ArrowRight',
+        rotate: 'ArrowUp',
+        softDrop: 'ArrowDown',
+        hardDrop: 'Space',
+        hold: 'KeyC',
+        pause: 'KeyP'
+      }
+    }
+  };
+};
+
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'MOVE_LEFT': {
@@ -80,59 +136,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     }
 
     case 'RESET': {
-      // Create a completely fresh state
-      // Preserve only the high score from the previous state
-      const highScore = state.stats?.highScore || 0;
-      
-      return {
-        // Start with a clean board
-        board: createBoard(),
-        currentPiece: null,
-        nextPieces: Array(3).fill(0).map(getRandomPiece),
-        holdPiece: null,
-        canHold: true,
-        
-        // Reset all game state flags
-        gameOver: false,
-        isPaused: false,
-        isStarted: false,
-        
-        // Reset all stats but preserve high score
-        stats: {
-          score: 0,
-          highScore: Math.max(state.stats?.score || 0, highScore),
-          level: 1,
-          linesCleared: 0,
-          tetrisCount: 0,
-          totalPieces: 0,
-          startTime: Date.now(),
-          gameTime: 0,
-          lastLevelUp: 0,
-          // Preserve achievements and inventory from previous state
-          achievements: state.stats?.achievements || [],
-          inventory: state.stats?.inventory || {},
-          coins: state.stats?.coins || 0
-        },
-        
-        // Preserve settings from previous state
-        settings: {
-          ghostPiece: state.settings?.ghostPiece !== undefined ? state.settings.ghostPiece : true,
-          holdPiece: state.settings?.holdPiece !== undefined ? state.settings.holdPiece : true,
-          nextPiecesCount: state.settings?.nextPiecesCount || 3,
-          theme: state.settings?.theme || 'default',
-          soundEnabled: state.settings?.soundEnabled !== undefined ? state.settings.soundEnabled : true,
-          musicEnabled: state.settings?.musicEnabled !== undefined ? state.settings.musicEnabled : true,
-          controls: state.settings?.controls || {
-            moveLeft: 'ArrowLeft',
-            moveRight: 'ArrowRight',
-            rotate: 'ArrowUp',
-            softDrop: 'ArrowDown',
-            hardDrop: 'Space',
-            hold: 'KeyC',
-            pause: 'KeyP'
-          }
-        }
-      };
+      return createInitialState(state);
     }
 
     case 'START': {

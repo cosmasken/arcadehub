@@ -10,6 +10,7 @@ import { toast } from '../../hooks/use-toast';
 import { LEVELS, ACHIEVEMENTS } from './constants';
 import { getActiveTournamentIdByName } from '../../lib/tournamentUtils';
 import { joinTournamentAA, submitScoreAA } from '../../lib/aaUtils';
+import { useNavigate } from 'react-router-dom';
 
 // Inner component to handle game UI
 const GameUI: React.FC = () => {
@@ -18,6 +19,7 @@ const GameUI: React.FC = () => {
   const prevAchievements = React.useRef<string[]>([]);
   // --- Local UI state for leaderboard modal ---
   const [showLeaderboard, setShowLeaderboard] = React.useState(false);
+  const navigate = useNavigate();
 
   // Show toast on new achievement
   useEffect(() => {
@@ -183,7 +185,7 @@ const GameUI: React.FC = () => {
   }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame, handleStartGame, gameState.ui.isInitialized, gameState.ui.shopOpen, gameState.ui.settingsOpen, gameState.settings.useWASD, openShop, openSettings, openAchievements, playSound]);
 
   const handleBack = () => {
-    window.location.href = '/';
+    navigate('/');
   };
 
   return (

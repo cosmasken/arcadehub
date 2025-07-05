@@ -17,6 +17,8 @@ import { joinTournamentAA, submitScoreAA } from '../../lib/aaUtils';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { GameState } from './types';
 import { useNavigate } from 'react-router-dom';
+import { TouchControls } from './components/TouchControls';
+import { useMediaQuery } from 'react-responsive';
 // Local game status for the UI
 enum GameStatus {
   START = 'start',
@@ -43,28 +45,57 @@ const GameUI: React.FC = () => {
   const hasJoinedRef = useRef(false);
   const hasSubmittedRef = useRef(false);
 
+  // Memoized tournament fetching function to prevent unnecessary re-renders
+  const fetchTournamentId = useCallback(async () => {
+    try {
+      const id = await getActiveTournamentIdByName('Tetris');
+      if (id) {
+        setTournamentId(id);
+      } else {
+        toast({ variant: 'destructive', title: 'Tournament Not Found', description: 'Tetris tournament not found or is not active.' });
+      }
+    } catch (error) {
+      console.error('Error fetching Tetris tournament ID:', error);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Tournament Error', 
+        description: 'Could not fetch tournament details. Please try again later.'
+      });
+    }
+  }, []);
+
   // Fetch tournament ID on component mount
   useEffect(() => {
-    getActiveTournamentIdByName('Tetris')
-      .then(id => {
-        if (id) {
-          setTournamentId(id);
-        } else {
-          toast({ variant: 'destructive', title: 'Error', description: 'Tetris tournament not found or is not active.' });
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching Tetris tournament ID:', error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch tournament details.' });
+    fetchTournamentId();
+  }, [fetchTournamentId]);
+
+  // Memoized tournament joining function
+  const joinTournament = useCallback(async () => {
+    if (!aaSigner || tournamentId === null || hasJoinedRef.current) return;
+    
+    try {
+      hasJoinedRef.current = true;
+      await joinTournamentAA(aaSigner, tournamentId, { gasMultiplier: 1.5 });
+      toast({ 
+        title: 'Tournament Joined', 
+        description: 'You have successfully joined the Tetris tournament!'
       });
-  }, []);
+    } catch (error) {
+      console.error('Error joining tournament:', error);
+      // Reset the flag so user can try again
+      hasJoinedRef.current = false;
+      toast({ 
+        variant: 'destructive', 
+        title: 'Tournament Error', 
+        description: 'Failed to join the tournament. Please try again.'
+      });
+    }
+  }, [aaSigner, tournamentId]);
 
   // Join tournament once signer and tournamentId are ready
   useEffect(() => {
-    if (!aaSigner || tournamentId === null || hasJoinedRef.current) return;
-    hasJoinedRef.current = true;
-    joinTournamentAA(aaSigner, tournamentId, { gasMultiplier: 1.5 }).catch(() => {});
-  }, [aaSigner, tournamentId]);
+    joinTournament();
+  }, [joinTournament]);
   const prevScore = useRef(0);
   // Toast when score increases significantly
   useEffect(() => {
@@ -96,17 +127,38 @@ const GameUI: React.FC = () => {
     ...controls
   }), [controls, defaultControls]);
 
+  // Memoized score submission function
+  const submitScore = useCallback(async () => {
+    if (!aaSigner || !state.gameOver || tournamentId === null || hasSubmittedRef.current) return;
+    
+    try {
+      hasSubmittedRef.current = true;
+      await submitScoreAA(
+        aaSigner,
+        tournamentId,
+        state.stats.score,
+        { gasMultiplier: 1.5 }
+      );
+      toast({ 
+        title: 'Score Submitted', 
+        description: `Your score of ${state.stats.score.toLocaleString()} has been submitted to the tournament!`
+      });
+    } catch (error) {
+      console.error('Error submitting score:', error);
+      // Reset the flag so user can try again
+      hasSubmittedRef.current = false;
+      toast({ 
+        variant: 'destructive', 
+        title: 'Score Submission Error', 
+        description: 'Failed to submit your score. Please try again.'
+      });
+    }
+  }, [aaSigner, state.gameOver, state.stats.score, tournamentId]);
+
   // Submit score when game over
   useEffect(() => {
-    if (!aaSigner || !state.gameOver || tournamentId === null || hasSubmittedRef.current) return;
-    hasSubmittedRef.current = true;
-    submitScoreAA(
-      aaSigner,
-      tournamentId,
-      state.stats.score,
-      { gasMultiplier: 1.5 }
-    ).catch(console.error);
-  }, [aaSigner, state.gameOver, state.stats.score, tournamentId]);
+    submitScore();
+  }, [submitScore]);
 
   // Determine game status based on state
   const getGameStatus = useCallback((): 'start' | 'playing' | 'paused' | 'gameOver' => {
@@ -115,7 +167,7 @@ const GameUI: React.FC = () => {
     return state.isStarted ? 'playing' : 'start';
   }, [state.gameOver, state.isPaused, state.isStarted]);
 
-  // Handle keyboard input based on current controls
+  // Handle keyboard input based on current controls using a more efficient approach
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     const gameStatus = getGameStatus();
     if (gameStatus === GameStatus.PAUSED || gameStatus === GameStatus.GAME_OVER) {
@@ -127,49 +179,169 @@ const GameUI: React.FC = () => {
     // Handle both key and code for better compatibility
     const key = e.key || e.code;
     const code = e.code;
-
-    // Check if any control matches either the key or code
-    if (key === currentControls.rotate || code === currentControls.rotate) {
+    
+    // Define action mappings for better maintainability and performance
+    // Use proper action types from GameAction union type
+    const actionMap: Record<string, { type: 'MOVE_LEFT' | 'MOVE_RIGHT' | 'ROTATE' | 'SOFT_DROP' | 'HARD_DROP' | 'HOLD' | 'PAUSE' | 'RESET'; condition?: () => boolean }> = {
+      [currentControls.rotate]: { type: 'ROTATE' },
+      [currentControls.moveLeft]: { type: 'MOVE_LEFT' },
+      [currentControls.moveRight]: { type: 'MOVE_RIGHT' },
+      [currentControls.softDrop]: { type: 'SOFT_DROP' },
+      [currentControls.hardDrop]: { type: 'HARD_DROP' },
+      'Space': { type: 'HARD_DROP' }, // Special case for space bar
+      [currentControls.hold]: { type: 'HOLD' },
+      [currentControls.pause]: { 
+        type: 'PAUSE',
+        condition: () => {
+          const currentStatus = getGameStatus();
+          if (currentStatus === 'playing') {
+            return true;
+          } else if (currentStatus === 'paused') {
+            dispatch({ type: 'RESET' });
+            return false;
+          }
+          return false;
+        }
+      },
+      'KeyP': { 
+        type: 'PAUSE',
+        condition: () => key.toLowerCase() === 'p' && getGameStatus() === 'playing'
+      }
+    };
+    
+    // Check for matching key or code
+    const action = actionMap[key] || actionMap[code];
+    
+    if (action) {
       e.preventDefault();
-      dispatch({ type: 'ROTATE' });
-    } else if (key === currentControls.moveLeft || code === currentControls.moveLeft) {
-      e.preventDefault();
-      dispatch({ type: 'MOVE_LEFT' });
-    } else if (key === currentControls.moveRight || code === currentControls.moveRight) {
-      e.preventDefault();
-      dispatch({ type: 'MOVE_RIGHT' });
-    } else if (key === currentControls.softDrop || code === currentControls.softDrop) {
-      e.preventDefault();
-      dispatch({ type: 'SOFT_DROP' });
-    } else if (key === currentControls.hardDrop || code === currentControls.hardDrop || 
-               (code === 'Space' && key === ' ')) {
-      e.preventDefault();
-      dispatch({ type: 'HARD_DROP' });
-    } else if (key === currentControls.hold || code === currentControls.hold) {
-      e.preventDefault();
-      dispatch({ type: 'HOLD' });
-    } else if (key === currentControls.pause || code === currentControls.pause || 
-               (code === 'KeyP' && key.toLowerCase() === 'p')) {
-      e.preventDefault();
-      const currentStatus = getGameStatus();
-      if (currentStatus === 'playing') {
-        dispatch({ type: 'PAUSE' });
-      } else if (currentStatus === 'paused') {
-        dispatch({ type: 'RESET' });
+      
+      // If there's a condition function, check it first
+      if (action.condition === undefined || action.condition()) {
+        dispatch({ type: action.type });
       }
     }
   }, [dispatch, effectiveControls, getGameStatus]);
 
-  // Set up keyboard event listeners
+  // Handle touch gestures for mobile controls
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+  
+  // Minimum distance for a swipe to be registered
+  const minSwipeDistance = 50;
+  
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    setTouchEnd(null); // Reset touchEnd
+    const firstTouch = e.touches[0];
+    setTouchStart({
+      x: firstTouch.clientX,
+      y: firstTouch.clientY
+    });
+  }, []);
+  
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!touchStart) return;
+    const firstTouch = e.touches[0];
+    setTouchEnd({
+      x: firstTouch.clientX,
+      y: firstTouch.clientY
+    });
+  }, [touchStart]);
+  
+  const handleTouchEnd = useCallback(() => {
+    if (!touchStart || !touchEnd) return;
+    
+    const gameStatus = getGameStatus();
+    if (gameStatus === GameStatus.PAUSED || gameStatus === GameStatus.GAME_OVER) {
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
+    
+    const distX = touchEnd.x - touchStart.x;
+    const distY = touchEnd.y - touchStart.y;
+    const absDistX = Math.abs(distX);
+    const absDistY = Math.abs(distY);
+    
+    // Detect swipe direction if it exceeds minimum distance
+    if (Math.max(absDistX, absDistY) > minSwipeDistance) {
+      // More horizontal than vertical swipe
+      if (absDistX > absDistY) {
+        if (distX > 0) {
+          // Right swipe
+          dispatch({ type: 'MOVE_RIGHT' });
+        } else {
+          // Left swipe
+          dispatch({ type: 'MOVE_LEFT' });
+        }
+      } else {
+        // More vertical than horizontal swipe
+        if (distY > 0) {
+          // Down swipe
+          dispatch({ type: 'SOFT_DROP' });
+        } else {
+          // Up swipe - rotate
+          dispatch({ type: 'ROTATE' });
+        }
+      }
+    } else {
+      // Short tap - rotate piece
+      dispatch({ type: 'ROTATE' });
+    }
+    
+    // Reset touch points
+    setTouchStart(null);
+    setTouchEnd(null);
+  }, [touchStart, touchEnd, dispatch, getGameStatus]);
+  
+  // Double tap handler for hard drop
+  const [lastTap, setLastTap] = useState<number>(0);
+  const handleDoubleTap = useCallback((e: TouchEvent) => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTap;
+    
+    if (tapLength < 300 && tapLength > 0) {
+      // Double tap detected
+      dispatch({ type: 'HARD_DROP' });
+      e.preventDefault(); // Prevent zoom
+    }
+    
+    setLastTap(currentTime);
+  }, [lastTap, dispatch]);
+  
+  // Set up keyboard and touch event listeners
   useEffect(() => {
+    // Keyboard controls
     window.addEventListener('keydown', handleKeyDown);
+    
+    // Touch controls
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchstart', handleDoubleTap);
+    
     return () => {
+      // Cleanup keyboard controls
       window.removeEventListener('keydown', handleKeyDown);
+      
+      // Cleanup touch controls
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchstart', handleDoubleTap);
     };
-  }, [handleKeyDown]);
+  }, [handleKeyDown, handleTouchStart, handleTouchMove, handleTouchEnd, handleDoubleTap]);
 
   const [highScore, setHighScore] = useLocalStorage('tetris-highscore', 0);
   const { isConnected } = useWalletStore();
+  
+  // Detect if device is mobile for showing touch controls
+  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const [showTouchControls, setShowTouchControls] = useState(false);
+  
+  // Only show touch controls on mobile devices and when the game is actually playing
+  useEffect(() => {
+    setShowTouchControls(isMobile && state.isStarted && !state.isPaused && !state.gameOver);
+  }, [isMobile, state.isStarted, state.isPaused, state.gameOver]);
 
   // Effects
   useEffect(() => {
@@ -366,6 +538,12 @@ const GameUI: React.FC = () => {
             isOpen={showHelp}
             onClose={() => setShowHelp(false)}
             controls={controls}
+          />
+          
+          {/* Touch Controls for Mobile */}
+          <TouchControls 
+            dispatch={dispatch} 
+            visible={showTouchControls} 
           />
         </div>
       )}

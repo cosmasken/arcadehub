@@ -5,7 +5,68 @@ import { cn } from '../../../lib/utils';
 import Achievements from './Achievements';
 import Shop from './Shop';
 
+// Settings tab content component
+const SettingsTabContent: React.FC = () => {
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-bold text-white mb-4">Controls</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Move Left</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">←</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Move Right</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">→</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Rotate</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↑</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Soft Drop</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↓</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Hard Drop</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">Space</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Hold Piece</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">C</kbd>
+        </div>
+      </div>
+      
+      <h3 className="text-lg font-bold text-white mt-6 mb-4">Display Options</h3>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-300">Show Ghost Piece</span>
+          <div className="w-10 h-6 bg-gray-700 rounded-full relative">
+            <div className="absolute left-1 top-1 w-4 h-4 bg-cyan-500 rounded-full"></div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-gray-300">Sound Effects</span>
+          <div className="w-10 h-6 bg-gray-700 rounded-full relative">
+            <div className="absolute left-1 top-1 w-4 h-4 bg-cyan-500 rounded-full"></div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-gray-300">Music</span>
+          <div className="w-10 h-6 bg-gray-700 rounded-full relative">
+            <div className="absolute left-1 top-1 w-4 h-4 bg-cyan-500 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Define tab types with string literal union for better type safety
 type TabType = 'main' | 'achievements' | 'upgrades' | 'settings';
+
+// Define menu types for better type safety
+type MenuType = 'start' | 'pause' | 'gameOver';
 
 interface GameMenuProps {
   onStart: () => void;
@@ -95,47 +156,7 @@ const GameMenu: React.FC<Omit<GameMenuProps, 'type' | 'score' | 'highScore' | 'l
       case 'upgrades':
         return <Shop />;
       case 'settings':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white mb-4">Controls</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Move Left</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">←</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Move Right</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">→</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Rotate</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↑</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Soft Drop</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↓</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Hard Drop</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">Space</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Hold Piece</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">C</kbd>
-              </div>
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-700">
-              <p className="text-sm text-gray-400">Keyboard Shortcuts:</p>
-              <ul className="mt-2 space-y-1 text-sm text-gray-400">
-                <li>• P: Pause/Resume Game</li>
-                <li>• R: Restart Game</li>
-                <li>• A: View Achievements</li>
-                <li>• S: Open Shop</li>
-                <li>• Esc: Settings</li>
-              </ul>
-            </div>
-          </div>
-        );
+        return <SettingsTabContent />;
       default:
         return (
           <div className="space-y-6">

@@ -3,17 +3,8 @@ import { GameState, GameAction, GameContextType, Position } from './types';
 import { COLS, ROWS, SHAPES, COLORS, POINTS, LEVELS, SHOP_ITEMS, ACHIEVEMENTS } from './constants';
 import { gameReducer } from './gameReducer';
 
-// Helper functions
-const createBoard = (): number[][] => {
-  const board: number[][] = [];
-  for (let i = 0; i < ROWS; i++) {
-    board.push(Array(COLS).fill(0));
-  }
-  return board;
-};
-
-const getRandomPiece = (): number =>
-  Math.floor(Math.random() * (SHAPES.length - 1)) + 1;
+// Import helper functions from utils
+import { createBoard, getRandomPiece, isValidMove, rotateMatrix, getSRSKicks, PIECE_TYPE_MAP, SRS_KICKS, SRS_I_KICKS } from './utils';
 
 const createDefaultState = (): GameState => ({
   board: createBoard(),
@@ -92,116 +83,19 @@ const GameContext = createContext<GameContextType | undefined>(undefined);
 // Initial state
 const initialState = getInitialState();
 
-// Helper function to check if a move is valid
-const isValidMove = (board: number[][], shape: number[][], position: Position): boolean => {
-  for (let y = 0; y < shape.length; y++) {
-    for (let x = 0; x < shape[y].length; x++) {
-      // Skip empty cells in the shape
-      if (shape[y][x] === 0) continue;
+// isValidMove is now imported from utils.ts
 
-      // Calculate board position
-      const boardX = position.x + x;
-      const boardY = position.y + y;
-
-      // Check boundaries
-      if (boardX < 0 || boardX >= COLS) return false;  // Left/Right walls
-      if (boardY >= ROWS) return false;                 // Bottom
-
-      // Check for collisions with existing pieces (only if within board bounds)
-      if (boardY >= 0 && board[boardY][boardX] !== 0) {
-        return false;
-      }
-    }
-  }
-  return true;
-};
-
-// Helper functions
-const rotateMatrix = (matrix: number[][]): number[][] => {
-  if (!matrix.length) return matrix;
-
-  // Make the matrix square if it's not
-  const N = Math.max(matrix.length, Math.max(...matrix.map(row => row.length)));
-  const paddedMatrix = matrix.map(row => [...row, ...Array(N - row.length).fill(0)]);
-  while (paddedMatrix.length < N) {
-    paddedMatrix.push(Array(N).fill(0));
-  }
-
-  // Create result matrix
-  const result = Array(N).fill(0).map(() => Array(N).fill(0));
-
-  // Do the rotation (90 degrees clockwise)
-  for (let y = 0; y < N; y++) {
-    for (let x = 0; x < N; x++) {
-      result[x][N - 1 - y] = paddedMatrix[y][x] || 0;
-    }
-  }
-
-  // Trim empty rows and columns
-  // Trim empty rows from top and bottom
-  const trimmed = result.filter(row => row.some(cell => cell !== 0));
-
-  // Trim empty columns from left and right
-  const cols = trimmed[0]?.length || 0;
-  let startCol = 0;
-  let endCol = cols - 1;
-
-  for (let x = 0; x < cols; x++) {
-    if (trimmed.some(row => row[x] !== 0)) {
-      startCol = x;
-      break;
-    }
-  }
-
-  for (let x = cols - 1; x >= 0; x--) {
-    if (trimmed.some(row => row[x] !== 0)) {
-      endCol = x;
-      break;
-    }
-  }
-
-  return trimmed.map(row => row.slice(startCol, endCol + 1));
-};
-
-// --- SRS Wall Kick Data ---
-// SRS wall kick data for JLSTZ pieces
-const SRS_KICKS = [
-  { x: 0, y: 0 },
-  { x: -1, y: 0 },
-  { x: -1, y: 1 },
-  { x: 0, y: -2 },
-  { x: -1, y: -2 },
-];
-// SRS wall kick data for I piece
-const SRS_I_KICKS = [
-  { x: 0, y: 0 },
-  { x: -2, y: 0 },
-  { x: 1, y: 0 },
-  { x: -2, y: -1 },
-  { x: 1, y: 2 },
-];
-
-// Helper to get SRS kicks for a piece type
-function getSRSKicks(type: string, from: number, to: number) {
-  // Only 4 states: 0 (spawn), 1 (right), 2 (reverse), 3 (left)
-  // SRS uses (from, to) to select the correct kick table
-  // For simplicity, use the same kicks for all transitions except I piece
-  if (type === 'I') {
-    // SRS I piece has unique tables for each rotation transition
-    // We'll use the standard right rotation table for all for simplicity
-    return SRS_I_KICKS;
-  }
-  if (type === 'O') {
-    // O piece rotates in place
-    return [{ x: 0, y: 0 }];
-  }
-  return SRS_KICKS;
-}
+// All helper functions now imported from utils.ts
 
 const rotatePiece = (state: GameState): GameState => {
   if (!state.currentPiece || state.gameOver || state.isPaused) return state;
 
-  const { type, shape, rotation = 0 } = state.currentPiece as any;
+  // Use proper typing for currentPiece properties
+  const { shape } = state.currentPiece;
+  // Convert piece type number to string representation for getSRSKicks
+  const pieceType = state.currentPiece.type;
+  const type = PIECE_TYPE_MAP[pieceType] || '';
+  const rotation = state.currentPiece.rotation || 0;
   // Next rotation state (0-3)
   const nextRotation = ((rotation ?? 0) + 1) % 4;
 
@@ -279,18 +173,47 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // (Removed autosave useEffect to rely on manual save)
 
-  // Game loop
+  // Frame reference for animation frame ID
+  const frameRef = useRef<number>();
+
+  // Game loop using requestAnimationFrame for smoother performance
   useEffect(() => {
-    if (!state.isStarted || state.gameOver) return;
-
-    const tick = () => {
-      dispatch({ type: 'TICK' });
-    };
-
+    if (!state.isStarted || state.gameOver || state.isPaused) return;
+    
+    let lastTime = 0;
+    let accumulator = 0;
+    
+    // Calculate speed based on level (in milliseconds)
     const speed = Math.max(100, 1000 - (state.stats.level * 50));
-    const gameLoop = setInterval(tick, speed);
-    return () => clearInterval(gameLoop);
-  }, [state.isStarted, state.gameOver, state.stats.level]);
+    
+    const gameLoop = (timestamp: number) => {
+      if (!lastTime) lastTime = timestamp;
+      const deltaTime = timestamp - lastTime;
+      lastTime = timestamp;
+      
+      // Accumulate time until we reach the speed threshold
+      accumulator += deltaTime;
+      
+      // Only dispatch TICK when enough time has passed
+      if (accumulator >= speed) {
+        dispatch({ type: 'TICK' });
+        accumulator = 0; // Reset accumulator
+      }
+      
+      // Continue the loop
+      frameRef.current = requestAnimationFrame(gameLoop);
+    };
+    
+    // Start the game loop
+    frameRef.current = requestAnimationFrame(gameLoop);
+    
+    // Cleanup function
+    return () => {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, [state.isStarted, state.gameOver, state.isPaused, state.stats.level, dispatch]);
 
   // Check for achievements
   useEffect(() => {

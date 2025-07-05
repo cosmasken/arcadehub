@@ -12,10 +12,6 @@ import ManageTournamentModal from '../components/ManageTournamentModal';
 import useWalletStore from '../stores/useWalletStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import {
-  getUserCreatedTournaments,
-  getTournamentInfo,
-  forceEndTournamentAA,
-  finalizeTournamentAA,
   getProvider,
   listenForTournamentEvents,
   isTokenAllowed,
@@ -112,85 +108,85 @@ const SponsorDashboard = () => {
     setIsManageModalOpen(true);
   };
 
-  const handleDistribute = async (tournament) => {
-    try {
-      setIsLoadingModalOpen(true);
-      setLoadingTitle("Distributing Prizes");
-      setLoadingDescription("Please wait while we distribute the prizes...");
-      setLoadingTransactionText("Distributing...");
-      if (!aaSigner) throw new Error("Wallet not connected.");
-      const result = await forceEndTournamentAA(aaSigner, tournament.id, 0);
-      toast({
-        title: "Tournament Ended",
-        description: (
-          <span>
-            Tournament {tournament.title} ended. Dispute period started.
-            <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
-              View on Etherscan
-            </a>
-          </span>
-        ),
-        className: "bg-green-400 text-black border-green-400"
-      });
-      setActiveTournaments(prev =>
-        prev.map(t =>
-          t.id === tournament.id ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 } : t
-        )
-      );
-    } catch (error) {
-      toast({
-        title: "End Failed",
-        description: decodeError(error),
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoadingModalOpen(false);
-      setLoadingTitle("");
-      setLoadingDescription("");
-      setLoadingTransactionText("");
-    }
-  };
+  // const handleDistribute = async (tournament) => {
+  //   try {
+  //     setIsLoadingModalOpen(true);
+  //     setLoadingTitle("Distributing Prizes");
+  //     setLoadingDescription("Please wait while we distribute the prizes...");
+  //     setLoadingTransactionText("Distributing...");
+  //     if (!aaSigner) throw new Error("Wallet not connected.");
+  //     const result = await forceEndTournamentAA(aaSigner, tournament.id, 0);
+  //     toast({
+  //       title: "Tournament Ended",
+  //       description: (
+  //         <span>
+  //           Tournament {tournament.title} ended. Dispute period started.
+  //           <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+  //             View on Etherscan
+  //           </a>
+  //         </span>
+  //       ),
+  //       className: "bg-green-400 text-black border-green-400"
+  //     });
+  //     setActiveTournaments(prev =>
+  //       prev.map(t =>
+  //         t.id === tournament.id ? { ...t, status: 'ended', distributionTime: Math.floor(Date.now() / 1000) + 120 } : t
+  //       )
+  //     );
+  //   } catch (error) {
+  //     toast({
+  //       title: "End Failed",
+  //       description: decodeError(error),
+  //       variant: "destructive"
+  //     });
+  //   } finally {
+  //     setIsLoadingModalOpen(false);
+  //     setLoadingTitle("");
+  //     setLoadingDescription("");
+  //     setLoadingTransactionText("");
+  //   }
+  // };
 
-  const handleFinalizeTournament = async (tournament) => {
-    try {
-      setIsLoadingModalOpen(true);
-      setLoadingTitle("Finalizing Tournament");
-      setLoadingDescription("Calculating winners");
-      setLoadingTransactionText("Finalizing...");
+  // const handleFinalizeTournament = async (tournament) => {
+  //   try {
+  //     setIsLoadingModalOpen(true);
+  //     setLoadingTitle("Finalizing Tournament");
+  //     setLoadingDescription("Calculating winners");
+  //     setLoadingTransactionText("Finalizing...");
 
-      if (!aaSigner) throw new Error("Wallet not connected.");
-      const result = await finalizeTournamentAA(aaSigner, tournament.id, 0);
-      toast({
-        title: "Tournament Finalized",
-        description: (
-          <span>
-            Prizes for {tournament.title} distributed.
-            <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
-              View on Etherscan
-            </a>
-          </span>
-        ),
-        className: "bg-green-400 text-black border-green-400"
-      });
-      setActiveTournaments(prev =>
-        prev.map(t =>
-          t.id === tournament.id ? { ...t, status: 'completed' } : t
-        )
+  //     if (!aaSigner) throw new Error("Wallet not connected.");
+  //     const result = await finalizeTournamentAA(aaSigner, tournament.id, 0);
+  //     toast({
+  //       title: "Tournament Finalized",
+  //       description: (
+  //         <span>
+  //           Prizes for {tournament.title} distributed.
+  //           <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+  //             View on Etherscan
+  //           </a>
+  //         </span>
+  //       ),
+  //       className: "bg-green-400 text-black border-green-400"
+  //     });
+  //     setActiveTournaments(prev =>
+  //       prev.map(t =>
+  //         t.id === tournament.id ? { ...t, status: 'completed' } : t
+  //       )
 
-      );
-    } catch (error) {
-      toast({
-        title: "Finalize Failed",
-        description: decodeError(error),
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoadingModalOpen(false);
-      setLoadingTitle("");
-      setLoadingDescription("");
-      setLoadingTransactionText("");
-    }
-  };
+  //     );
+  //   } catch (error) {
+  //     toast({
+  //       title: "Finalize Failed",
+  //       description: decodeError(error),
+  //       variant: "destructive"
+  //     });
+  //   } finally {
+  //     setIsLoadingModalOpen(false);
+  //     setLoadingTitle("");
+  //     setLoadingDescription("");
+  //     setLoadingTransactionText("");
+  //   }
+  // };
 
   return (
     <Layout>
@@ -315,7 +311,7 @@ const SponsorDashboard = () => {
                             size="sm"
                             className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"
                             disabled={tournament.status !== 'live'}
-                            onClick={() => handleDistribute(tournament)}
+                          
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             DISTRIBUTE
@@ -325,7 +321,6 @@ const SponsorDashboard = () => {
                             size="sm"
                             className="border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-black font-mono"
                             disabled={tournament.status !== 'ended' || Math.floor(Date.now() / 1000) < tournament.distributionTime}
-                            onClick={() => handleFinalizeTournament(tournament)}
                           >
                             <Eye className="w-4 h-4 mr-1" />
                             END TOURNAMENT

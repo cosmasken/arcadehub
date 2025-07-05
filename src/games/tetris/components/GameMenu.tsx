@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useGame } from '../context';
 import { Award, Settings, ShoppingCart, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import Achievements from './Achievements';
@@ -7,10 +8,6 @@ import Shop from './Shop';
 type TabType = 'main' | 'achievements' | 'upgrades' | 'settings';
 
 interface GameMenuProps {
-  type: 'start' | 'pause' | 'gameOver';
-  score: number;
-  highScore: number;
-  level: number;
   onStart: () => void;
   onResume: () => void;
   onRestart: () => void;
@@ -38,17 +35,19 @@ const TabButton: React.FC<{
   </button>
 );
 
-const GameMenu: React.FC<GameMenuProps> = ({
-  type,
-  score,
-  highScore,
-  level = 1,
+// GameMenu is now fully context-driven: menu type, score, highScore, and level are sourced from useGame() only.
+const GameMenu: React.FC<Omit<GameMenuProps, 'type' | 'score' | 'highScore' | 'level'>> = ({
   onStart,
   onResume,
   onRestart,
   onQuit,
   onSave,
 }) => {
+  const { state } = useGame();
+  const type = state.gameOver ? 'gameOver' : (state.isPaused ? 'pause' : 'start');
+  const score = state.stats?.score ?? 0;
+  const highScore = state.stats?.highScore ?? 0;
+  const level = state.stats?.level ?? 1;
   const [activeTab, setActiveTab] = useState<TabType>('main');
 
   const title = type === 'start' ? 'TETRIS' :
@@ -187,7 +186,12 @@ const GameMenu: React.FC<GameMenuProps> = ({
 
               {(type === 'pause' || type === 'gameOver') && (
                 <button
-                  onClick={onRestart}
+                  onClick={() => {
+                    // Force back to main tab when restarting
+                    setActiveTab('main');
+                    // Call the onRestart function to completely reset the game state
+                    onRestart();
+                  }}
                   className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
                 >
                   New Game

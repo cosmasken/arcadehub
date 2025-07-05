@@ -442,10 +442,6 @@ const GameBoard: React.FC = () => {
             !state.isStarted || state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}>
             <GameMenu 
-              type={state.menuType === 'levelComplete' ? 'levelComplete' : state.gameOver ? 'gameOver' : state.isPaused ? 'pause' : 'start'}
-              score={state.score}
-              highScore={state.highScore}
-              level={state.level}
               onStart={handleStart}
               onRestart={handleRestart}
               onSave={handleSave}

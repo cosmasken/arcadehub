@@ -1,24 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { GameState } from '../types';
+import { X } from 'lucide-react';
+import { useGameState } from '../context/GameStateContext';
+import { useGame } from '../context';
 
 interface GameMenuProps {
-  type: 'start' | 'pause' | 'gameOver' | 'levelComplete' | null;
-  score: number;
-  highScore: number;
-  level?: number;
-  onStart: () => void;
-  onRestart: () => void;
-  onSave: () => void;
-  onQuit: () => void;
+  onStart?: () => void;
+  onRestart?: () => void;
+  onSave?: () => void;
+  onQuit?: () => void;
   onNextLevel?: () => void;
 }
 
-const GameMenu: React.FC<GameMenuProps> = ({
-  type,
-  score,
-  highScore,
-  level = 1,
+const GameMenu: React.FC<Partial<GameMenuProps>> = ({
   onStart,
   onRestart,
   onSave,
@@ -26,7 +19,18 @@ const GameMenu: React.FC<GameMenuProps> = ({
   onNextLevel,
 }) => {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const navigate = useNavigate();
+  const { state: gameState, playSound } = useGameState();
+  const { state } = useGame();
+  
+  // Derive menu type from game state
+  const type = state.gameOver ? 'gameOver' : 
+               state.menuType === 'levelComplete' ? 'levelComplete' : 
+               state.isPaused ? 'pause' : 'start';
+  
+  // Get score, highScore, and level from game state
+  const score = state.score;
+  const highScore = state.highScore;
+  const level = state.level;
   if (!type) return null;
 
   const title = type === 'start' ? 'SNAKE' : 
@@ -35,7 +39,7 @@ const GameMenu: React.FC<GameMenuProps> = ({
 
   // Handle exit to home
   const handleExit = () => {
-    navigate('/'); // Navigate to home page
+    // Navigate to home page
   };
 
   // Get the appropriate action button based on menu type
@@ -43,7 +47,10 @@ const GameMenu: React.FC<GameMenuProps> = ({
     if (type === 'start') {
       return (
         <button
-          onClick={onStart}
+          onClick={() => {
+            if (onStart) onStart();
+            playSound('click');
+          }}
           className="w-full bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
         >
           Start Game
@@ -52,7 +59,10 @@ const GameMenu: React.FC<GameMenuProps> = ({
     } else if (type === 'pause') {
       return (
         <button
-          onClick={onStart}
+          onClick={() => {
+            if (onStart) onStart();
+            playSound('click');
+          }}
           className="w-full bg-gradient-to-r from-green-500 to-cyan-500 hover:from-green-600 hover:to-cyan-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
         >
           Continue Playing
@@ -61,7 +71,10 @@ const GameMenu: React.FC<GameMenuProps> = ({
     } else if (type === 'levelComplete') {
       return (
         <button
-          onClick={onNextLevel}
+          onClick={() => {
+            if (onNextLevel) onNextLevel();
+            playSound('click');
+          }}
           className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
         >
           Next Level
@@ -70,7 +83,10 @@ const GameMenu: React.FC<GameMenuProps> = ({
     } else { // gameOver
       return (
         <button
-          onClick={onRestart}
+          onClick={() => {
+            if (onRestart) onRestart();
+            playSound('click');
+          }}
           className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white py-3 px-6 rounded-lg text-base font-bold transition-all transform hover:scale-105 mb-3"
         >
           Play Again
@@ -121,48 +137,60 @@ const GameMenu: React.FC<GameMenuProps> = ({
           
           {/* Additional options */}
           {(type === 'pause' || type === 'gameOver') && onSave && (
-            <button
-              onClick={onSave}
-              className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium font-bold transition-all"
-            >
-              Save Game
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  if (onRestart) onRestart();
+                  playSound('click');
+                }}
+                className="w-full bg-gradient-to-r from-cyan-500 to-green-500 hover:from-cyan-600 hover:to-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium font-bold transition-all"
+              >
+                PLAY AGAIN
+              </button>
+              <button
+                onClick={() => {
+                  if (onSave) onSave();
+                  playSound('click');
+                }}
+                className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white py-2 px-4 rounded-lg text-sm font-medium font-bold transition-all"
+              >
+                SAVE SCORE
+              </button>
+              <button
+                onClick={() => {
+                  setShowExitConfirm(true);
+                  playSound('click');
+                }}
+                className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-2 px-4 rounded-lg text-sm font-medium font-bold transition-all"
+              >
+                EXIT
+              </button>
+            </div>
           )}
-          {(type === 'pause' || type === 'gameOver') && (
-            <button
-              onClick={onRestart}
-              className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
-            >
-              New Game
-            </button>
-          )}
-          
-          <button
-            onClick={() => setShowExitConfirm(true)}
-            className="w-full bg-transparent hover:bg-gray-800 text-gray-300 hover:text-white py-2 px-4 rounded-lg text-sm font-medium border border-gray-600 hover:border-gray-500 transition-colors"
-          >
-            Exit
-          </button>
           
           {/* Exit Confirmation Modal */}
           {showExitConfirm && (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-              <div className="bg-gray-900 border border-cyan-500/30 rounded-xl p-6 max-w-sm w-full shadow-2xl">
-                <h3 className="text-xl font-bold text-cyan-400 mb-3">Exit Game?</h3>
-                <p className="text-gray-300 mb-5">Are you sure you want to exit? Your progress will be saved automatically.</p>
-                <div className="flex space-x-3">
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
+              <div className="bg-gray-900/90 p-6 rounded-lg border border-cyan-400/30 max-w-md w-full mx-4">
+                <h2 className="text-2xl font-bold text-red-500 mb-4">Confirm Exit</h2>
+                <p className="text-gray-300 mb-6">Are you sure you want to exit? Your progress will be lost.</p>
+                <div className="flex space-x-4">
                   <button
                     onClick={() => {
-                      handleExit();
                       setShowExitConfirm(false);
+                      if (onQuit) onQuit();
+                      playSound('click');
                     }}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                    className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors"
                   >
-                    Exit to Home
+                    Yes, Exit
                   </button>
                   <button
-                    onClick={() => setShowExitConfirm(false)}
-                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                    onClick={() => {
+                      setShowExitConfirm(false);
+                      playSound('click');
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-lg transition-colors"
                   >
                     Cancel
                   </button>

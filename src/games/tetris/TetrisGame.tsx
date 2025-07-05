@@ -13,7 +13,7 @@ import { Link } from 'react-router-dom';
 import {ChevronLeft} from 'lucide-react';
 import useWalletStore from '../../stores/useWalletStore';
 import { getActiveTournamentIdByName } from '../../lib/tournamentUtils';
-import { joinTournamentAA, submitTournamentScoreAA } from '../../lib/aaUtils';
+import { joinTournamentAA, submitScoreAA } from '../../lib/aaUtils';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { GameState } from './types';
 import { useNavigate } from 'react-router-dom';
@@ -63,7 +63,7 @@ const GameUI: React.FC = () => {
   useEffect(() => {
     if (!aaSigner || tournamentId === null || hasJoinedRef.current) return;
     hasJoinedRef.current = true;
-    joinTournamentAA(aaSigner, tournamentId, 0, { gasMultiplier: 1.5 }).catch(() => {});
+    joinTournamentAA(aaSigner, tournamentId, { gasMultiplier: 1.5 }).catch(() => {});
   }, [aaSigner, tournamentId]);
   const prevScore = useRef(0);
   // Toast when score increases significantly
@@ -100,12 +100,10 @@ const GameUI: React.FC = () => {
   useEffect(() => {
     if (!aaSigner || !state.gameOver || tournamentId === null || hasSubmittedRef.current) return;
     hasSubmittedRef.current = true;
-    submitTournamentScoreAA(
+    submitScoreAA(
       aaSigner,
       tournamentId,
       state.stats.score,
-      "0x",
-      0,
       { gasMultiplier: 1.5 }
     ).catch(console.error);
   }, [aaSigner, state.gameOver, state.stats.score, tournamentId]);
@@ -280,32 +278,43 @@ const GameUI: React.FC = () => {
                 </div>
                 {currentStatus !== 'playing' && (
                   <GameMenu
-                    type={currentStatus === 'paused' ? 'pause' : currentStatus === 'gameOver' ? 'gameOver' : 'start'}
-                    score={state.stats.score}
-                    highScore={state.stats.highScore}
-                    level={state.stats.level}
-                    onStart={() => {
-                      if (currentStatus === GameStatus.START) {
-                        dispatch({ type: 'START' });
-                      } else {
-                        // Reset and start a new game
-                        dispatch({ type: 'RESET' });
-                        dispatch({ type: 'START' });
-                      }
-                      // Always hide the menu when starting a new game
-                      dispatch({ type: 'PAUSE', isPaused: false });
-                    }}
-                    onResume={() => dispatch({ type: 'PAUSE', isPaused: false })}
-                    onRestart={() => {
-                      dispatch({ type: 'RESET' });
-                      dispatch({ type: 'START' });
-                    }}
-                    onQuit={() => navigate('/')}
-                    onSave={async () => {
-                      await saveGame('user-placeholder-address');
-                      toast({ title: 'Game Saved', description: 'Your Tetris progress has been saved.' });
-                    }}
-                  />
+  onStart={() => {
+    if (currentStatus === GameStatus.START) {
+      dispatch({ type: 'START' });
+    } else {
+      // Reset and start a new game
+      dispatch({ type: 'RESET' });
+      dispatch({ type: 'START' });
+    }
+    // Always hide the menu when starting a new game
+    dispatch({ type: 'PAUSE', isPaused: false });
+  }}
+  onResume={() => dispatch({ type: 'PAUSE', isPaused: false })}
+  onRestart={() => {
+    // Reset game state completely
+    dispatch({ type: 'RESET' });
+    
+    // Reset tournament participation flags
+    hasJoinedRef.current = false;
+    hasSubmittedRef.current = false;
+    
+    // Reset score tracking for toast notifications
+    prevScore.current = 0;
+    
+    // Force a re-render by using a timeout
+    // This ensures the game state is fully reset before starting a new game
+    setTimeout(() => {
+      // Start the game and ensure it's not paused
+      dispatch({ type: 'START' });
+      dispatch({ type: 'PAUSE', isPaused: false });
+    }, 150);
+  }}
+  onQuit={() => navigate('/')}
+  onSave={async () => {
+    await saveGame('user-placeholder-address');
+    toast({ title: 'Game Saved', description: 'Your Tetris progress has been saved.' });
+  }}
+/>
                 )}
               </div>
             </div>

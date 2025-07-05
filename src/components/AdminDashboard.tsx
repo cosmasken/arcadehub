@@ -23,7 +23,7 @@ import {
 import PointsSystem from '../abi/PointsSystem.json';
 import TokenSelector from './TokenSelector';
 import { ethers } from 'ethers';
-import { approvePointsClaimAA, rejectPointsClaimAA, getProvider, setPointsToTokensRateAA, addAdminAA, removeAdminAA } from '../lib/aaUtils';
+import { approvePointsClaimAA, rejectPointsClaimAA, getProvider, addAdminAA, removeAdminAA } from '../lib/aaUtils';
 import useWalletStore from '../stores/useWalletStore';
 
 interface AdminUser {
@@ -164,21 +164,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminUser }) 
     }, 30000);
 
     // Real-time event listeners
-    const handlePointsClaimSubmitted = (player: string, claimIndex: ethers.BigNumberish, points: ethers.BigNumberish) => {
-      setAllClaims(prev => {
-        if (prev.some(claim => claim.player.toLowerCase() === player.toLowerCase() && claim.claimIndex === Number(claimIndex))) {
-          return prev;
-        }
-        return [...prev, {
-          player,
-          claimIndex: Number(claimIndex),
-          points: Number(points),
-          blockNumber: 0,
-          status: 'pending',
-        }].sort((a, b) => b.blockNumber - a.blockNumber);
-      });
-      toast({ title: 'New Claim', description: `${player} submitted ${points} points (Claim #${claimIndex}).` });
-    };
+    // const handlePointsClaimSubmitted = (player: string, claimIndex: ethers.BigNumberish, points: ethers.BigNumberish) => {
+    //   setAllClaims(prev => {
+    //     if (prev.some(claim => claim.player.toLowerCase() === player.toLowerCase() && claim.claimIndex === Number(claimIndex))) {
+    //       return prev;
+    //     }
+    //     return [...prev, {
+    //       player,
+    //       claimIndex: Number(claimIndex),
+    //       points: Number(points),
+    //       blockNumber: 0,
+    //       status: 'pending',
+    //     }].sort((a, b) => b.blockNumber - a.blockNumber);
+    //   });
+    //   toast({ title: 'New Claim', description: `${player} submitted ${points} points (Claim #${claimIndex}).` });
+    // };
     const handlePointsClaimApproved = (player: string, claimIndex: ethers.BigNumberish, points: ethers.BigNumberish) => {
       setAllClaims(prev => prev.map(claim =>
         claim.player.toLowerCase() === player.toLowerCase() && claim.claimIndex === Number(claimIndex)
@@ -243,7 +243,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminUser }) 
       fetchInitialData(); // Immediate refresh
     };
 
-    contract.on('PointsClaimSubmitted', handlePointsClaimSubmitted);
+    // contract.on('PointsClaimSubmitted', handlePointsClaimSubmitted);
     contract.on('PointsClaimApproved', handlePointsClaimApproved);
     contract.on('PointsClaimRejected', handlePointsClaimRejected);
     contract.on('TokensClaimed', handleTokensClaimed);
@@ -438,30 +438,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminUser }) 
     }
   };
 
-  const handleSetPointsToTokensRate = async () => {
-    if (!aaSigner) {
-      toast({ title: 'No admin wallet', description: 'Connect your admin AA wallet.', variant: 'destructive' });
-      return;
-    }
-    const rate = parseInt(newRate);
-    if (isNaN(rate) || rate <= 0) {
-      toast({ title: 'Invalid Rate', description: 'Please enter a valid rate greater than 0.', variant: 'destructive' });
-      return;
-    }
-    setLoadingModalText('Updating points to tokens rate...');
-    setIsLoadingModalOpen(true);
-    try {
-      await setPointsToTokensRateAA(aaSigner, rate);
-      setPointsToTokensRate(rate);
-      toast({ title: 'Rate Updated', description: `Points to tokens rate set to ${rate}.` });
-    } catch (err: any) {
-      console.error('Rate update error:', err);
-      toast({ title: 'Rate Update Failed', description: err.message || 'Error updating rate.', variant: 'destructive' });
-    } finally {
-      setIsLoadingModalOpen(false);
-      fetchInitialData(); // Refresh after rate update
-    }
-  };
+  // const handleSetPointsToTokensRate = async () => {
+  //   if (!aaSigner) {
+  //     toast({ title: 'No admin wallet', description: 'Connect your admin AA wallet.', variant: 'destructive' });
+  //     return;
+  //   }
+  //   const rate = parseInt(newRate);
+  //   if (isNaN(rate) || rate <= 0) {
+  //     toast({ title: 'Invalid Rate', description: 'Please enter a valid rate greater than 0.', variant: 'destructive' });
+  //     return;
+  //   }
+  //   setLoadingModalText('Updating points to tokens rate...');
+  //   setIsLoadingModalOpen(true);
+  //   try {
+  //     await setPointsToTokensRateAA(aaSigner, rate);
+  //     setPointsToTokensRate(rate);
+  //     toast({ title: 'Rate Updated', description: `Points to tokens rate set to ${rate}.` });
+  //   } catch (err: any) {
+  //     console.error('Rate update error:', err);
+  //     toast({ title: 'Rate Update Failed', description: err.message || 'Error updating rate.', variant: 'destructive' });
+  //   } finally {
+  //     setIsLoadingModalOpen(false);
+  //     fetchInitialData(); // Refresh after rate update
+  //   }
+  // };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -770,7 +770,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, adminUser }) 
                       className="bg-gray-800 text-green-400 border-cyan-400 p-2 font-mono w-24"
                     />
                     <Button
-                      onClick={handleSetPointsToTokensRate}
+                      // onClick={handleSetPointsToTokensRate}
                       className="bg-cyan-400 text-black hover:bg-cyan-300 font-mono"
                     >
                       UPDATE

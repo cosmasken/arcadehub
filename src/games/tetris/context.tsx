@@ -163,41 +163,60 @@ const rotateMatrix = (matrix: number[][]): number[][] => {
   return trimmed.map(row => row.slice(startCol, endCol + 1));
 };
 
+// --- SRS Wall Kick Data ---
+// SRS wall kick data for JLSTZ pieces
+const SRS_KICKS = [
+  { x: 0, y: 0 },
+  { x: -1, y: 0 },
+  { x: -1, y: 1 },
+  { x: 0, y: -2 },
+  { x: -1, y: -2 },
+];
+// SRS wall kick data for I piece
+const SRS_I_KICKS = [
+  { x: 0, y: 0 },
+  { x: -2, y: 0 },
+  { x: 1, y: 0 },
+  { x: -2, y: -1 },
+  { x: 1, y: 2 },
+];
+
+// Helper to get SRS kicks for a piece type
+function getSRSKicks(type: string, from: number, to: number) {
+  // Only 4 states: 0 (spawn), 1 (right), 2 (reverse), 3 (left)
+  // SRS uses (from, to) to select the correct kick table
+  // For simplicity, use the same kicks for all transitions except I piece
+  if (type === 'I') {
+    // SRS I piece has unique tables for each rotation transition
+    // We'll use the standard right rotation table for all for simplicity
+    return SRS_I_KICKS;
+  }
+  if (type === 'O') {
+    // O piece rotates in place
+    return [{ x: 0, y: 0 }];
+  }
+  return SRS_KICKS;
+}
+
 const rotatePiece = (state: GameState): GameState => {
   if (!state.currentPiece || state.gameOver || state.isPaused) return state;
 
-  const rotated = rotateMatrix(state.currentPiece.shape);
+  const { type, shape, rotation = 0 } = state.currentPiece as any;
+  // Next rotation state (0-3)
+  const nextRotation = ((rotation ?? 0) + 1) % 4;
 
-  // Check if rotation is valid in current position
-  if (isValidMove(state.board, rotated, state.currentPiece.position)) {
-    return {
-      ...state,
-      currentPiece: {
-        ...state.currentPiece,
-        shape: rotated,
-      },
-    };
-  }
+  // Rotate shape
+  const rotated = rotateMatrix(shape);
 
-  // Try wall kicks with more positions
-  const kicks = [
-    { x: -1, y: 0 },  // try left
-    { x: 1, y: 0 },   // try right
-    { x: 0, y: -1 },  // try up
-    { x: -2, y: 0 },  // try two left
-    { x: 2, y: 0 },   // try two right
-    { x: 0, y: -2 },  // try two up
-    { x: -1, y: -1 }, // try left and up
-    { x: 1, y: -1 },  // try right and up
-  ];
+  // Get SRS kicks for this piece and rotation
+  const kicks = getSRSKicks(type, rotation, nextRotation);
 
-  // Try each wall kick position
+  // Try each kick
   for (const kick of kicks) {
     const newPosition = {
       x: state.currentPiece.position.x + kick.x,
       y: state.currentPiece.position.y + kick.y,
     };
-
     if (isValidMove(state.board, rotated, newPosition)) {
       return {
         ...state,
@@ -205,11 +224,11 @@ const rotatePiece = (state: GameState): GameState => {
           ...state.currentPiece,
           shape: rotated,
           position: newPosition,
+          rotation: nextRotation,
         },
       };
     }
   }
-
   // If no valid rotation found, keep the original position
   return state;
 };

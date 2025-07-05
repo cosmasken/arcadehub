@@ -1,16 +1,74 @@
 import React, { useState, useCallback } from 'react';
+import { useGame } from '../context';
 import { Award, Settings, ShoppingCart, X } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import Achievements from './Achievements';
 import Shop from './Shop';
 
+// Settings tab content component
+const SettingsTabContent: React.FC = () => {
+  return (
+    <div className="space-y-4">
+      <h3 className="text-lg font-bold text-white mb-4">Controls</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Move Left</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">←</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Move Right</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">→</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Rotate</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↑</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Soft Drop</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↓</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Hard Drop</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">Space</kbd>
+        </div>
+        <div className="space-y-2">
+          <p className="text-gray-400 text-sm">Hold Piece</p>
+          <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">C</kbd>
+        </div>
+      </div>
+      
+      <h3 className="text-lg font-bold text-white mt-6 mb-4">Display Options</h3>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-300">Show Ghost Piece</span>
+          <div className="w-10 h-6 bg-gray-700 rounded-full relative">
+            <div className="absolute left-1 top-1 w-4 h-4 bg-cyan-500 rounded-full"></div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-gray-300">Sound Effects</span>
+          <div className="w-10 h-6 bg-gray-700 rounded-full relative">
+            <div className="absolute left-1 top-1 w-4 h-4 bg-cyan-500 rounded-full"></div>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-gray-300">Music</span>
+          <div className="w-10 h-6 bg-gray-700 rounded-full relative">
+            <div className="absolute left-1 top-1 w-4 h-4 bg-cyan-500 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Define tab types with string literal union for better type safety
 type TabType = 'main' | 'achievements' | 'upgrades' | 'settings';
 
+// Define menu types for better type safety
+type MenuType = 'start' | 'pause' | 'gameOver';
+
 interface GameMenuProps {
-  type: 'start' | 'pause' | 'gameOver';
-  score: number;
-  highScore: number;
-  level: number;
   onStart: () => void;
   onResume: () => void;
   onRestart: () => void;
@@ -38,17 +96,19 @@ const TabButton: React.FC<{
   </button>
 );
 
-const GameMenu: React.FC<GameMenuProps> = ({
-  type,
-  score,
-  highScore,
-  level = 1,
+// GameMenu is now fully context-driven: menu type, score, highScore, and level are sourced from useGame() only.
+const GameMenu: React.FC<Omit<GameMenuProps, 'type' | 'score' | 'highScore' | 'level'>> = ({
   onStart,
   onResume,
   onRestart,
   onQuit,
   onSave,
 }) => {
+  const { state } = useGame();
+  const type = state.gameOver ? 'gameOver' : (state.isPaused ? 'pause' : 'start');
+  const score = state.stats?.score ?? 0;
+  const highScore = state.stats?.highScore ?? 0;
+  const level = state.stats?.level ?? 1;
   const [activeTab, setActiveTab] = useState<TabType>('main');
 
   const title = type === 'start' ? 'TETRIS' :
@@ -96,47 +156,7 @@ const GameMenu: React.FC<GameMenuProps> = ({
       case 'upgrades':
         return <Shop />;
       case 'settings':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-white mb-4">Controls</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Move Left</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">←</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Move Right</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">→</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Rotate</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↑</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Soft Drop</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">↓</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Hard Drop</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">Space</kbd>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">Hold Piece</p>
-                <kbd className="px-2 py-1 bg-gray-800 rounded text-gray-300">C</kbd>
-              </div>
-            </div>
-            <div className="mt-6 pt-4 border-t border-gray-700">
-              <p className="text-sm text-gray-400">Keyboard Shortcuts:</p>
-              <ul className="mt-2 space-y-1 text-sm text-gray-400">
-                <li>• P: Pause/Resume Game</li>
-                <li>• R: Restart Game</li>
-                <li>• A: View Achievements</li>
-                <li>• S: Open Shop</li>
-                <li>• Esc: Settings</li>
-              </ul>
-            </div>
-          </div>
-        );
+        return <SettingsTabContent />;
       default:
         return (
           <div className="space-y-6">
@@ -187,7 +207,12 @@ const GameMenu: React.FC<GameMenuProps> = ({
 
               {(type === 'pause' || type === 'gameOver') && (
                 <button
-                  onClick={onRestart}
+                  onClick={() => {
+                    // Force back to main tab when restarting
+                    setActiveTab('main');
+                    // Call the onRestart function to completely reset the game state
+                    onRestart();
+                  }}
                   className="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
                 >
                   New Game

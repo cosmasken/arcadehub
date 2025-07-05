@@ -33,3 +33,6 @@ GEMINI.md
 .env.test
 .env.local
 .vercel
+
+hardhat.config.ts
+/scripts

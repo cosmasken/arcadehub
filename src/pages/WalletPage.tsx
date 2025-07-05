@@ -1,5 +1,5 @@
 import Layout from "../components/Layout";
-import { useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWalletRewardsStore } from '../stores/useWalletRewardsStore';
 import { WalletBalanceCard } from '../components/wallet/WalletBalanceCard';
 import { PendingRewards } from '../components/wallet/PendingRewards';
@@ -8,9 +8,100 @@ import { useToast } from '../components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import useWalletStore from '../stores/useWalletStore';
 import { ethers } from 'ethers';
+// --- ADDED IMPORTS ---
+import { CONFIG } from '../config';
+import useProfileStore from '../stores/useProfileStore';
+import { achievements as allAchievements } from '../data/achievements';
+import type { Achievement } from '../data/achievements';
+// Import game-specific achievements
+import { ACHIEVEMENTS as TETRIS_ACHIEVEMENTS } from '../games/tetris/constants';
+import { ACHIEVEMENTS as SNAKE_ACHIEVEMENTS } from '../games/snake/constants';
 
 export default function WalletPage() {
   const navigate = useNavigate();
+    // ERC20 token list (hardcoded as requested)
+    const ERC20_TOKENS = useMemo(() => [
+      { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+      { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+      { symbol: 'DAI', address: '0x6B175474E89094C44Da98b954EedeAC495271d0F' },
+      { symbol: 'ARC', address: '0x150E812D3443699e8b829EF6978057Ed7CB47AE6' },
+    ], []);
+  
+    // ERC20 balances state
+    const [erc20Balances, setErc20Balances] = useState<Record<string, { balance: string; address: string; decimals: number }>>({});
+  
+    // Profile/achievements
+    const { achievements: userAchievements } = useProfileStore();
+    // userAchievements is an array of achievement objects with achievement_id or id
+    const mintedAchievementIds = userAchievements?.map((a: { achievement_id?: number; id?: number }) => a.achievement_id ?? a.id) || [];
+    // mintedAchievements: Achievement[]`
+    const mintedAchievements: Achievement[] = mintedAchievementIds
+      .map((id: number | string) => Object.values(allAchievements).find((a: Achievement) => a.id === id))
+      .filter(Boolean) as Achievement[];
+      
+    // Get game-specific achievements that have been minted with memoization
+    const mintedTetrisAchievementIds = useMemo(() => {
+      return localStorage.getItem('tetris_achievements') ? 
+        JSON.parse(localStorage.getItem('tetris_achievements') || '[]') as string[] : [];
+    }, []);
+    
+    const mintedSnakeAchievementIds = useMemo(() => {
+      return localStorage.getItem('snake_achievements') ? 
+        JSON.parse(localStorage.getItem('snake_achievements') || '[]') as string[] : [];
+    }, []);
+      
+    // Format game achievements to match the display format
+    type GameAchievementDisplay = {
+      id: string;
+      title: string;
+      emoji: string;
+      description: string;
+      game: string;
+      reward: number;
+    };
+    
+    // Process Tetris achievements with memoization
+    const tetrisAchievements = useMemo(() => {
+      const achievements: GameAchievementDisplay[] = [];
+      for (const id of mintedTetrisAchievementIds) {
+        const achievement = TETRIS_ACHIEVEMENTS.find(a => a.id === id);
+        if (achievement) {
+          achievements.push({
+            id: `tetris_${achievement.id}`,
+            title: achievement.name,
+            emoji: achievement.icon,
+            description: achievement.description,
+            game: 'Tetris',
+            reward: achievement.reward
+          });
+        }
+      }
+      return achievements;
+    }, [mintedTetrisAchievementIds]);
+    
+    // Process Snake achievements with memoization
+    const snakeAchievements = useMemo(() => {
+      const achievements: GameAchievementDisplay[] = [];
+      for (const id of mintedSnakeAchievementIds) {
+        const achievement = SNAKE_ACHIEVEMENTS.find(a => a.id === id);
+        if (achievement) {
+          achievements.push({
+            id: `snake_${achievement.id}`,
+            title: achievement.name,
+            emoji: achievement.icon,
+            description: achievement.description,
+            game: 'Snake',
+            reward: achievement.reward
+          });
+        }
+      }
+      return achievements;
+    }, [mintedSnakeAchievementIds]);
+    
+    // Combine all game achievements with memoization to prevent unnecessary recalculations
+    const gameAchievements = useMemo(() => {
+      return [...tetrisAchievements, ...snakeAchievements];
+    }, [tetrisAchievements, snakeAchievements]);
   const {
     walletSummary,
     isLoading,
@@ -27,29 +118,68 @@ export default function WalletPage() {
   const getEthereum = (): any => (window as any).ethereum;
 
   // Fetch initial data and trigger ERC20 sync
+  const [erc20Loading, setErc20Loading] = useState(false);
+
   useEffect(() => {
-    fetchWalletSummary();
-    // Only sync if wallet is connected and ethers is available
-    if (isConnected && aaWalletAddress && getEthereum()) {
-      const provider = new ethers.BrowserProvider(getEthereum());
-      fetchAndSyncERC20Balances(provider, aaWalletAddress)
-        .then((balances) => {
-          if (balances) {
-            toast({
-              title: 'Token Balances Synced',
-              description: 'Your ERC20 token balances have been updated.',
-            });
+    // Only fetch balances if wallet is connected and ethers is available
+    const fetchBalances = async () => {
+      if (!isConnected || !getEthereum()) return;
+
+      try {
+        const ethereum = getEthereum();
+        if (!ethereum) {
+          console.error('Ethereum provider not found');
+          return;
+        }
+
+        const provider = new ethers.BrowserProvider(ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+
+        // Fetch ERC20 token balances
+        const balances: Record<string, { balance: string; address: string; decimals: number }> = {};
+
+        for (const token of ERC20_TOKENS) {
+          try {
+            const tokenContract = new ethers.Contract(
+              token.address,
+              [
+                'function balanceOf(address owner) view returns (uint256)',
+                'function decimals() view returns (uint8)',
+              ],
+              provider
+            );
+
+            const balance = await tokenContract.balanceOf(address);
+            const decimals = await tokenContract.decimals();
+            
+            balances[token.symbol] = {
+              balance: ethers.formatUnits(balance, decimals),
+              address: token.address,
+              decimals
+            };
+          } catch (error) {
+            console.error(`Error fetching balance for ${token.symbol}:`, error);
+            balances[token.symbol] = {
+              balance: '0',
+              address: token.address,
+              decimals: 18
+            };
           }
-        })
-        .catch((err) => {
-          toast({
-            title: 'Token Sync Error',
-            description: err?.message || 'Failed to sync token balances',
-            variant: 'destructive',
-          });
+        }
+
+        setErc20Balances(balances);
+      } catch (error) {
+        console.error('Error fetching balances:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error fetching balances',
+          description: 'Could not retrieve your token balances. Please try again later.'
         });
-    }
-  }, [fetchWalletSummary, fetchAndSyncERC20Balances, isConnected, aaWalletAddress, toast]);
+      }
+    };
+    fetchBalances();
+  }, [isConnected, aaWalletAddress, toast, ERC20_TOKENS]);
 
   // Show error toast if there's an error
   useEffect(() => {
@@ -75,6 +205,8 @@ export default function WalletPage() {
     }
   };
 
+
+
   return (
     <Layout>
       <div className="container mx-auto py-6 space-y-6 max-w-4xl">
@@ -93,11 +225,91 @@ export default function WalletPage() {
         </div>
 
         <div className="grid gap-6">
-          {/* Wallet Balance */}
-          <WalletBalanceCard
-            balance={walletSummary?.balance || null}
-            isLoading={isLoading}
-          />
+          {/* ERC20 Token Balances */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {erc20Loading ? (
+              ERC20_TOKENS.map(({ symbol }) => (
+                <div key={symbol} className="animate-pulse h-24 bg-muted rounded-lg" />
+              ))
+            ) : (
+              ERC20_TOKENS.map(({ symbol, address }) => {
+                const token = erc20Balances[symbol] || { balance: '0', address, decimals: 18 };
+                return (
+                  <WalletBalanceCard
+                    key={symbol}
+                    balances={{ [symbol]: token }}
+                    isLoading={erc20Loading}
+                  />
+                );
+              })
+            )}
+          </div>
+
+          {/* Achievements Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div>
+              <h2 className="text-xl font-bold mb-4">Achievements</h2>
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+                {mintedAchievements.length > 0 ? (
+                  <div className="space-y-4">
+                    {mintedAchievements.map((achievement) => (
+                      <div key={achievement.id} className="flex items-start">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center text-2xl">
+                          {achievement.emoji}
+                        </div>
+                        <div className="ml-4">
+                          <h3 className="text-lg font-medium">{achievement.title}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {achievement.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400">No achievements yet.</p>
+                )}
+              </div>
+            </div>
+            
+            {/* Game-specific achievements section */}
+            <div>
+              <h2 className="text-xl font-bold mb-4">Game Achievements</h2>
+              <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+                {gameAchievements.length > 0 ? (
+                  <div className="space-y-4">
+                    {gameAchievements.map((achievement) => (
+                      <div key={achievement.id} className="flex items-start">
+                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                          <img 
+                            src={achievement.emoji} 
+                            alt={achievement.title} 
+                            className="h-6 w-6" 
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className="flex items-center">
+                            <h3 className="text-lg font-medium">{achievement.title}</h3>
+                            <span className="ml-2 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                              {achievement.game}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {achievement.description}
+                          </p>
+                          <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                            Reward: {achievement.reward} coins
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400">No game achievements unlocked yet. Play games to earn achievements!</p>
+                )}
+              </div>
+            </div>    
+          </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Pending Rewards */}
@@ -121,3 +333,4 @@ export default function WalletPage() {
     </Layout>
   );
 }
+

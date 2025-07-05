@@ -32,12 +32,12 @@ const throttledRequests = new Map<string, { timestamp: number, promise: Promise<
 const nftCache = new Map<string, { timestamp: number, data: any[] }>();
 const NFT_CACHE_DURATION = 60000; // 1 minute cache
 
-import TournamentHub from '../abi/TournamentHub.json'; 
-import SnakeGame from '../abi/SnakeGame.json';
+import TournamentHubABI from '../abi/TournamentHub.json';
+
 
 // Validate ABI at load time
-if (!TournamentHub || !Array.isArray(TournamentHub)) {
-  console.error('Invalid TournamentHubABI:', TournamentHub);
+if (!TournamentHubABI || !Array.isArray(TournamentHubABI)) {
+  console.error('Invalid TournamentHubABI:', TournamentHubABI);
   throw new Error('TournamentHubABI is not a valid ABI array');
 }
 
@@ -1794,276 +1794,6 @@ export const transferNFTAA = async (
   );
 };
 
-// Create tournament in TournamentHub
-export const createTournamentAA = async (
-  accountSigner,
-  name,
-  prizePool,
-  token,
-  paymentType = 0,
-  options = { gasMultiplier: 100 }
-) => {
-  const opKey = generateOperationKey('createTournamentAA', [
-    await accountSigner.getAddress(),
-    name,
-    prizePool.toString(),
-    token,
-    paymentType,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.tournamentHub,
-        TournamentHub,
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('createTournament', [
-        name,
-        prizePool,
-        token
-      ]);
-      const userOp = await builder.execute(
-        TESTNET_CONFIG.smartContracts.tournamentHub,
-        token === '0x0000000000000000000000000000000000000000' ? prizePool : 0, // NERO value
-        callData
-      );
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    token,
-    options
-  );
-};
-
-// Join a tournament in TournamentHub
-export const joinTournamentAA = async (
-  accountSigner,
-  tournamentId,
-  paymentType = 0,
-  options = { gasMultiplier: 100 }
-) => {
-  const opKey = generateOperationKey('joinTournamentAA', [
-    await accountSigner.getAddress(),
-    tournamentId,
-    paymentType,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.tournamentHub,
-        TournamentHub,
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('joinTournament', [tournamentId]);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    '',
-    options
-  );
-};
-
-// Submit tournament score to TournamentHub
-export const submitTournamentScoreAA = async (
-  accountSigner,
-  tournamentId,
-  score,
-  signature,
-  paymentType = 0,
-  options = { gasMultiplier: 100 }
-) => {
-  const opKey = generateOperationKey('submitTournamentScoreAA', [
-    await accountSigner.getAddress(),
-    tournamentId,
-    score,
-    signature,
-    paymentType,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.tournamentHub,
-        TournamentHub,
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('submitTournamentScore', [
-        tournamentId,
-        score,
-        signature
-      ]);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    '',
-    options
-  );
-};
-
-// Force end tournament in TournamentHub (creator only, demo mode)
-export const forceEndTournamentAA = async (
-  accountSigner,
-  tournamentId,
-  paymentType = 0,
-  options = { gasMultiplier: 100 }
-) => {
-  const opKey = generateOperationKey('forceEndTournamentAA', [
-    await accountSigner.getAddress(),
-    tournamentId,
-    paymentType,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.tournamentHub,
-        TournamentHub,
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('forceEndTournament', [tournamentId]);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    '',
-    options
-  );
-};
-
-// Finalize tournament in TournamentHub (automatic distribution)
-export const finalizeTournamentAA = async (
-  accountSigner,
-  tournamentId,
-  paymentType = 0, // Changed default to 0 (user pays gas)
-  options = { gasMultiplier: 100 }
-) => {
-  const opKey = generateOperationKey('finalizeTournamentAA', [
-    await accountSigner.getAddress(),
-    tournamentId,
-    paymentType,
-    options?.gasMultiplier || 100
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.tournamentHub,
-        TournamentHub,
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('finalizeTournament', [tournamentId]);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.tournamentHub, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt
-      };
-    },
-    paymentType,
-    '',
-    options
-  );
-};
-
-// Get tournament info
-export const getTournamentInfo = async (tournamentId, userAddress) => {
-  const provider = getProvider();
-  const contract = new ethers.Contract(
-    TESTNET_CONFIG.smartContracts.tournamentHub,
-    TournamentHub,
-    provider
-  );
-  const info = await contract.getTournamentInfo(tournamentId, userAddress);
-  return {
-    id: Number(info.id),
-    creator: info.creator,
-    name: info.name,
-    prizePool: ethers.formatUnits(info.prizePool, 18), // Adjust decimals in frontend
-    token: info.token,
-    startTime: Number(info.startTime) * 1000, // Convert to milliseconds
-    endTime: Number(info.endTime) * 1000,
-    participants: info.participants,
-    isActive: info.isActive,
-    prizesDistributed: info.prizesDistributed,
-    participantScore: Number(info.participantScore),
-    isParticipant: info.isParticipant
-  };
-};
-
-// Get active tournament IDs
-export const getActiveTournamentIds = async () => {
-  const provider = getProvider();
-  const contract = new ethers.Contract(
-    TESTNET_CONFIG.smartContracts.tournamentHub,
-    TournamentHub,
-    provider
-  );
-  const ids = await contract.getActiveTournamentIds();
-  return ids.map(id => Number(id));
-};
-
-// Get user-created tournaments
-export const getUserCreatedTournaments = async (userAddress) => {
-  const provider = getProvider();
-  const contract = new ethers.Contract(
-    TESTNET_CONFIG.smartContracts.tournamentHub,
-    TournamentHub,
-    provider
-  );
-  const ids = await contract.getUserCreatedTournaments(userAddress);
-  return ids.map(id => Number(id));
-};
-
-// Get user-joined tournaments
-export const getUserJoinedTournaments = async (userAddress) => {
-  const provider = getProvider();
-  const contract = new ethers.Contract(
-    TESTNET_CONFIG.smartContracts.tournamentHub,
-    TournamentHub,
-    provider
-  );
-  const ids = await contract.getUserJoinedTournaments(userAddress);
-  return ids.map(id => Number(id));
-};
 
 // Check if a token is allowed
 export const isTokenAllowed = async (tokenAddress) => {
@@ -2486,13 +2216,6 @@ export const addAdminAA = async (
     ["function isOwner() view returns (bool)"],
     getProvider()
   );
-  // const isOwner = await contract.connect(accountSigner).isOwner();
-  // if (!isOwner) {
-  //   throw new Error(`AA wallet ${aaWalletAddress} is not the owner`);
-  // }
-  // if (!ethers.isAddress(admin)) {
-  //   throw new Error(`Invalid admin address: ${admin}`);
-  // }
 
   const opKey = generateOperationKey('addAdminAA', [
     await accountSigner.getAddress(),
@@ -2629,234 +2352,157 @@ export const removeAdminAA = async (
   );
 };
 
-export const setPointsToTokensRateAA = async (
-  accountSigner: ethers.Signer,
-  newRate: number,
-  paymentType: number = 0,
-  selectedToken: string = '',
-  options?: { apiKey?: string; gasMultiplier?: number }
-) => {
-  const aaWalletAddress = await getAAWalletAddress(accountSigner);
-  const contract = new ethers.Contract(
-    TESTNET_CONFIG.smartContracts.pointsSystem,
-    ["function isAdmin(address) view returns (bool)"],
-    getProvider()
-  );
-  if (!(await contract.isAdmin(aaWalletAddress))) {
-    throw new Error(`AA wallet ${aaWalletAddress} is not an admin`);
-  }
-  if (newRate <= 0) {
-    throw new Error(`Invalid rate: ${newRate}`);
-  }
 
-  const opKey = generateOperationKey('setPointsToTokensRateAA', [
-    await accountSigner.getAddress(),
-    newRate,
-    paymentType,
-    selectedToken,
-    options?.gasMultiplier || 100,
-  ]);
-  return executeOperation(
-    opKey,
-    accountSigner,
-    async (client, builder) => {
-      if (API_OPTIMIZATION.debugLogs) {
-        console.log(`Setting points to tokens rate to ${newRate}`);
-      }
-      const contract = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.pointsSystem,
-        ["function setPointsToTokensRate(uint256 _newRate) external"],
-        getProvider()
-      );
-      const callData = contract.interface.encodeFunctionData('setPointsToTokensRate', [newRate]);
-      const userOp = await builder.execute(TESTNET_CONFIG.smartContracts.pointsSystem, 0, callData);
-      const res = await client.sendUserOperation(userOp);
-      if (API_OPTIMIZATION.debugLogs) {
-        console.log(`UserOperation sent: ${res.userOpHash}`);
-      }
-      const receipt = await res.wait();
-      return {
-        userOpHash: res.userOpHash,
-        transactionHash: receipt?.transactionHash,
-        receipt,
-      };
-    },
-    paymentType,
-    selectedToken,
-    options
-  );
-};
-
-// Snake Tournament Functions
-export const createSnakeTournamentAA = async (
+// Create a tournament
+export const createTournamentAA = async (
   accountSigner: ethers.Signer,
   name: string,
-  duration: number, // in minutes
-  paymentType: number = 0,
-  selectedToken: string = '',
+  gameType: string, // "Snake" or "Tetris"
+  tournamentType: string, // "Standard", "TimeDash", etc.
+  challengeParam: number | string,
+  prizePool: bigint | number | string,
   options: any = {}
 ) => {
-  const operationKey = `createSnakeTournament_${Date.now()}`;
+  const operationKey = `createTournament:${name}:${gameType}:${tournamentType}:${challengeParam}:${prizePool}`;
   return executeOperation(
     operationKey,
     accountSigner,
     async (client, builder) => {
-      const snakeTournament = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.snakeTournament,
-        SnakeGame,
+      const tournamentHub = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHubABI,
         accountSigner
       );
-
-      const tx = await snakeTournament.createTournament(duration);
+      const value = BigInt(prizePool);
+      const tx = await tournamentHub.createTournament(
+        name,
+        gameType,
+        tournamentType,
+        challengeParam,
+        { value }
+      );
       const receipt = await tx.wait();
-
       return {
         transactionHash: receipt.transactionHash,
-        tournamentId: receipt.events?.[0]?.args?.tournamentId?.toString(),
-        receipt,
+        receipt
       };
     },
-    paymentType,
-    selectedToken,
+    0, // sponsorship
+    '',
     options
   );
 };
 
-export const joinSnakeTournamentAA = async (
+// Join a tournament
+export const joinTournamentAA = async (
   accountSigner: ethers.Signer,
-  tournamentId: string,
-  paymentType: number = 0,
-  selectedToken: string = '',
+  tournamentId: number,
   options: any = {}
 ) => {
-  const operationKey = `joinSnakeTournament_${tournamentId}_${Date.now()}`;
+  const operationKey = `joinTournament:${tournamentId}`;
   return executeOperation(
     operationKey,
     accountSigner,
     async (client, builder) => {
-      const snakeTournament = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.snakeTournament,
-        SnakeGame,
+      const tournamentHub = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHubABI,
         accountSigner
       );
-
-      const tx = await snakeTournament.joinTournament(tournamentId);
+      const tx = await tournamentHub.joinTournament(tournamentId);
       const receipt = await tx.wait();
-
       return {
         transactionHash: receipt.transactionHash,
-        receipt,
+        receipt
       };
     },
-    paymentType,
-    selectedToken,
+    0,
+    '',
     options
   );
 };
 
-export const submitSnakeScoreAA = async (
+// Submit a score
+export const submitScoreAA = async (
   accountSigner: ethers.Signer,
-  tournamentId: string,
+  tournamentId: number,
   score: number,
-  paymentType: number = 0,
-  selectedToken: string = '',
   options: any = {}
 ) => {
-  const operationKey = `submitSnakeScore_${tournamentId}_${Date.now()}`;
+  const operationKey = `submitScore:${tournamentId}:${score}`;
   return executeOperation(
     operationKey,
     accountSigner,
     async (client, builder) => {
-      const snakeTournament = new ethers.Contract(
-        TESTNET_CONFIG.smartContracts.snakeTournament,
-        SnakeGame,
+      const tournamentHub = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHubABI,
         accountSigner
       );
-
-      const tx = await snakeTournament.submitScore(tournamentId, score);
+      const tx = await tournamentHub.submitScore(tournamentId, score);
       const receipt = await tx.wait();
-
       return {
         transactionHash: receipt.transactionHash,
-        receipt,
+        receipt
       };
     },
-    paymentType,
-    selectedToken,
+    0,
+    '',
     options
   );
 };
 
-export const getSnakeTournamentInfo = async (tournamentId: string) => {
-  try {
-    const provider = getProvider();
-    const snakeTournament = new ethers.Contract(
-      TESTNET_CONFIG.smartContracts.snakeTournament,
-      SnakeGame,
-      provider
-    );
-
-    const info = await snakeTournament.tournaments(tournamentId);
-    const participants = await snakeTournament.getParticipants(tournamentId);
-
-    return {
-      id: tournamentId,
-      startTime: Number(info.startTime) * 1000, // Convert to milliseconds
-      endTime: Number(info.endTime) * 1000,
-      isActive: info.isActive,
-      isFinished: info.isFinished,
-      prizePool: info.prizePool.toString(),
-      participants: participants || [],
-    };
-  } catch (error) {
-    console.error('Error getting tournament info:', error);
-    throw error;
-  }
+// End a tournament
+export const endTournamentAA = async (
+  accountSigner: ethers.Signer,
+  tournamentId: number,
+  options: any = {}
+) => {
+  const operationKey = `endTournament:${tournamentId}`;
+  return executeOperation(
+    operationKey,
+    accountSigner,
+    async (client, builder) => {
+      const tournamentHub = new ethers.Contract(
+        TESTNET_CONFIG.smartContracts.tournamentHub,
+        TournamentHubABI,
+        accountSigner
+      );
+      const tx = await tournamentHub.endTournament(tournamentId);
+      const receipt = await tx.wait();
+      return {
+        transactionHash: receipt.transactionHash,
+        receipt
+      };
+    },
+    0,
+    '',
+    options
+  );
 };
 
-export const getActiveSnakeTournaments = async () => {
-  try {
-    const provider = getProvider();
-    const snakeTournament = new ethers.Contract(
-      TESTNET_CONFIG.smartContracts.snakeTournament,
-      SnakeGame,
-      provider
-    );
-
-    const currentId = await snakeTournament.currentTournamentId();
-    const activeTournaments = [];
-
-    for (let i = 1; i <= currentId; i++) {
-      const tournament = await snakeTournament.tournaments(i);
-      if (tournament.isActive && !tournament.isFinished) {
-        const participants = await snakeTournament.getParticipants(i);
-        activeTournaments.push({
-          id: i.toString(),
-          startTime: Number(tournament.startTime) * 1000,
-          endTime: Number(tournament.endTime) * 1000,
-          prizePool: tournament.prizePool.toString(),
-          participantCount: participants?.length || 0,
-        });
-      }
-    }
-
-    return activeTournaments;
-  } catch (error) {
-    console.error('Error getting active tournaments:', error);
-    throw error;
-  }
+// Get tournament info
+export const getTournamentInfoAA = async (
+  tournamentId: number,
+  provider?: ethers.Provider
+) => {
+  provider = provider || getProvider();
+  const tournamentHub = new ethers.Contract(
+    TESTNET_CONFIG.smartContracts.tournamentHub,
+    TournamentHubABI,
+    provider
+  );
+  const info = await tournamentHub.getTournamentInfo(tournamentId);
+  return {
+    name: info[0],
+    gameType: info[1],
+    tournamentType: info[2],
+    challengeParam: info[3],
+    creator: info[4],
+    prizePool: info[5],
+    startTime: Number(info[6]) * 1000,
+    endTime: Number(info[7]) * 1000,
+    isActive: info[8],
+    participants: info[9],
+  };
 };
-
-// Add SnakeTournament ABI at the top of the file with other imports
-// import SnakeTournament from '../abi/SnakeTournament.json';
-
-// And add this to the existing ABI validation section
-// if (!SnakeTournament || !Array.isArray(SnakeTournament)) {
-//   console.error('Invalid SnakeTournament ABI:', SnakeTournament);
-//   throw new Error('SnakeTournament ABI is not a valid ABI array');
-// }
-
-// Dev helper to clear all AA caches from console
-if (typeof window !== 'undefined') {
-  (window as any).clearAACache = clearAACache;
-}

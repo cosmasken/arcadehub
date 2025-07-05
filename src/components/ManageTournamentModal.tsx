@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useToast } from '../hooks/use-toast';
 import { Settings, Coins, Users, Calendar, Trophy, Plus, Edit, Square } from 'lucide-react';
 import useWalletStore from '../stores/useWalletStore';
-import { addFundsAA, forceEndTournamentAA, finalizeTournamentAA } from '../lib/aaUtils';
+import { addFundsAA } from '../lib/aaUtils';
 import { ethers } from 'ethers';
 import { decodeError } from '../lib/utils';
 
@@ -79,58 +79,58 @@ const ManageTournamentModal = ({ isOpen, onClose, tournament }: ManageTournament
     }
   };
 
-  const handleTournamentAction = async (action) => {
-    setIsLoading(true);
-    try {
-      if (!aaSigner) throw new Error("Wallet not connected.");
-      let result;
-      if (action === 'end') {
-        result = await forceEndTournamentAA(aaSigner, tournament.id, 0);
-        toast({
-          title: "Tournament Ended",
-          description: (
-            <span>
-              Tournament {tournament.title} ended.
-              <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
-                View on Etherscan
-              </a>
-            </span>
-          ),
-          className: "bg-green-400 text-black border-green-400"
-        });
-      } else if (action === 'finalize') {
-        result = await finalizeTournamentAA(aaSigner, tournament.id, 0);
-        toast({
-          title: "Tournament Finalized",
-          description: (
-            <span>
-              Prizes for {tournament.title} distributed.
-              <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
-                View on Etherscan
-              </a>
-            </span>
-          ),
-          className: "bg-green-400 text-black border-green-400"
-        });
-      } else if (action === 'edit') {
-        toast({
-          title: "Edit Not Supported",
-          description: "Editing tournaments is not yet implemented.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-    } catch (error) {
-      toast({
-        title: `${action} Failed`,
-        description: decodeError(error),
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const handleTournamentAction = async (action) => {
+  //   setIsLoading(true);
+  //   try {
+  //     if (!aaSigner) throw new Error("Wallet not connected.");
+  //     let result;
+  //     if (action === 'end') {
+  //       result = await endTournamentAA(aaSigner, tournament.id, 0);
+  //       toast({
+  //         title: "Tournament Ended",
+  //         description: (
+  //           <span>
+  //             Tournament {tournament.title} ended.
+  //             <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+  //               View on Etherscan
+  //             </a>
+  //           </span>
+  //         ),
+  //         className: "bg-green-400 text-black border-green-400"
+  //       });
+  //     } else if (action === 'finalize') {
+  //       result = await finalizeTournamentAA(aaSigner, tournament.id, 0);
+  //       toast({
+  //         title: "Tournament Finalized",
+  //         description: (
+  //           <span>
+  //             Prizes for {tournament.title} distributed.
+  //             <a href={`https://testnet.neroscan.io/tx/${result.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+  //               View on Etherscan
+  //             </a>
+  //           </span>
+  //         ),
+  //         className: "bg-green-400 text-black border-green-400"
+  //       });
+  //     } else if (action === 'edit') {
+  //       toast({
+  //         title: "Edit Not Supported",
+  //         description: "Editing tournaments is not yet implemented.",
+  //         variant: "destructive"
+  //       });
+  //       setIsLoading(false);
+  //       return;
+  //     }
+  //   } catch (error) {
+  //     toast({
+  //       title: `${action} Failed`,
+  //       description: decodeError(error),
+  //       variant: "destructive"
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -233,7 +233,7 @@ const ManageTournamentModal = ({ isOpen, onClose, tournament }: ManageTournament
                 TOURNAMENT_CONTROLS
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            {/* <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {tournament.status === 'live' && (
                   <Button
@@ -265,7 +265,7 @@ const ManageTournamentModal = ({ isOpen, onClose, tournament }: ManageTournament
                   EDIT
                 </Button>
               </div>
-            </CardContent>
+            </CardContent> */}
           </Card>
           <Card className="bg-black border-2 border-green-400">
             <CardHeader>

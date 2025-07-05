@@ -4,17 +4,23 @@ import { GameProvider, useGame } from './context';
 import { GameStateProvider, useGameState } from './context/GameStateContext';
 import useWalletStore from '../../stores/useWalletStore';
 import { GameBoard, StatsPanel, Shop, Achievements } from './components';
+import Leaderboard from './components/Leaderboard';
 import ProgressBar from '../../components/ProgressBar';
 import { toast } from '../../hooks/use-toast';
 import { LEVELS, ACHIEVEMENTS } from './constants';
 import { getActiveTournamentIdByName } from '../../lib/tournamentUtils';
-import { joinTournamentAA, submitTournamentScoreAA } from '../../lib/aaUtils';
+import { joinTournamentAA, submitScoreAA } from '../../lib/aaUtils';
+import { useNavigate } from 'react-router-dom';
 
 // Inner component to handle game UI
 const GameUI: React.FC = () => {
   const { state, startGame, pauseGame, resetGame, changeDirection } = useGame();
   const [tournamentId, setTournamentId] = React.useState<number | null>(null);
   const prevAchievements = React.useRef<string[]>([]);
+  // --- Local UI state for leaderboard modal ---
+  const [showLeaderboard, setShowLeaderboard] = React.useState(false);
+  const navigate = useNavigate();
+
   // Show toast on new achievement
   useEffect(() => {
     if (prevAchievements.current.length === 0) {
@@ -54,7 +60,7 @@ const GameUI: React.FC = () => {
   useEffect(() => {
     if (!aaSigner || tournamentId === null || hasJoinedRef.current) return;
     hasJoinedRef.current = true;
-    joinTournamentAA(aaSigner, tournamentId, 0, { gasMultiplier: 1.5 }).catch(() => {
+    joinTournamentAA(aaSigner, tournamentId, { gasMultiplier: 1.5 }).catch(() => {
       /* ignore duplicate join errors */
     });
   }, [aaSigner, tournamentId]);
@@ -63,12 +69,10 @@ const GameUI: React.FC = () => {
   useEffect(() => {
     if (!aaSigner || !state.gameOver || tournamentId === null || hasSubmittedRef.current) return;
     hasSubmittedRef.current = true;
-    submitTournamentScoreAA(
+    submitScoreAA(
       aaSigner,
       tournamentId,
       state.score,
-      "0x", // Empty signature in demo mode
-      0,
       { gasMultiplier: 1.5 }
     ).catch(console.error);
   }, [aaSigner, state.gameOver, state.score, tournamentId]);
@@ -181,7 +185,7 @@ const GameUI: React.FC = () => {
   }, [state.isStarted, state.gameOver, startGame, pauseGame, resetGame, handleStartGame, gameState.ui.isInitialized, gameState.ui.shopOpen, gameState.ui.settingsOpen, gameState.settings.useWASD, openShop, openSettings, openAchievements, playSound]);
 
   const handleBack = () => {
-    window.location.href = '/';
+    navigate('/');
   };
 
   return (
@@ -359,21 +363,19 @@ const GameUI: React.FC = () => {
         {/* Achievements Modal */}
         {gameState.ui.achievementsOpen && (
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 transition-all duration-300">
-            <div className="bg-gray-900/95 rounded-lg border border-cyan-400/30 max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden transform transition-all duration-300 scale-100 animate-in">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-cyan-400">🏆 ACHIEVEMENTS</h2>
-                  <button
-                    onClick={() => { closeAchievements(); playSound('click'); }}
-                    className="text-gray-400 hover:text-gray-200 text-3xl font-bold transition-colors duration-200"
-                  >
-                    ×
-                  </button>
-                </div>
+            <div className="bg-gray-900/95 rounded-lg border border-cyan-400/30 max-w-md w-full mx-4 p-6 transform transition-all duration-300 scale-100 animate-in">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-cyan-400">🏆 ACHIEVEMENTS</h2>
+                <button
+                  onClick={() => { closeAchievements(); playSound('click'); }}
+                  className="text-gray-400 hover:text-gray-200 text-2xl font-bold transition-colors duration-200"
+                >
+                  ×
+                </button>
+              </div>
 
-                <div className="overflow-y-auto max-h-[60vh]">
-                  <Achievements />
-                </div>
+              <div className="overflow-y-auto max-h-[60vh]">
+                <Achievements />
               </div>
             </div>
           </div>

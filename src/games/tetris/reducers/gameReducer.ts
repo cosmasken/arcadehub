@@ -1,9 +1,67 @@
 import { GameState, GameAction } from '../types';
 import { COLS, ROWS, SHAPES, POINTS, LEVELS } from '../constants';
+import { createBoard,getRandomPiece } from '../initialState';
+import { rotatePiece, hardDrop,holdPiece,lockPiece,spawnNewPiece,buyItem } from '../utils/gameReducers';
+
+// Helper function to create initial state while preserving certain values from previous state
+const createInitialState = (state: GameState): GameState => {
+  // Preserve only the high score from the previous state
+  const highScore = state.stats?.highScore || 0;
+  
+  return {
+    // Start with a clean board
+    board: createBoard(),
+    currentPiece: null,
+    nextPieces: Array(3).fill(0).map(getRandomPiece),
+    holdPiece: null,
+    canHold: true,
+    
+    // Reset all game state flags
+    gameOver: false,
+    isPaused: false,
+    isStarted: false,
+    
+    // Reset all stats but preserve high score
+    stats: {
+      score: 0,
+      highScore: Math.max(state.stats?.score || 0, highScore),
+      level: 1,
+      linesCleared: 0,
+      tetrisCount: 0,
+      totalPieces: 0,
+      startTime: Date.now(),
+      gameTime: 0,
+      lastLevelUp: 0,
+      // Preserve achievements and inventory from previous state
+      achievements: state.stats?.achievements || [],
+      inventory: state.stats?.inventory || {},
+      coins: state.stats?.coins || 0
+    },
+    
+    // Preserve settings from previous state
+    settings: {
+      ghostPiece: state.settings?.ghostPiece !== undefined ? state.settings.ghostPiece : true,
+      holdPiece: state.settings?.holdPiece !== undefined ? state.settings.holdPiece : true,
+      nextPiecesCount: state.settings?.nextPiecesCount || 3,
+      theme: state.settings?.theme || 'default',
+      soundEnabled: state.settings?.soundEnabled !== undefined ? state.settings.soundEnabled : true,
+      musicEnabled: state.settings?.musicEnabled !== undefined ? state.settings.musicEnabled : true,
+      controls: state.settings?.controls || {
+        moveLeft: 'ArrowLeft',
+        moveRight: 'ArrowRight',
+        rotate: 'ArrowUp',
+        softDrop: 'ArrowDown',
+        hardDrop: 'Space',
+        hold: 'KeyC',
+        pause: 'KeyP'
+      }
+    }
+  };
+};
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
-    case 'MOVE_LEFT':
+    case 'MOVE_LEFT': {
       if (!state.currentPiece || state.gameOver || state.isPaused) return state;
       const leftPosition = {
         ...state.currentPiece.position,
@@ -19,8 +77,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         };
       }
       return state;
+    }
 
-    case 'MOVE_RIGHT':
+    case 'MOVE_RIGHT': {
       if (!state.currentPiece || state.gameOver || state.isPaused) return state;
       const rightPosition = {
         ...state.currentPiece.position,
@@ -36,11 +95,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         };
       }
       return state;
+    }
 
-    case 'ROTATE':
+    case 'ROTATE': {
       return rotatePiece(state);
+    }
 
-    case 'SOFT_DROP':
+    case 'SOFT_DROP': {
       if (!state.currentPiece || state.gameOver || state.isPaused) return state;
       const downPosition = {
         ...state.currentPiece.position,
@@ -60,41 +121,25 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         };
       }
       return state;
+    }
 
-    case 'HARD_DROP':
+    case 'HARD_DROP': {
       return hardDrop(state);
+    }
 
-    case 'HOLD':
+    case 'HOLD': {
       return holdPiece(state);
+    }
 
-    case 'PAUSE':
+    case 'PAUSE': {
       return { ...state, isPaused: !state.isPaused };
+    }
 
-    case 'RESET':
-      return {
-        ...state,
-        board: createBoard(),
-        currentPiece: null,
-        nextPieces: Array(3).fill(0).map(getRandomPiece),
-        holdPiece: null,
-        canHold: true,
-        gameOver: false,
-        isPaused: false,
-        isStarted: false,
-        stats: {
-          ...state.stats,
-          score: 0,
-          level: 1,
-          linesCleared: 0,
-          tetrisCount: 0,
-          totalPieces: 0,
-          startTime: Date.now(),
-          gameTime: 0,
-          lastLevelUp: 0,
-        },
-      };
+    case 'RESET': {
+      return createInitialState(state);
+    }
 
-    case 'START':
+    case 'START': {
       return {
         ...state,
         isStarted: true,
@@ -104,8 +149,9 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
           startTime: Date.now(),
         },
       };
+    }
 
-    case 'TICK':
+    case 'TICK': {
       if (!state.currentPiece) {
         return spawnNewPiece(state);
       }
@@ -123,12 +169,15 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         };
       }
       return lockPiece(state);
+    }
 
-    case 'BUY_ITEM':
+    case 'BUY_ITEM': {
       return buyItem(state, action.itemId);
+    }
 
-    default:
+    default: {
       return state;
+    }
   }
 };
 

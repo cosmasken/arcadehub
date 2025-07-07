@@ -10,15 +10,21 @@ import HoldPiece from './components/HoldPiece';
 import NextPieces from './components/NextPieces';
 import BackButton from './components/BackButton';
 import { Link } from 'react-router-dom';
-import {ChevronLeft} from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import useWalletStore from '../../stores/useWalletStore';
 import { getActiveTournamentIdByName } from '../../lib/tournamentUtils';
 import { joinTournamentAA, submitScoreAA } from '../../lib/aaUtils';
 import { useLocalStorage } from '../../hooks/useLocalStorage';
 import type { GameState } from './types';
 import { useNavigate } from 'react-router-dom';
-import { TouchControls } from './components/TouchControls';
+import TouchControls from './components/TouchControls';
 import { useMediaQuery } from 'react-responsive';
+import {
+  getGameStatus,
+  shouldShowMenu,
+  canAcceptInput,
+  getScoreDisplay
+} from './utils/gameStateUtils';
 // Local game status for the UI
 enum GameStatus {
   START = 'start',
@@ -56,9 +62,9 @@ const GameUI: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching Tetris tournament ID:', error);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Tournament Error', 
+      toast({
+        variant: 'destructive',
+        title: 'Tournament Error',
         description: 'Could not fetch tournament details. Please try again later.'
       });
     }
@@ -72,21 +78,21 @@ const GameUI: React.FC = () => {
   // Memoized tournament joining function
   const joinTournament = useCallback(async () => {
     if (!aaSigner || tournamentId === null || hasJoinedRef.current) return;
-    
+
     try {
       hasJoinedRef.current = true;
       await joinTournamentAA(aaSigner, tournamentId, { gasMultiplier: 1.5 });
-      toast({ 
-        title: 'Tournament Joined', 
+      toast({
+        title: 'Tournament Joined',
         description: 'You have successfully joined the Tetris tournament!'
       });
     } catch (error) {
       console.error('Error joining tournament:', error);
       // Reset the flag so user can try again
       hasJoinedRef.current = false;
-      toast({ 
-        variant: 'destructive', 
-        title: 'Tournament Error', 
+      toast({
+        variant: 'destructive',
+        title: 'Tournament Error',
         description: 'Failed to join the tournament. Please try again.'
       });
     }
@@ -120,7 +126,7 @@ const GameUI: React.FC = () => {
 
   // Load controls from localStorage or use defaults
   const [controls, setControls] = useLocalStorage<ControlSettings>('tetris-controls', defaultControls);
-  
+
   // Merge with defaults to ensure all controls are set
   const effectiveControls = useCallback(() => ({
     ...defaultControls,
@@ -130,7 +136,7 @@ const GameUI: React.FC = () => {
   // Memoized score submission function
   const submitScore = useCallback(async () => {
     if (!aaSigner || !state.gameOver || tournamentId === null || hasSubmittedRef.current) return;
-    
+
     try {
       hasSubmittedRef.current = true;
       await submitScoreAA(
@@ -139,17 +145,17 @@ const GameUI: React.FC = () => {
         state.stats.score,
         { gasMultiplier: 1.5 }
       );
-      toast({ 
-        title: 'Score Submitted', 
+      toast({
+        title: 'Score Submitted',
         description: `Your score of ${state.stats.score.toLocaleString()} has been submitted to the tournament!`
       });
     } catch (error) {
       console.error('Error submitting score:', error);
       // Reset the flag so user can try again
       hasSubmittedRef.current = false;
-      toast({ 
-        variant: 'destructive', 
-        title: 'Score Submission Error', 
+      toast({
+        variant: 'destructive',
+        title: 'Score Submission Error',
         description: 'Failed to submit your score. Please try again.'
       });
     }
@@ -160,75 +166,58 @@ const GameUI: React.FC = () => {
     submitScore();
   }, [submitScore]);
 
-  // Determine game status based on state
-  const getGameStatus = useCallback((): 'start' | 'playing' | 'paused' | 'gameOver' => {
-    if (state.gameOver) return 'gameOver';
-    if (state.isPaused) return 'paused';
-    return state.isStarted ? 'playing' : 'start';
-  }, [state.gameOver, state.isPaused, state.isStarted]);
+  // Determine game status based on state using utility
+  const currentStatus = getGameStatus(state);
+  const showMenu = shouldShowMenu(state);
+  const acceptInput = canAcceptInput(state);
+  const scoreDisplay = getScoreDisplay(state);
 
-  // Handle keyboard input based on current controls using a more efficient approach
+  // Handle keyboard input with improved logic
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    const gameStatus = getGameStatus();
-    if (gameStatus === GameStatus.PAUSED || gameStatus === GameStatus.GAME_OVER) {
-      return;
-    }
+    // Only accept input when game is actively playing
+    if (!acceptInput) return;
 
     const currentControls = effectiveControls();
-    
+
     // Handle both key and code for better compatibility
     const key = e.key || e.code;
     const code = e.code;
-    
-    // Define action mappings for better maintainability and performance
-    // Use proper action types from GameAction union type
-    const actionMap: Record<string, { type: 'MOVE_LEFT' | 'MOVE_RIGHT' | 'ROTATE' | 'SOFT_DROP' | 'HARD_DROP' | 'HOLD' | 'PAUSE' | 'RESET'; condition?: () => boolean }> = {
+
+    // Define action mappings for better maintainability
+    const actionMap: Record<string, { type: 'MOVE_LEFT' | 'MOVE_RIGHT' | 'ROTATE' | 'SOFT_DROP' | 'HARD_DROP' | 'HOLD' | 'PAUSE'; condition?: () => boolean }> = {
       [currentControls.rotate]: { type: 'ROTATE' },
       [currentControls.moveLeft]: { type: 'MOVE_LEFT' },
       [currentControls.moveRight]: { type: 'MOVE_RIGHT' },
       [currentControls.softDrop]: { type: 'SOFT_DROP' },
       [currentControls.hardDrop]: { type: 'HARD_DROP' },
-      'Space': { type: 'HARD_DROP' }, // Special case for space bar
+      'Space': { type: 'HARD_DROP' },
       [currentControls.hold]: { type: 'HOLD' },
-      [currentControls.pause]: { 
+      [currentControls.pause]: {
         type: 'PAUSE',
-        condition: () => {
-          const currentStatus = getGameStatus();
-          if (currentStatus === 'playing') {
-            return true;
-          } else if (currentStatus === 'paused') {
-            dispatch({ type: 'RESET' });
-            return false;
-          }
-          return false;
-        }
-      },
-      'KeyP': { 
-        type: 'PAUSE',
-        condition: () => key.toLowerCase() === 'p' && getGameStatus() === 'playing'
+        condition: () => currentStatus === 'playing'
       }
     };
-    
+
     // Check for matching key or code
     const action = actionMap[key] || actionMap[code];
-    
+
     if (action) {
       e.preventDefault();
-      
+
       // If there's a condition function, check it first
       if (action.condition === undefined || action.condition()) {
         dispatch({ type: action.type });
       }
     }
-  }, [dispatch, effectiveControls, getGameStatus]);
+  }, [dispatch, effectiveControls, acceptInput, currentStatus]);
 
   // Handle touch gestures for mobile controls
-  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
-  
+  const [touchStart, setTouchStart] = useState<{ x: number, y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number, y: number } | null>(null);
+
   // Minimum distance for a swipe to be registered
   const minSwipeDistance = 50;
-  
+
   const handleTouchStart = useCallback((e: TouchEvent) => {
     setTouchEnd(null); // Reset touchEnd
     const firstTouch = e.touches[0];
@@ -237,7 +226,7 @@ const GameUI: React.FC = () => {
       y: firstTouch.clientY
     });
   }, []);
-  
+
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!touchStart) return;
     const firstTouch = e.touches[0];
@@ -246,40 +235,29 @@ const GameUI: React.FC = () => {
       y: firstTouch.clientY
     });
   }, [touchStart]);
-  
+
   const handleTouchEnd = useCallback(() => {
-    if (!touchStart || !touchEnd) return;
-    
-    const gameStatus = getGameStatus();
-    if (gameStatus === GameStatus.PAUSED || gameStatus === GameStatus.GAME_OVER) {
-      setTouchStart(null);
-      setTouchEnd(null);
-      return;
-    }
-    
+    if (!touchStart || !touchEnd || !acceptInput) return;
+
     const distX = touchEnd.x - touchStart.x;
     const distY = touchEnd.y - touchStart.y;
     const absDistX = Math.abs(distX);
     const absDistY = Math.abs(distY);
-    
+
     // Detect swipe direction if it exceeds minimum distance
     if (Math.max(absDistX, absDistY) > minSwipeDistance) {
       // More horizontal than vertical swipe
       if (absDistX > absDistY) {
         if (distX > 0) {
-          // Right swipe
           dispatch({ type: 'MOVE_RIGHT' });
         } else {
-          // Left swipe
           dispatch({ type: 'MOVE_LEFT' });
         }
       } else {
         // More vertical than horizontal swipe
         if (distY > 0) {
-          // Down swipe
           dispatch({ type: 'SOFT_DROP' });
         } else {
-          // Up swipe - rotate
           dispatch({ type: 'ROTATE' });
         }
       }
@@ -287,42 +265,42 @@ const GameUI: React.FC = () => {
       // Short tap - rotate piece
       dispatch({ type: 'ROTATE' });
     }
-    
+
     // Reset touch points
     setTouchStart(null);
     setTouchEnd(null);
-  }, [touchStart, touchEnd, dispatch, getGameStatus]);
-  
+  }, [touchStart, touchEnd, dispatch, acceptInput]);
+
   // Double tap handler for hard drop
   const [lastTap, setLastTap] = useState<number>(0);
   const handleDoubleTap = useCallback((e: TouchEvent) => {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTap;
-    
+
     if (tapLength < 300 && tapLength > 0) {
       // Double tap detected
       dispatch({ type: 'HARD_DROP' });
       e.preventDefault(); // Prevent zoom
     }
-    
+
     setLastTap(currentTime);
   }, [lastTap, dispatch]);
-  
+
   // Set up keyboard and touch event listeners
   useEffect(() => {
     // Keyboard controls
     window.addEventListener('keydown', handleKeyDown);
-    
+
     // Touch controls
     window.addEventListener('touchstart', handleTouchStart);
     window.addEventListener('touchmove', handleTouchMove);
     window.addEventListener('touchend', handleTouchEnd);
     window.addEventListener('touchstart', handleDoubleTap);
-    
+
     return () => {
       // Cleanup keyboard controls
       window.removeEventListener('keydown', handleKeyDown);
-      
+
       // Cleanup touch controls
       window.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchmove', handleTouchMove);
@@ -333,22 +311,22 @@ const GameUI: React.FC = () => {
 
   const [highScore, setHighScore] = useLocalStorage('tetris-highscore', 0);
   const { isConnected } = useWalletStore();
-  
+
   // Detect if device is mobile for showing touch controls
   const isMobile = useMediaQuery({ maxWidth: 768 });
   const [showTouchControls, setShowTouchControls] = useState(false);
-  
-  // Only show touch controls on mobile devices and when the game is actually playing
+
+  // Only show touch controls on mobile devices and when the game is actively playing
   useEffect(() => {
-    setShowTouchControls(isMobile && state.isStarted && !state.isPaused && !state.gameOver);
-  }, [isMobile, state.isStarted, state.isPaused, state.gameOver]);
+    setShowTouchControls(isMobile && acceptInput);
+  }, [isMobile, acceptInput]);
 
   // Effects
   useEffect(() => {
-    if (state.gameOver && state.stats.score > highScore) {
-      setHighScore(state.stats.score);
+    if (state.gameOver && scoreDisplay.current > highScore) {
+      setHighScore(scoreDisplay.current);
     }
-  }, [state.gameOver, state.stats.score, highScore, setHighScore]);
+  }, [state.gameOver, scoreDisplay.current, highScore, setHighScore]);
 
   useEffect(() => {
     // Prevent scrolling on the body
@@ -367,8 +345,6 @@ const GameUI: React.FC = () => {
     };
   }, []);
 
-  const currentStatus = getGameStatus();
-
   return (
     <div className="relative w-full h-screen bg-gray-900 overflow-hidden">
       {showSplash ? (
@@ -381,14 +357,14 @@ const GameUI: React.FC = () => {
         <div className="flex flex-col h-full w-full">
           {/* Top Bar - Mobile */}
           <div className="lg:hidden bg-gray-900/90 backdrop-blur-sm p-3 border-b border-gray-800 flex justify-between items-center">
-            <BackButton 
+            <BackButton
               onClick={() => navigate('/')}
               className="text-sm px-3 py-1.5"
             />
             <div className="flex items-center space-x-4">
               <div className="text-white font-mono text-sm">
                 <span className="text-gray-400">Score: </span>
-                {state.stats.score.toLocaleString()}
+                {scoreDisplay.current.toLocaleString()}
               </div>
               <button
                 onClick={() => setShowHelp(true)}
@@ -405,10 +381,10 @@ const GameUI: React.FC = () => {
           <div className="flex flex-1 overflow-hidden">
             {/* Left Sidebar - Desktop */}
             <div className="hidden lg:flex flex-col w-56 xl:w-64 bg-gray-900/80 border-r border-gray-800 p-4 space-y-4">
-               <div className="flex justify-center min-h-[80px]">
-                  <HoldPiece />
-                </div>
-              
+              <div className="flex justify-center min-h-[80px]">
+                <HoldPiece />
+              </div>
+
               <div className="bg-gray-800/50 rounded-xl p-4 flex-1 overflow-y-auto">
                 <h3 className="text-sm font-medium text-gray-300 mb-3">Controls</h3>
                 <div className="space-y-2.5 text-sm text-gray-300">
@@ -437,56 +413,51 @@ const GameUI: React.FC = () => {
               <div className="relative w-full max-w-md mx-auto">
                 <div className="w-full flex items-center justify-center" style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}>
                   {/* Progress bar top */}
-            <div className="w-full px-4 mb-2">
-              <ProgressBar
-                current={state.stats.linesCleared % 10}
-                total={10}
-                label={`Level ${state.stats.level} Progress`}
-              />
-            </div>
-            <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
+                  <div className="w-full px-4 mb-2">
+                    <ProgressBar
+                      current={state.stats.linesCleared % 10}
+                      total={10}
+                      label={`Level ${state.stats.level} Progress`}
+                    />
+                  </div>
+                  <div className="relative w-full h-full max-w-full max-h-full flex items-center justify-center">
                     <Board />
                   </div>
                 </div>
-                {currentStatus !== 'playing' && (
+                {showMenu && (
                   <GameMenu
-  onStart={() => {
-    if (currentStatus === GameStatus.START) {
-      dispatch({ type: 'START' });
-    } else {
-      // Reset and start a new game
-      dispatch({ type: 'RESET' });
-      dispatch({ type: 'START' });
-    }
-    // Always hide the menu when starting a new game
-    dispatch({ type: 'PAUSE', isPaused: false });
-  }}
-  onResume={() => dispatch({ type: 'PAUSE', isPaused: false })}
-  onRestart={() => {
-    // Reset game state completely
-    dispatch({ type: 'RESET' });
-    
-    // Reset tournament participation flags
-    hasJoinedRef.current = false;
-    hasSubmittedRef.current = false;
-    
-    // Reset score tracking for toast notifications
-    prevScore.current = 0;
-    
-    // Force a re-render by using a timeout
-    // This ensures the game state is fully reset before starting a new game
-    setTimeout(() => {
-      // Start the game and ensure it's not paused
-      dispatch({ type: 'START' });
-      dispatch({ type: 'PAUSE', isPaused: false });
-    }, 150);
-  }}
-  onQuit={() => navigate('/')}
-  onSave={async () => {
-    await saveGame('user-placeholder-address');
-    toast({ title: 'Game Saved', description: 'Your Tetris progress has been saved.' });
-  }}
-/>
+                    onStart={() => {
+                      if (currentStatus === 'start') {
+                        dispatch({ type: 'START' });
+                      } else {
+                        // Reset and start a new game
+                        dispatch({ type: 'RESET' });
+                        dispatch({ type: 'START' });
+                      }
+                    }}
+                    onResume={() => dispatch({ type: 'PAUSE', isPaused: false })}
+                    onRestart={() => {
+                      // Reset tournament participation flags first
+                      hasJoinedRef.current = false;
+                      hasSubmittedRef.current = false;
+                      
+                      // Reset score tracking for toast notifications
+                      prevScore.current = 0;
+                      
+                      // Reset game state completely
+                      dispatch({ type: 'RESET' });
+                      
+                      // Start the game after a small delay to ensure reset is processed
+                      setTimeout(() => {
+                        dispatch({ type: 'START' });
+                      }, 50);
+                    }}
+                    onQuit={() => navigate('/')}
+                    onSave={async () => {
+                      await saveGame('user-placeholder-address');
+                      toast({ title: 'Game Saved', description: 'Your Tetris progress has been saved.' });
+                    }}
+                  />
                 )}
               </div>
             </div>
@@ -497,17 +468,18 @@ const GameUI: React.FC = () => {
                 <ChevronLeft className="w-6 h-6 text-gray-400" />
                 <span className="text-sm font-medium text-gray-300">Back to Home</span>
               </Link>
-                
-                <div className="space-y-4">
-                  <NextPieces />
-                </div>
-              
+
+              <div className="space-y-4">
+                <NextPieces />
+              </div>
+
               <div className="bg-gray-800/50 rounded-xl p-4 space-y-3">
                 <h3 className="text-sm font-medium text-gray-300">Stats</h3>
                 <div className="space-y-2.5">
                   {[
-                    { label: 'Score', value: state.stats.score.toLocaleString() },
-                    { label: 'Level', value: state.stats.level }
+                    { label: 'Score', value: scoreDisplay.current.toLocaleString() },
+                    { label: 'Level', value: scoreDisplay.level },
+                    { label: 'Lines', value: scoreDisplay.lines }
                   ].map((stat, index) => (
                     <div key={index} className="flex justify-between items-center py-1.5 px-2 rounded-lg hover:bg-gray-700/50">
                       <span className="text-xs text-gray-400">{stat.label}</span>
@@ -529,7 +501,7 @@ const GameUI: React.FC = () => {
             </div>
             <div className="bg-gray-800/50 rounded-lg p-3 flex flex-col items-center">
               <span className="text-xs text-gray-400 mb-1">Level</span>
-              <span className="text-white font-mono text-lg">{state.stats.level}</span>
+              <span className="text-white font-mono text-lg">{scoreDisplay.level}</span>
             </div>
           </div>
 
@@ -539,11 +511,11 @@ const GameUI: React.FC = () => {
             onClose={() => setShowHelp(false)}
             controls={controls}
           />
-          
+
           {/* Touch Controls for Mobile */}
-          <TouchControls 
-            dispatch={dispatch} 
-            visible={showTouchControls} 
+          <TouchControls
+            dispatch={dispatch}
+            visible={showTouchControls}
           />
         </div>
       )}

@@ -4,6 +4,8 @@ import { useGameState } from '../context/GameStateContext';
 import { GRID_SIZE } from '../constants';
 import GameMenu from './GameMenu';
 import SplashScreen from './SplashScreen';
+import MobileControls from './MobileControls';
+import { shouldShowMenu, canAcceptInput } from '../utils/gameStateUtils';
 
 const GameBoard: React.FC = () => {
   const { state, dispatch, changeDirection } = useGame();
@@ -14,10 +16,19 @@ const GameBoard: React.FC = () => {
   const lastTimeRef = useRef<number>(0);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
+  // Determine if menu should be shown
+  const showMenu = shouldShowMenu(state, gameState.ui);
+  
+  // Check if game can accept input
+  const acceptInput = canAcceptInput(state);
+
   // Handle keyboard controls
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Only accept input when game is actively playing
+    if (!acceptInput) return;
+    
     // Toggle pause with 'p' key
-    if (e.key.toLowerCase() === 'p' && state.isStarted && !state.gameOver) {
+    if (e.key.toLowerCase() === 'p') {
       dispatch({ type: 'PAUSE_GAME', isPaused: !state.isPaused });
       return;
     }
@@ -59,7 +70,7 @@ const GameBoard: React.FC = () => {
           break;
       }
     }
-  }, [changeDirection, gameState.settings.useWASD]);
+  }, [changeDirection, gameState.settings.useWASD, acceptInput, state.isPaused, dispatch]);
 
   // Set up keyboard event listeners
   useEffect(() => {
@@ -348,68 +359,43 @@ const GameBoard: React.FC = () => {
       show: true, 
       menuType: 'start' 
     });
-    // Make sure game is paused when menu is shown
-    dispatch({ type: 'PAUSE_GAME', isPaused: true });
   }, [dispatch]);
 
-  // Handle menu actions
+  // Simplified menu action handlers
   const handleStart = useCallback(() => {
-    if (state.menuType === 'start') {
-      // Start a new game - reset everything first
-      dispatch({ type: 'RESET_GAME' });
-      // Then start the game
-      dispatch({ type: 'START' });
-      // Make sure menu is hidden and game is not paused
-      dispatch({ type: 'TOGGLE_MENU', show: false });
-      dispatch({ type: 'PAUSE_GAME', isPaused: false });
-    } else if (state.menuType === 'pause') {
-      // Just resume the game - don't reset, just unpause
-      dispatch({ type: 'PAUSE_GAME', isPaused: false });
-      // Make sure menu is hidden
-      dispatch({ type: 'TOGGLE_MENU', show: false });
-    } else if (state.menuType === 'gameOver') {
-      // For game over, we want to reset and start a new game
+    if (state.gameOver || !state.isStarted) {
+      // Start new game or restart after game over
       dispatch({ type: 'RESET_GAME' });
       dispatch({ type: 'START' });
-      dispatch({ type: 'TOGGLE_MENU', show: false });
+    } else if (state.isPaused) {
+      // Resume paused game
       dispatch({ type: 'PAUSE_GAME', isPaused: false });
     }
-  }, [state.menuType, dispatch]);
+    dispatch({ type: 'TOGGLE_MENU', show: false });
+  }, [state.gameOver, state.isStarted, state.isPaused, dispatch]);
 
   const handleRestart = useCallback(() => {
-    // Reset the game completely
     dispatch({ type: 'RESET_GAME' });
-    // Start a new game immediately
     dispatch({ type: 'START' });
-    // Hide menu after restart
     dispatch({ type: 'TOGGLE_MENU', show: false });
-    dispatch({ type: 'PAUSE_GAME', isPaused: false });
+  }, [dispatch]);
+
+  const handleNextLevel = useCallback(() => {
+    dispatch({ type: 'NEXT_LEVEL' });
+    dispatch({ type: 'TOGGLE_MENU', show: false });
   }, [dispatch]);
 
   const { saveGame } = useGame();
   const handleSave = useCallback(async () => {
-    // TODO: Replace with actual user address from wallet/session
-    const userAddress = 'demo-user-address';
+    const userAddress = 'demo-user-address'; // TODO: Get from wallet
     await saveGame(userAddress);
-    // Optionally show a toast or log
     console.log('Game saved');
   }, [saveGame]);
 
   const handleQuit = useCallback(() => {
-    if (state.menuType === 'pause') {
-      // If quitting from pause, return to main menu
-      dispatch({ type: 'RETURN_TO_MENU' });
-      // Show start menu
-      dispatch({ 
-        type: 'TOGGLE_MENU', 
-        show: true, 
-        menuType: 'start' 
-      });
-    } else {
-      // If already in main menu, just close the menu
-      dispatch({ type: 'TOGGLE_MENU', show: false });
-    }
-  }, [state.menuType, dispatch]);
+    dispatch({ type: 'RETURN_TO_MENU' });
+    dispatch({ type: 'TOGGLE_MENU', show: true, menuType: 'start' });
+  }, [dispatch]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-gray-900 p-4">
@@ -436,21 +422,25 @@ const GameBoard: React.FC = () => {
           />
         )}
         
-        {/* Game Menu - Shows when game is not started or is paused/over */}
-        {!state.isLoading && !gameState.ui.showLoginPrompt && (
-          <div className={`absolute inset-0 transition-opacity duration-300 ${
-            !state.isStarted || state.showMenu ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}>
+        {/* Game Menu - Simplified visibility logic */}
+        {showMenu && (
+          <div className="absolute inset-0 transition-opacity duration-300">
             <GameMenu 
               onStart={handleStart}
               onRestart={handleRestart}
               onSave={handleSave}
               onQuit={handleQuit}
-              onNextLevel={() => {
-                dispatch({ type: 'NEXT_LEVEL' });
-              }}
+              onNextLevel={handleNextLevel}
             />
           </div>
+        )}
+
+        {/* Mobile Controls - Show when game is active */}
+        {acceptInput && (
+          <MobileControls 
+            onDirectionChange={changeDirection}
+            useWASD={gameState.settings.useWASD}
+          />
         )}
       </div>
     </div>

@@ -1,93 +1,123 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { GameAction } from '../types';
+import { RotateCw, ArrowDown, ArrowLeft, ArrowRight, Square, Pause } from 'lucide-react';
 
 interface TouchControlsProps {
   dispatch: React.Dispatch<GameAction>;
   visible: boolean;
 }
 
-/**
- * TouchControls component provides on-screen buttons for mobile gameplay
- */
 export const TouchControls: React.FC<TouchControlsProps> = ({ dispatch, visible }) => {
+  const handleAction = useCallback((action: GameAction) => {
+    dispatch(action);
+  }, [dispatch]);
+
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 p-4 flex flex-col items-center z-20 touch-none">
-      {/* Top row - Rotate */}
-      <div className="mb-4 w-full flex justify-center">
-        <button
-          className="w-16 h-16 rounded-full bg-gray-800/70 backdrop-blur flex items-center justify-center text-white border-2 border-gray-700 active:bg-gray-700"
-          onClick={() => dispatch({ type: 'ROTATE' })}
-          aria-label="Rotate"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-        </button>
-      </div>
-      
-      {/* Middle row - Left, Hard Drop, Right */}
-      <div className="flex justify-between w-full max-w-md mb-4">
-        <button
-          className="w-16 h-16 rounded-full bg-gray-800/70 backdrop-blur flex items-center justify-center text-white border-2 border-gray-700 active:bg-gray-700"
-          onClick={() => dispatch({ type: 'MOVE_LEFT' })}
-          aria-label="Move Left"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        
-        <button
-          className="w-16 h-16 rounded-full bg-gray-800/70 backdrop-blur flex items-center justify-center text-white border-2 border-gray-700 active:bg-gray-700"
-          onClick={() => dispatch({ type: 'HARD_DROP' })}
-          aria-label="Hard Drop"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </button>
-        
-        <button
-          className="w-16 h-16 rounded-full bg-gray-800/70 backdrop-blur flex items-center justify-center text-white border-2 border-gray-700 active:bg-gray-700"
-          onClick={() => dispatch({ type: 'MOVE_RIGHT' })}
-          aria-label="Move Right"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-      
-      {/* Bottom row - Soft Drop and Hold */}
-      <div className="flex justify-between w-full max-w-md">
-        <button
-          className="w-16 h-16 rounded-full bg-gray-800/70 backdrop-blur flex items-center justify-center text-white border-2 border-gray-700 active:bg-gray-700"
-          onClick={() => dispatch({ type: 'SOFT_DROP' })}
-          aria-label="Soft Drop"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        
-        <button
-          className="w-16 h-16 rounded-full bg-gray-800/70 backdrop-blur flex items-center justify-center text-white border-2 border-gray-700 active:bg-gray-700"
-          onClick={() => dispatch({ type: 'HOLD' })}
-          aria-label="Hold Piece"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-          </svg>
-        </button>
-      </div>
-      
-      {/* Help text */}
-      <div className="mt-4 text-xs text-gray-400 text-center">
-        <p>Tap buttons or use swipe gestures to control</p>
-        <p>Double-tap screen for hard drop</p>
+    <div className="fixed bottom-4 left-0 right-0 z-50 px-4">
+      <div className="max-w-sm mx-auto">
+        {/* Top Row - Rotate and Hold */}
+        <div className="flex justify-between mb-3">
+          <button
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleAction({ type: 'ROTATE' });
+            }}
+            className="bg-blue-600/90 hover:bg-blue-700/90 active:bg-blue-800/90 text-white p-3 rounded-lg shadow-lg backdrop-blur-sm border border-blue-400/30 transition-all duration-150 transform active:scale-95"
+            aria-label="Rotate"
+          >
+            <RotateCw className="w-6 h-6" />
+          </button>
+          
+          <button
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleAction({ type: 'HOLD' });
+            }}
+            className="bg-purple-600/90 hover:bg-purple-700/90 active:bg-purple-800/90 text-white p-3 rounded-lg shadow-lg backdrop-blur-sm border border-purple-400/30 transition-all duration-150 transform active:scale-95"
+            aria-label="Hold Piece"
+          >
+            <Square className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* Main Control Grid */}
+        <div className="bg-gray-900/80 backdrop-blur-sm rounded-xl p-4 border border-gray-600/30 shadow-2xl">
+          {/* Movement Controls */}
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            {/* Top row - empty, up (soft drop), empty */}
+            <div></div>
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleAction({ type: 'SOFT_DROP' });
+              }}
+              className="bg-green-600/90 hover:bg-green-700/90 active:bg-green-800/90 text-white p-4 rounded-lg shadow-lg border border-green-400/30 transition-all duration-150 transform active:scale-95 flex items-center justify-center"
+              aria-label="Soft Drop"
+            >
+              <ArrowDown className="w-6 h-6" />
+            </button>
+            <div></div>
+
+            {/* Middle row - left, hard drop, right */}
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleAction({ type: 'MOVE_LEFT' });
+              }}
+              className="bg-cyan-600/90 hover:bg-cyan-700/90 active:bg-cyan-800/90 text-white p-4 rounded-lg shadow-lg border border-cyan-400/30 transition-all duration-150 transform active:scale-95 flex items-center justify-center"
+              aria-label="Move Left"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleAction({ type: 'HARD_DROP' });
+              }}
+              className="bg-red-600/90 hover:bg-red-700/90 active:bg-red-800/90 text-white p-4 rounded-lg shadow-lg border border-red-400/30 transition-all duration-150 transform active:scale-95 flex items-center justify-center font-bold text-sm"
+              aria-label="Hard Drop"
+            >
+              DROP
+            </button>
+            
+            <button
+              onTouchStart={(e) => {
+                e.preventDefault();
+                handleAction({ type: 'MOVE_RIGHT' });
+              }}
+              className="bg-cyan-600/90 hover:bg-cyan-700/90 active:bg-cyan-800/90 text-white p-4 rounded-lg shadow-lg border border-cyan-400/30 transition-all duration-150 transform active:scale-95 flex items-center justify-center"
+              aria-label="Move Right"
+            >
+              <ArrowRight className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* Pause Button */}
+          <button
+            onTouchStart={(e) => {
+              e.preventDefault();
+              handleAction({ type: 'PAUSE' });
+            }}
+            className="w-full bg-yellow-600/90 hover:bg-yellow-700/90 active:bg-yellow-800/90 text-white p-3 rounded-lg shadow-lg border border-yellow-400/30 transition-all duration-150 transform active:scale-95 flex items-center justify-center gap-2"
+            aria-label="Pause Game"
+          >
+            <Pause className="w-5 h-5" />
+            <span className="font-medium">PAUSE</span>
+          </button>
+        </div>
+
+        {/* Control Labels */}
+        <div className="mt-2 text-center">
+          <div className="text-xs text-gray-400 bg-gray-900/60 backdrop-blur-sm rounded-lg px-3 py-1 inline-block">
+            Tap controls to play • Swipe for quick moves
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+export default TouchControls;

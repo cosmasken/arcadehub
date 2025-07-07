@@ -291,39 +291,6 @@ const GameUI: React.FC = () => {
               )}
               <GameBoard />
             </div>
-
-            {/* Mobile Controls */}
-            <div className="lg:hidden mt-3 bg-gray-800/50 p-3 rounded-lg border border-cyan-400/20">
-              <h3 className="text-center font-medium mb-2 text-cyan-400">CONTROLS</h3>
-              <div className="grid grid-cols-3 gap-1 max-w-[180px] mx-auto">
-                <div></div>
-                <button
-                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-all duration-200 transform hover:scale-105"
-                  onClick={() => { playSound('click'); /* Add mobile direction change if needed */ }}
-                >
-                  {gameState.settings.useWASD ? 'W' : '↑'}
-                </button>
-                <div></div>
-                <button
-                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-all duration-200 transform hover:scale-105"
-                  onClick={() => { playSound('click'); /* Add mobile direction change if needed */ }}
-                >
-                  {gameState.settings.useWASD ? 'A' : '←'}
-                </button>
-                <button
-                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-all duration-200 transform hover:scale-105"
-                  onClick={() => { playSound('click'); /* Add mobile direction change if needed */ }}
-                >
-                  {gameState.settings.useWASD ? 'S' : '↓'}
-                </button>
-                <button
-                  className="bg-cyan-900/50 hover:bg-cyan-800/70 p-3 rounded-lg text-cyan-300 font-bold text-lg border border-cyan-400/30 transition-all duration-200 transform hover:scale-105"
-                  onClick={() => { playSound('click'); /* Add mobile direction change if needed */ }}
-                >
-                  {gameState.settings.useWASD ? 'D' : '→'}
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Right Sidebar How to Play */}

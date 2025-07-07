@@ -1,7 +1,6 @@
 import Layout from "../components/Layout";
 import React, { useState } from 'react';
 import { useToast } from '../hooks/use-toast';
-import Navigation from '../components/Navigation';
 import LoadingModal from '../components/LoadingModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { Card } from '../components/ui/card';

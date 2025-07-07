@@ -1,6 +1,5 @@
 import Layout from "../components/Layout";
 import React, { useEffect, useState, useCallback } from 'react';
-import Navigation from '../components/Navigation';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -111,7 +110,6 @@ const Profile = () => {
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
-          <Navigation />
           <main className="container mx-auto px-4 py-24 md:py-8">
             <div className="flex justify-center items-center min-h-[50vh]">
               <span className="text-red-400 text-xl">Profile not found.</span>

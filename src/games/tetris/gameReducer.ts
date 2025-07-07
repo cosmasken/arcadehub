@@ -1,38 +1,11 @@
 import { GameState, GameAction } from './types';
 import { COLS, ROWS, SHAPES, POINTS, LEVELS, SHOP_ITEMS } from './constants';
-
-// Standard SRS Wall Kick Data
-// Format: [initial rotation] -> [next rotation]: [test1, test2, test3, test4, test5]
-const WALL_KICK_TESTS = {
-  // J, L, S, T, Z pieces
-  JLSTZ: [
-    // 0>>1 (0° -> 90°)
-    [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
-    // 1>>2 (90° -> 180°)
-    [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
-    // 2>>3 (180° -> 270°)
-    [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
-    // 3>>0 (270° -> 0°)
-    [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]]
-  ],
-  // I piece has different wall kicks
-  I: [
-    // 0>>1
-    [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
-    // 1>>2
-    [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
-    // 2>>3
-    [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
-    // 3>>0
-    [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]]
-  ]
-};
-
-// For counter-clockwise rotation (not currently used but here for completeness)
-const WALL_KICK_TESTS_CCW = {
-  JLSTZ: WALL_KICK_TESTS.JLSTZ.map((_, i, arr) => arr[(i + 1) % 4]),
-  I: WALL_KICK_TESTS.I.map((_, i, arr) => arr[(i + 1) % 4])
-};
+import { 
+  attemptRotation, 
+  isValidPosition, 
+  getShapeForRotation, 
+  getSpawnPosition 
+} from './utils/rotationUtils';
 
 // Helper functions
 const createBoard = (): number[][] => {
@@ -46,83 +19,64 @@ const createBoard = (): number[][] => {
 const getRandomPiece = (): number => 
   Math.floor(Math.random() * (SHAPES.length - 1)) + 1;
 
-const isValidMove = (board: number[][], shape: number[][], position: {x: number, y: number}): boolean => {
-  // Check if shape is empty
-  if (!shape.length || !shape[0]?.length) return false;
-  
-  // Check each cell of the shape
-  for (let y = 0; y < shape.length; y++) {
-    for (let x = 0; x < shape[y].length; x++) {
-      // Skip empty cells in the shape
-      if (shape[y][x] === 0) continue;
-      
-      // Calculate board position
-      const boardX = position.x + x;
-      const boardY = position.y + y;
-      
-      // Check boundaries
-      if (boardX < 0 || boardX >= COLS || boardY >= ROWS) {
-        return false; // Out of bounds
-      }
-      
-      // Check if position is above the board (spawn area)
-      if (boardY < 0) {
-        continue;
-      }
-      
-      // Check for collision with existing pieces
-      if (board[boardY][boardX] !== 0) {
-        return false; // Collision with existing piece
-      }
-    }
-  }
-  
-  return true; // No collisions or boundaries hit
-};
-
-// SRS: always rotate the base shape from SHAPES, not the current shape
-const getSRSShape = (type: number, rotation: number): number[][] => {
-  const shape = SHAPES[type];
-  let result = shape;
-  for (let i = 0; i < rotation; i++) {
-    result = rotateMatrix(result, true);
-  }
-  return result;
-};
-
-const rotateMatrix = (matrix: number[][], clockwise: boolean = true): number[][] => {
-  if (!matrix.length || !matrix[0]?.length) return matrix;
-  const rows = matrix.length;
-  const cols = matrix[0].length;
-  const rotated = Array(cols).fill(0).map(() => Array(rows).fill(0));
-  if (clockwise) {
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        rotated[x][rows - 1 - y] = matrix[y][x];
-      }
-    }
-  } else {
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        rotated[cols - 1 - x][y] = matrix[y][x];
-      }
-    }
-  }
-  return rotated;
-};
+const createDefaultState = (): GameState => ({
+  board: createBoard(),
+  currentPiece: null,
+  nextPieces: Array(3).fill(0).map(() => getRandomPiece()),
+  holdPiece: null,
+  canHold: true,
+  gameOver: false,
+  isPaused: false,
+  isStarted: false,
+  stats: {
+    score: 0,
+    level: 1,
+    linesCleared: 0,
+    tetrisCount: 0,
+    totalPieces: 0,
+    startTime: 0,
+    gameTime: 0,
+    lastLevelUp: 0,
+    highScore: 0,
+    achievements: [],
+    inventory: {},
+    coins: 0,
+  },
+  settings: {
+    ghostPiece: false,
+    holdPiece: true,
+    nextPiecesCount: 3,
+    theme: 'classic',
+    soundEnabled: true,
+    musicEnabled: true,
+    controls: {
+      moveLeft: 'ArrowLeft',
+      moveRight: 'ArrowRight',
+      rotate: 'ArrowUp',
+      softDrop: 'ArrowDown',
+      hardDrop: 'Space',
+      hold: 'KeyC',
+      pause: 'KeyP',
+    },
+  },
+});
 
 const spawnNewPiece = (state: GameState): GameState => {
+  const pieceType = state.nextPieces[0];
+  const spawnPos = getSpawnPosition(pieceType);
+  const shape = getShapeForRotation(pieceType, 0);
+  
   const newPiece = {
-    type: state.nextPieces[0],
-    shape: SHAPES[state.nextPieces[0]],
-    position: { x: Math.floor(COLS / 2) - 1, y: 0 },
-    rotation: 0, // Initial rotation state
+    type: pieceType,
+    shape,
+    position: spawnPos,
+    rotation: 0
   };
   
   const nextPieces = [...state.nextPieces.slice(1), getRandomPiece()];
   
   // Check if the new piece can be placed
-  if (!isValidMove(state.board, newPiece.shape, newPiece.position)) {
+  if (!isValidPosition(state.board, newPiece.shape, newPiece.position)) {
     return { ...state, gameOver: true };
   }
   
@@ -130,6 +84,10 @@ const spawnNewPiece = (state: GameState): GameState => {
     ...state,
     currentPiece: newPiece,
     nextPieces,
+    stats: {
+      ...state.stats,
+      totalPieces: state.stats.totalPieces + 1
+    }
   };
 };
 
@@ -146,7 +104,7 @@ const lockPiece = (state: GameState): GameState => {
       if (shape[y][x] !== 0) {
         const boardY = position.y + y;
         const boardX = position.x + x;
-        if (boardY >= 0) { // Only add if it's within the visible board
+        if (boardY >= 0 && boardY < ROWS && boardX >= 0 && boardX < COLS) {
           newBoard[boardY][boardX] = type;
         }
       }
@@ -155,6 +113,8 @@ const lockPiece = (state: GameState): GameState => {
   
   // Check for completed lines
   let linesCleared = 0;
+  let tetrisCount = state.stats.tetrisCount;
+  
   for (let y = ROWS - 1; y >= 0; y--) {
     if (newBoard[y].every(cell => cell !== 0)) {
       // Remove the line and add a new empty one at the top
@@ -165,15 +125,21 @@ const lockPiece = (state: GameState): GameState => {
     }
   }
   
-  // Calculate score
-  const linePoints = [0, 100, 300, 500, 800]; // Points for 0-4 lines
-  const points = linePoints[Math.min(linesCleared, linePoints.length - 1)];
-  const score = state.stats.score + (points * (state.stats.level + 1));
+  // Count Tetris (4 lines cleared at once)
+  if (linesCleared === 4) {
+    tetrisCount++;
+  }
   
-  // Calculate level
-  const newLines = state.stats.linesCleared + linesCleared;
+  // Calculate score with level multiplier
+  const linePoints = [0, 100, 300, 500, 800]; // Points for 0-4 lines
+  const basePoints = linePoints[Math.min(linesCleared, linePoints.length - 1)];
+  const levelMultiplier = state.stats.level;
+  const score = state.stats.score + (basePoints * levelMultiplier);
+  
+  // Calculate level progression
+  const newTotalLines = state.stats.linesCleared + linesCleared;
   const level = Math.min(
-    Math.floor(newLines / 10) + 1,
+    Math.floor(newTotalLines / 10) + 1,
     LEVELS.length
   );
   
@@ -186,7 +152,8 @@ const lockPiece = (state: GameState): GameState => {
       ...state.stats,
       score,
       level,
-      linesCleared: newLines,
+      linesCleared: newTotalLines,
+      tetrisCount,
       highScore: Math.max(score, state.stats.highScore),
     },
   };
@@ -200,11 +167,13 @@ const movePiece = (state: GameState, dx: number, dy: number): GameState => {
     y: state.currentPiece.position.y + dy,
   };
 
-  if (dy > 0 && !isValidMove(state.board, state.currentPiece.shape, newPosition)) {
+  // If moving down and can't move, lock the piece
+  if (dy > 0 && !isValidPosition(state.board, state.currentPiece.shape, newPosition)) {
     return lockPiece(state);
   }
 
-  if (isValidMove(state.board, state.currentPiece.shape, newPosition)) {
+  // If the move is valid, update position
+  if (isValidPosition(state.board, state.currentPiece.shape, newPosition)) {
     return {
       ...state,
       currentPiece: {
@@ -221,34 +190,29 @@ const rotatePiece = (state: GameState, clockwise: boolean = true): GameState => 
   if (!state.currentPiece || state.gameOver || state.isPaused) return state;
 
   const { type, position, rotation = 0 } = state.currentPiece;
-  const currentRotation = rotation % 4;
-  const nextRotation = clockwise ? (currentRotation + 1) % 4 : (currentRotation + 3) % 4;
-
-  // Always rotate from base shape using SRS
-  const rotatedShape = getSRSShape(type, nextRotation);
-  const isIPiece = type === 1; // I piece
-  const kickSet = isIPiece ? WALL_KICK_TESTS.I : WALL_KICK_TESTS.JLSTZ;
-  const kickTests = clockwise
-    ? kickSet[currentRotation]
-    : (isIPiece ? WALL_KICK_TESTS_CCW.I : WALL_KICK_TESTS_CCW.JLSTZ)[currentRotation];
-
-  for (const [dx, dy] of kickTests) {
-    const newPosition = {
-      x: position.x + dx,
-      y: position.y + dy
+  
+  // Use the enhanced rotation system
+  const rotationResult = attemptRotation(
+    state.board,
+    state.currentPiece.shape,
+    position,
+    type,
+    rotation,
+    clockwise
+  );
+  
+  if (rotationResult.success) {
+    return {
+      ...state,
+      currentPiece: {
+        ...state.currentPiece,
+        shape: rotationResult.newShape,
+        position: rotationResult.newPosition,
+        rotation: rotationResult.newRotation
+      }
     };
-    if (isValidMove(state.board, rotatedShape, newPosition)) {
-      return {
-        ...state,
-        currentPiece: {
-          ...state.currentPiece,
-          shape: rotatedShape,
-          position: newPosition,
-          rotation: nextRotation
-        }
-      };
-    }
   }
+  
   return state; // No valid rotation found
 };
 
@@ -256,14 +220,21 @@ const hardDrop = (state: GameState): GameState => {
   if (!state.currentPiece || state.gameOver || state.isPaused) return state;
   
   let newY = state.currentPiece.position.y;
-  while (isValidMove(state.board, state.currentPiece.shape, {
+  let dropDistance = 0;
+  
+  // Find the lowest valid position
+  while (isValidPosition(state.board, state.currentPiece.shape, {
     x: state.currentPiece.position.x,
     y: newY + 1,
   })) {
     newY++;
+    dropDistance++;
   }
   
-  return lockPiece({
+  // Add points for hard drop distance
+  const hardDropPoints = dropDistance * 2;
+  
+  const stateWithDrop = {
     ...state,
     currentPiece: {
       ...state.currentPiece,
@@ -272,29 +243,44 @@ const hardDrop = (state: GameState): GameState => {
         y: newY,
       },
     },
-  });
+    stats: {
+      ...state.stats,
+      score: state.stats.score + hardDropPoints
+    }
+  };
+  
+  return lockPiece(stateWithDrop);
 };
 
 const holdPiece = (state: GameState): GameState => {
-  if (!state.canHold || state.gameOver || state.isPaused) return state;
+  if (!state.canHold || !state.currentPiece || state.gameOver || state.isPaused) return state;
   
-  const newHoldPiece = state.currentPiece?.type || null;
-  let newCurrentPiece = state.nextPieces[0];
-  const newNextPieces = [...state.nextPieces.slice(1), getRandomPiece()];
+  const currentPieceType = state.currentPiece.type;
+  let newCurrentPieceType: number;
+  let newNextPieces = [...state.nextPieces];
   
   if (state.holdPiece !== null) {
-    newCurrentPiece = state.holdPiece;
+    // Swap with held piece
+    newCurrentPieceType = state.holdPiece;
+  } else {
+    // Take from next pieces
+    newCurrentPieceType = state.nextPieces[0];
+    newNextPieces = [...state.nextPieces.slice(1), getRandomPiece()];
   }
+  
+  const spawnPos = getSpawnPosition(newCurrentPieceType);
+  const shape = getShapeForRotation(newCurrentPieceType, 0);
   
   return {
     ...state,
     currentPiece: {
-      type: newCurrentPiece,
-      shape: SHAPES[newCurrentPiece],
-      position: { x: Math.floor(COLS / 2) - 1, y: 0 },
+      type: newCurrentPieceType,
+      shape,
+      position: spawnPos,
+      rotation: 0
     },
     nextPieces: newNextPieces,
-    holdPiece: newHoldPiece,
+    holdPiece: currentPieceType,
     canHold: false,
   };
 };
@@ -302,46 +288,62 @@ const holdPiece = (state: GameState): GameState => {
 const gameTick = (state: GameState): GameState => {
   if (state.gameOver || state.isPaused) return state;
   
+  // Update game time
+  const currentTime = Date.now();
+  const gameTime = state.stats.gameTime + (currentTime - (state.stats.startTime || currentTime));
+  
+  const updatedState = {
+    ...state,
+    stats: {
+      ...state.stats,
+      gameTime
+    }
+  };
+  
   // If there's no current piece, spawn a new one
-  if (!state.currentPiece) {
-    return spawnNewPiece(state);
+  if (!updatedState.currentPiece) {
+    return spawnNewPiece(updatedState);
   }
   
   // Try to move piece down
-  const newState = movePiece(state, 0, 1);
-  
-  // If piece didn't move down, lock it in place
-  if (newState === state) {
-    return lockPiece(state);
-  }
-  
-  return newState;
+  return movePiece(updatedState, 0, 1);
 };
 
 const buyItem = (state: GameState, itemId: string): GameState => {
-  // Find the item in the shop
   const item = SHOP_ITEMS.find(i => i.id === itemId);
-  if (!item) return state;
+  if (!item || state.stats.coins < item.price) return state;
 
-  // Only update if user can afford it, etc. (omitted for brevity)
   const newSettings = { ...state.settings };
-  if (itemId === 'ghost_piece') {
-    newSettings.ghostPiece = true;
-  }
-  // Add similar logic for other upgrades if needed
+  const newStats = { 
+    ...state.stats, 
+    coins: state.stats.coins - item.price,
+    inventory: {
+      ...state.stats.inventory,
+      [itemId]: (state.stats.inventory[itemId] || 0) + 1
+    }
+  };
 
-  // Deduct coins, add to inventory, etc. (omitted for brevity)
+  // Apply item effects
+  if (item.effect.ghostPiece !== undefined) {
+    newSettings.ghostPiece = item.effect.ghostPiece;
+  }
+  if (item.effect.holdPiece !== undefined) {
+    newSettings.holdPiece = item.effect.holdPiece;
+  }
+  if (item.effect.nextPiecesCount !== undefined) {
+    newSettings.nextPiecesCount = item.effect.nextPiecesCount;
+  }
+
   return {
     ...state,
     settings: newSettings,
-    // You may want to update stats.inventory, stats.coins, etc.
+    stats: newStats
   };
 };
 
 export const gameReducer = (state: GameState, action: GameAction): GameState => {
   switch (action.type) {
     case 'LOAD_STATE': {
-      // Defensive: ensure all required fields exist, fallback to current state if not
       const loaded = action.payload as Partial<GameState>;
       return {
         ...state,
@@ -358,44 +360,99 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         settings: { ...state.settings, ...loaded.settings },
       };
     }
+    
     case 'MOVE_LEFT':
-      return !state.isPaused && !state.gameOver ? movePiece(state, -1, 0) : state;
+      return canAcceptInput(state) ? movePiece(state, -1, 0) : state;
+      
     case 'MOVE_RIGHT':
-      return !state.isPaused && !state.gameOver ? movePiece(state, 1, 0) : state;
+      return canAcceptInput(state) ? movePiece(state, 1, 0) : state;
+      
     case 'ROTATE':
-      return !state.isPaused && !state.gameOver ? rotatePiece(state) : state;
+      return canAcceptInput(state) ? rotatePiece(state, true) : state;
+      
     case 'SOFT_DROP':
-      return !state.isPaused && !state.gameOver ? movePiece(state, 0, 1) : state;
+      return canAcceptInput(state) ? movePiece(state, 0, 1) : state;
+      
     case 'HARD_DROP':
-      return !state.isPaused && !state.gameOver ? hardDrop(state) : state;
+      return canAcceptInput(state) ? hardDrop(state) : state;
+      
     case 'HOLD':
-      return !state.isPaused && !state.gameOver ? holdPiece(state) : state;
+      return canAcceptInput(state) ? holdPiece(state) : state;
+      
     case 'PAUSE':
       return {
         ...state,
         isPaused: action.isPaused !== undefined ? action.isPaused : !state.isPaused,
       };
+      
     case 'RESET':
     case 'RESET_GAME':
-      // This will be handled by the context provider
-      return state;
+      console.log('🔄 RESET action received in gameReducer');
+      // Create a fresh game state while preserving high score and settings
+      const resetState = {
+        ...createDefaultState(),
+        stats: {
+          ...createDefaultState().stats,
+          highScore: state.stats.highScore, // Preserve high score
+        },
+        settings: { ...state.settings }, // Preserve user settings
+      };
+      console.log('🔄 Reset state created:', { 
+        isStarted: resetState.isStarted, 
+        isPaused: resetState.isPaused, 
+        gameOver: resetState.gameOver,
+        score: resetState.stats.score 
+      });
+      return resetState;
+      
     case 'START':
     case 'START_GAME':
-      return { ...state, isStarted: true, isPaused: false, gameOver: false };
+      console.log('🚀 START action received in gameReducer');
+      const startState = { 
+        ...state, 
+        isStarted: true, 
+        isPaused: false, 
+        gameOver: false,
+        stats: {
+          ...state.stats,
+          startTime: Date.now()
+        }
+      };
+      console.log('🚀 Start state created:', { 
+        isStarted: startState.isStarted, 
+        isPaused: startState.isPaused, 
+        gameOver: startState.gameOver,
+        score: startState.stats.score 
+      });
+      return startState;
+      
     case 'TICK':
-      return !state.isPaused && !state.gameOver ? gameTick(state) : state;
+      return gameTick(state);
+      
     case 'BUY_ITEM':
       return buyItem(state, action.itemId);
+      
     case 'GAME_OVER':
-      return { ...state, gameOver: true, isPaused: true };
+      return { 
+        ...state, 
+        gameOver: true, 
+        isPaused: true,
+        stats: {
+          ...state.stats,
+          gameTime: state.stats.gameTime + (Date.now() - (state.stats.startTime || Date.now()))
+        }
+      };
+      
     case 'ADD_SCORE':
       return {
         ...state,
         stats: {
           ...state.stats,
           score: state.stats.score + action.points,
+          highScore: Math.max(state.stats.score + action.points, state.stats.highScore)
         },
       };
+      
     case 'ADD_LINES': {
       const newLines = state.stats.linesCleared + action.lines;
       const newLevel = Math.min(
@@ -412,7 +469,13 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         },
       };
     }
+    
     default:
       return state;
   }
+};
+
+// Helper function to check if game can accept input
+const canAcceptInput = (state: GameState): boolean => {
+  return !state.gameOver && !state.isPaused && state.isStarted;
 };

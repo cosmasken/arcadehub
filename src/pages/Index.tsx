@@ -219,51 +219,149 @@ const Index = () => {
       <WelcomeModal />
       <HowToPlay />
       <Navigation />
-      <main className="overflow-hidden">
-        <div className="flex-1 flex flex-col items-center justify-center w-full">
+      <main className="overflow-hidden min-h-screen">
+        <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-4 sm:py-6 md:py-8 min-h-[calc(100vh-4rem)]">
           {/* Welcoming Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-300 via-cyan-300 to-white bg-clip-text text-transparent mb-1 drop-shadow-lg">Welcome to ArcadeHub</h1>
-            <p className="text-lg text-purple-200 font-medium mb-2">Enjoy classic games with a modern twist!</p>
-            <span className="inline-block px-4 py-1 rounded-full bg-cyan-800/40 text-cyan-200 text-xs font-mono tracking-widest uppercase">More games coming soon</span>
+          <div className="text-center mb-4 md:mb-6 lg:mb-8 flex-shrink-0">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-purple-300 via-cyan-300 to-white bg-clip-text text-transparent mb-2 drop-shadow-lg px-4">
+              Welcome to ArcadeHub
+            </h1>
+            <p className="text-sm sm:text-base md:text-lg text-purple-200 font-medium mb-2 md:mb-3 px-4">
+              Enjoy classic games with a modern twist!
+            </p>
+            <span className="inline-block px-3 py-1 rounded-full bg-cyan-800/40 text-cyan-200 text-xs font-mono tracking-widest uppercase">
+              More games coming soon
+            </span>
           </div>
-          {/* Hero Game Cards */}
-          <div className="flex flex-col md:flex-row gap-8 w-full max-w-3xl items-center justify-center">
-            {allGames.map((game) => (
-              <div
-                key={game.id}
-                className="bg-gray-900/80 rounded-2xl shadow-xl border border-purple-800/40 hover:border-cyan-400/50 transition-all duration-300 max-w-xs w-full flex flex-col items-center group relative overflow-hidden"
-              >
-                <img
-                  src={game.image}
-                  alt={game.title}
-                  className="w-full h-52 object-cover object-center rounded-t-2xl group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="p-4 flex flex-col items-center w-full">
-                  <h2 className="text-xl font-bold text-purple-100 mb-1 drop-shadow-md">{game.title}</h2>
-                  <p className="text-purple-300 text-center mb-3 text-sm">{game.description}</p>
-                  <div className="flex gap-2 mb-3">
-                    <span className="bg-cyan-800/60 text-cyan-200 px-2 py-0.5 rounded-full text-xs font-mono">{game.players.toLocaleString()} players</span>
-                    <span className="bg-purple-800/60 text-purple-200 px-2 py-0.5 rounded-full text-xs font-mono flex items-center gap-1"><Star className="w-4 h-4 inline-block text-yellow-400" /> {game.rating}</span>
-                    <span className="bg-gradient-to-r from-yellow-500/80 to-orange-400/80 text-white px-2 py-0.5 rounded-full text-xs font-mono font-bold shadow">{game.prize}</span>
+
+          {/* Hero Game Cards - Mobile Optimized */}
+          <div className="w-full max-w-6xl flex-1 flex items-center justify-center">
+            {/* Mobile Layout: Single column with compact cards */}
+            <div className="block md:hidden space-y-3 w-full max-w-sm">
+              {allGames.map((game) => (
+                <div
+                  key={game.id}
+                  className="bg-gray-900/80 rounded-xl shadow-xl border border-purple-800/40 hover:border-cyan-400/50 transition-all duration-300 w-full overflow-hidden relative"
+                >
+                  <div className="flex">
+                    {/* Image Section - Smaller on mobile */}
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
+                      <img
+                        src={game.image}
+                        alt={game.title}
+                        className="w-full h-full object-cover rounded-l-xl"
+                      />
+                    </div>
+                    
+                    {/* Content Section */}
+                    <div className="flex-1 p-3 flex flex-col justify-between min-h-24 sm:min-h-28">
+                      <div className="flex-1">
+                        <h2 className="text-sm sm:text-base font-bold text-purple-100 mb-1">{game.title}</h2>
+                        <p className="text-purple-300 text-xs mb-2 overflow-hidden" style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: '1.2em',
+                          maxHeight: '2.4em'
+                        }}>
+                          {game.description}
+                        </p>
+                        
+                        {/* Stats - Compact */}
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          <span className="bg-cyan-800/60 text-cyan-200 px-1.5 py-0.5 rounded-full text-xs">
+                            {(game.players / 1000).toFixed(1)}k
+                          </span>
+                          <span className="bg-purple-800/60 text-purple-200 px-1.5 py-0.5 rounded-full text-xs flex items-center gap-1">
+                            <Star className="w-3 h-3 text-yellow-400" /> {game.rating}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Play Button - Always visible and properly sized */}
+                      <button
+                        onClick={() => {
+                          if (isConnected) {
+                            navigate(`/games/${game.id}`);
+                          } else {
+                            window.dispatchEvent(new Event('openWalletModal'));
+                          }
+                        }}
+                        className="w-full px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold text-xs shadow-lg hover:from-cyan-500 hover:to-purple-500 transition-all duration-200 flex-shrink-0"
+                      >
+                        {isConnected ? 'Play Now' : 'Connect'}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (isConnected) {
-                        navigate(`/games/${game.id}`);
-                      } else {
-                        // Optionally trigger wallet connect modal here
-                        window.dispatchEvent(new Event('openWalletModal'));
-                      }
-                    }}
-                    className="mt-1 px-6 py-2 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold text-base shadow-lg hover:from-cyan-500 hover:to-purple-500 hover:scale-105 transition-all duration-200"
-                  >
-                    {isConnected ? 'Play Now' : 'Connect Wallet'}
-                  </button>
+                  
+                  {/* Status Badge */}
+                  <span className="absolute top-1 right-1 bg-green-600/90 text-white text-xs font-bold px-1.5 py-0.5 rounded-full shadow">
+                    LIVE
+                  </span>
+                  
+                  {/* Prize Badge */}
+                  <span className="absolute bottom-1 right-1 bg-gradient-to-r from-yellow-500/90 to-orange-400/90 text-white px-1.5 py-0.5 rounded-full text-xs font-bold shadow">
+                    {game.prize}
+                  </span>
                 </div>
-                <span className="absolute top-3 right-3 bg-green-600/90 text-white text-xs font-bold px-3 py-1 rounded-full shadow">LIVE</span>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            {/* Desktop Layout: Side by side cards */}
+            <div className="hidden md:flex gap-6 lg:gap-8 items-center justify-center">
+              {allGames.map((game) => (
+                <div
+                  key={game.id}
+                  className="bg-gray-900/80 rounded-2xl shadow-xl border border-purple-800/40 hover:border-cyan-400/50 transition-all duration-300 max-w-xs w-full flex flex-col items-center group relative overflow-hidden"
+                >
+                  <img
+                    src={game.image}
+                    alt={game.title}
+                    className="w-full h-48 lg:h-52 object-cover object-center rounded-t-2xl group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="p-4 lg:p-6 flex flex-col items-center w-full">
+                    <h2 className="text-xl lg:text-2xl font-bold text-purple-100 mb-2 drop-shadow-md text-center">
+                      {game.title}
+                    </h2>
+                    <p className="text-purple-300 text-center mb-4 text-sm lg:text-base">
+                      {game.description}
+                    </p>
+                    
+                    {/* Stats */}
+                    <div className="flex flex-wrap gap-2 mb-4 justify-center">
+                      <span className="bg-cyan-800/60 text-cyan-200 px-3 py-1 rounded-full text-xs font-mono">
+                        {game.players.toLocaleString()} players
+                      </span>
+                      <span className="bg-purple-800/60 text-purple-200 px-3 py-1 rounded-full text-xs font-mono flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-400" /> {game.rating}
+                      </span>
+                      <span className="bg-gradient-to-r from-yellow-500/80 to-orange-400/80 text-white px-3 py-1 rounded-full text-xs font-mono font-bold shadow">
+                        {game.prize}
+                      </span>
+                    </div>
+                    
+                    {/* Play Button */}
+                    <button
+                      onClick={() => {
+                        if (isConnected) {
+                          navigate(`/games/${game.id}`);
+                        } else {
+                          window.dispatchEvent(new Event('openWalletModal'));
+                        }
+                      }}
+                      className="w-full px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold text-base shadow-lg hover:from-cyan-500 hover:to-purple-500 hover:scale-105 transition-all duration-200"
+                    >
+                      {isConnected ? 'Play Now' : 'Connect Wallet'}
+                    </button>
+                  </div>
+                  
+                  {/* Status Badge */}
+                  <span className="absolute top-3 right-3 bg-green-600/90 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+                    LIVE
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </main>

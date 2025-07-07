@@ -171,18 +171,6 @@ const GameUI: React.FC = () => {
   const showMenu = shouldShowMenu(state);
   const acceptInput = canAcceptInput(state);
   const scoreDisplay = getScoreDisplay(state);
-  
-  // Debug logging for menu state
-  useEffect(() => {
-    console.log('🎮 Game state changed:', {
-      currentStatus,
-      showMenu,
-      acceptInput,
-      isStarted: state.isStarted,
-      isPaused: state.isPaused,
-      gameOver: state.gameOver
-    });
-  }, [currentStatus, showMenu, acceptInput, state.isStarted, state.isPaused, state.gameOver]);
 
   // Handle keyboard input with improved logic
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -449,14 +437,6 @@ const GameUI: React.FC = () => {
                     }}
                     onResume={() => dispatch({ type: 'PAUSE', isPaused: false })}
                     onRestart={() => {
-                      console.log('🔄 Restart button clicked');
-                      console.log('Current state before reset:', { 
-                        isStarted: state.isStarted, 
-                        isPaused: state.isPaused, 
-                        gameOver: state.gameOver,
-                        score: state.stats.score 
-                      });
-                      
                       // Reset tournament participation flags first
                       hasJoinedRef.current = false;
                       hasSubmittedRef.current = false;
@@ -465,12 +445,10 @@ const GameUI: React.FC = () => {
                       prevScore.current = 0;
                       
                       // Reset game state completely
-                      console.log('🔄 Dispatching RESET action');
                       dispatch({ type: 'RESET' });
                       
                       // Start the game after a small delay to ensure reset is processed
                       setTimeout(() => {
-                        console.log('🚀 Dispatching START action');
                         dispatch({ type: 'START' });
                       }, 50);
                     }}

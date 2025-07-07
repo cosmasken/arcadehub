@@ -387,7 +387,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       
     case 'RESET':
     case 'RESET_GAME':
-      console.log('🔄 RESET action received in gameReducer');
       // Create a fresh game state while preserving high score and settings
       const resetState = {
         ...createDefaultState(),
@@ -397,17 +396,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         },
         settings: { ...state.settings }, // Preserve user settings
       };
-      console.log('🔄 Reset state created:', { 
-        isStarted: resetState.isStarted, 
-        isPaused: resetState.isPaused, 
-        gameOver: resetState.gameOver,
-        score: resetState.stats.score 
-      });
       return resetState;
       
     case 'START':
     case 'START_GAME':
-      console.log('🚀 START action received in gameReducer');
       const startState = { 
         ...state, 
         isStarted: true, 
@@ -418,12 +410,6 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
           startTime: Date.now()
         }
       };
-      console.log('🚀 Start state created:', { 
-        isStarted: startState.isStarted, 
-        isPaused: startState.isPaused, 
-        gameOver: startState.gameOver,
-        score: startState.stats.score 
-      });
       return startState;
       
     case 'TICK':

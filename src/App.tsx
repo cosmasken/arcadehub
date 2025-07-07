@@ -38,6 +38,7 @@ import CreateTournament from "./pages/CreateTournament";
 import SponsorAnalytics from "./components/SponsorAnalytics";
 import SnakeGame from "./games/snake/SnakeGame";
 import Tetris from "./games/tetris";
+import PacmanGame from "./games/pacman/PacmanGame";
 import WalletPage from "./pages/WalletPage";
 import { error } from 'console';
 
@@ -217,6 +218,7 @@ const App = () => {
                 <Route path="developer/dashboard" element={<DeveloperProfile />} />
                 <Route path="games/snake" element={<SnakeGame />} />
                 <Route path="games/tetris" element={<Tetris />} />
+                <Route path="games/pacman" element={<PacmanGame />} />
                 <Route path="sponsors" element={<Sponsors />} />
                 <Route path="sponsor/login" element={<SponsorLogin />} />
                 <Route path="sponsor/dashboard" element={<SponsorDashboard />} />

@@ -1,6 +1,5 @@
 import Layout from "../components/Layout";
 import React, { useEffect, useState, useRef } from "react";
-import Navigation from '../components/Navigation';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -96,9 +95,9 @@ const Leaderboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
-      <Navigation />
-      <main className="container mx-auto px-4 py-24 md:py-8">
+    <Layout>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 bg-grid-pattern">
+        <main className="container mx-auto px-4 py-24 md:py-8">
         <div className="container mx-auto max-w-6xl">
           {/* Header */}
           <div className="text-center mb-12">
@@ -203,7 +202,8 @@ const Leaderboard = () => {
           </Card>
         </div>
       </main>
-    </div>
+      </div>
+    </Layout>
   );
 };
 

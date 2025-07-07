@@ -1,7 +1,6 @@
 import Layout from "../components/Layout";
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link, useNavigate, Navigate } from 'react-router-dom';
-import Navigation from '../components/Navigation';
 import Breadcrumbs from '../components/Breadcrumbs';
 import GameCard from '../components/GameCard';
 import WelcomeModal from '../components/WelcomeModal';
@@ -73,6 +72,18 @@ const Index = () => {
       rating: 4.5,
       prize: "75 NERO",
       lastUpdated: '2023-07-01'
+    },
+    {
+      id: "pacman",
+      title: "Pac-Man",
+      description: "Classic maze chase arcade game",
+      image: "/pacman.jpeg",
+      status: "live" as const,
+      category: "arcade",
+      players: 12500,
+      rating: 4.8,
+      prize: "200 NERO",
+      lastUpdated: '2024-07-07'
     }
   ], []);
 
@@ -98,8 +109,8 @@ const Index = () => {
     },
     {
       title: "GAMES AVAILABLE",
-      value: "2",
-      change: "+2 new this week",
+      value: "3",
+      change: "+1 new this week",
       icon: GamepadIcon,
       trend: "up" as const
     }
@@ -218,7 +229,6 @@ const Index = () => {
     <Layout>
       <WelcomeModal />
       <HowToPlay />
-      <Navigation />
       <main className="overflow-hidden min-h-screen">
         <div className="flex-1 flex flex-col items-center justify-center w-full px-4 py-4 sm:py-6 md:py-8 min-h-[calc(100vh-4rem)]">
           {/* Welcoming Header */}
@@ -245,7 +255,7 @@ const Index = () => {
                 >
                   <div className="flex">
                     {/* Image Section - Smaller on mobile */}
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
                       <img
                         src={game.image}
                         alt={game.title}
@@ -254,10 +264,10 @@ const Index = () => {
                     </div>
                     
                     {/* Content Section */}
-                    <div className="flex-1 p-3 flex flex-col justify-between min-h-24 sm:min-h-28">
+                    <div className="flex-1 p-2.5 sm:p-3 flex flex-col justify-between min-h-20 sm:min-h-24">
                       <div className="flex-1">
                         <h2 className="text-sm sm:text-base font-bold text-purple-100 mb-1">{game.title}</h2>
-                        <p className="text-purple-300 text-xs mb-2 overflow-hidden" style={{
+                        <p className="text-purple-300 text-xs mb-1.5 overflow-hidden" style={{
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: 'vertical',
@@ -268,7 +278,7 @@ const Index = () => {
                         </p>
                         
                         {/* Stats - Compact */}
-                        <div className="flex flex-wrap gap-1 mb-2">
+                        <div className="flex flex-wrap gap-1 mb-1.5">
                           <span className="bg-cyan-800/60 text-cyan-200 px-1.5 py-0.5 rounded-full text-xs">
                             {(game.players / 1000).toFixed(1)}k
                           </span>
@@ -308,34 +318,34 @@ const Index = () => {
             </div>
 
             {/* Desktop Layout: Side by side cards */}
-            <div className="hidden md:flex gap-6 lg:gap-8 items-center justify-center">
+            <div className="hidden md:flex gap-4 lg:gap-6 items-center justify-center flex-wrap">
               {allGames.map((game) => (
                 <div
                   key={game.id}
-                  className="bg-gray-900/80 rounded-2xl shadow-xl border border-purple-800/40 hover:border-cyan-400/50 transition-all duration-300 max-w-xs w-full flex flex-col items-center group relative overflow-hidden"
+                  className="bg-gray-900/80 rounded-2xl shadow-xl border border-purple-800/40 hover:border-cyan-400/50 transition-all duration-300 w-full max-w-xs flex flex-col items-center group relative overflow-hidden"
                 >
                   <img
                     src={game.image}
                     alt={game.title}
-                    className="w-full h-48 lg:h-52 object-cover object-center rounded-t-2xl group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-40 lg:h-48 object-cover object-center rounded-t-2xl group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="p-4 lg:p-6 flex flex-col items-center w-full">
-                    <h2 className="text-xl lg:text-2xl font-bold text-purple-100 mb-2 drop-shadow-md text-center">
+                  <div className="p-4 lg:p-5 flex flex-col items-center w-full">
+                    <h2 className="text-lg lg:text-xl font-bold text-purple-100 mb-2 drop-shadow-md text-center">
                       {game.title}
                     </h2>
-                    <p className="text-purple-300 text-center mb-4 text-sm lg:text-base">
+                    <p className="text-purple-300 text-center mb-3 text-sm">
                       {game.description}
                     </p>
                     
                     {/* Stats */}
                     <div className="flex flex-wrap gap-2 mb-4 justify-center">
-                      <span className="bg-cyan-800/60 text-cyan-200 px-3 py-1 rounded-full text-xs font-mono">
+                      <span className="bg-cyan-800/60 text-cyan-200 px-2 py-1 rounded-full text-xs font-mono">
                         {game.players.toLocaleString()} players
                       </span>
-                      <span className="bg-purple-800/60 text-purple-200 px-3 py-1 rounded-full text-xs font-mono flex items-center gap-1">
+                      <span className="bg-purple-800/60 text-purple-200 px-2 py-1 rounded-full text-xs font-mono flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-400" /> {game.rating}
                       </span>
-                      <span className="bg-gradient-to-r from-yellow-500/80 to-orange-400/80 text-white px-3 py-1 rounded-full text-xs font-mono font-bold shadow">
+                      <span className="bg-gradient-to-r from-yellow-500/80 to-orange-400/80 text-white px-2 py-1 rounded-full text-xs font-mono font-bold shadow">
                         {game.prize}
                       </span>
                     </div>
@@ -349,7 +359,7 @@ const Index = () => {
                           window.dispatchEvent(new Event('openWalletModal'));
                         }
                       }}
-                      className="w-full px-6 py-3 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold text-base shadow-lg hover:from-cyan-500 hover:to-purple-500 hover:scale-105 transition-all duration-200"
+                      className="w-full px-4 py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 text-white font-bold text-sm shadow-lg hover:from-cyan-500 hover:to-purple-500 hover:scale-105 transition-all duration-200"
                     >
                       {isConnected ? 'Play Now' : 'Connect Wallet'}
                     </button>

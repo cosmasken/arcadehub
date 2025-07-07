@@ -1,9 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet, Menu } from 'lucide-react';
+import { Home, Gamepad2, Trophy, User as UserIcon, Settings, Search, Gift, Wallet } from 'lucide-react';
 import { Input } from './ui/input';
 import { UserMenu } from './UserMenu';
 import useWalletStore from '../stores/useWalletStore';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from './ui/sheet';
 import { Button } from './ui/button';
 
 import type { User } from '../types/supabase';
@@ -103,53 +102,11 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
               </div>
             </div>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Search - Simple search icon that could expand */}
             <div className="md:hidden flex items-center">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                    <Menu className="h-6 w-6" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[250px] sm:w-[300px] bg-gray-900 border-l border-gray-800 p-4">
-                  <div className="flex flex-col items-center space-y-6 mt-8">
-                    {/* Search Bar (Mobile) */}
-                    <div className="w-full relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        type="text"
-                        placeholder="Search games..."
-                        className="pl-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* Mobile Navigation Links */}
-                    <nav className="flex flex-col space-y-2 w-full">
-                      {navLinks.map((link) => (
-                        <SheetClose asChild key={link.to}>
-                          <Link
-                            to={link.to}
-                            className={`flex items-center px-3 py-2 text-base font-medium rounded-md ${location.pathname === link.to
-                              ? 'bg-gray-800 text-white'
-                              : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                              }`}
-                          >
-                            <link.icon className="h-5 w-5 mr-3" />
-                            {link.label}
-                          </Link>
-                        </SheetClose>
-                      ))}
-                    </nav>
-
-
-
-                    {/* User Menu (Mobile) */}
-                    <div className="w-full flex justify-center">
-                      <UserMenu />
-                    </div>
-                  </div>
-                </SheetContent>
-              </Sheet>
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
+                <Search className="h-5 w-5" />
+              </Button>
             </div>
           </div>
 
@@ -158,27 +115,32 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
       </nav>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/90 backdrop-blur-md border-t border-gray-800 z-40">
-        <div className="flex justify-around">
-          {navLinks.map((link) => (
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 z-40 safe-area-pb">
+        <div className="flex justify-around items-center px-2 py-2">
+          {navLinks.slice(0, 4).map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className={`flex flex-col items-center justify-center py-3 px-4 ${location.pathname === link.to
-                ? 'text-cyan-400'
-                : 'text-gray-400 hover:text-white'
+              className={`flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors ${location.pathname === link.to
+                ? 'text-cyan-400 bg-gray-800/50'
+                : 'text-gray-400 hover:text-white hover:bg-gray-800/30'
                 }`}
             >
-              <link.icon className="h-6 w-6" />
-              <span className="text-xs mt-1">{link.label}</span>
+              <link.icon className="h-5 w-5" />
+              <span className="text-xs mt-1 font-medium">{link.label}</span>
             </Link>
           ))}
-          <UserMenu />
+          
+          {/* User Menu in Bottom Navigation */}
+          <div className="flex flex-col items-center justify-center py-2 px-3">
+            <UserMenu />
+          </div>
         </div>
       </nav>
 
-      {/* Add padding to account for fixed header */}
-      <div className="h-16 md:h-12" />
+      {/* Add padding to account for fixed header and bottom navigation */}
+      <div className="h-16" />
+      <div className="md:hidden h-16" /> {/* Extra padding for mobile bottom nav */}
       <style>
         {`
           .hide-scrollbar {
@@ -187,6 +149,14 @@ const Navigation: React.FC<NavigationProps> = ({ userProfile }) => {
           }
           .hide-scrollbar::-webkit-scrollbar {
             display: none;
+          }
+          .safe-area-pb {
+            padding-bottom: env(safe-area-inset-bottom);
+          }
+          @media (max-width: 768px) {
+            body {
+              padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+            }
           }
         `}
       </style>
